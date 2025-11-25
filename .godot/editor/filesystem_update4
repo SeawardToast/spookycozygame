@@ -1,4 +1,4 @@
-res://scenes/characters/ghost/ghost.tscn
+res://scenes/test/test_scene_npc_ghost.tscn
 res://scenes/ui/game_ui_theme.tres
 res://tilesets/large_house_tile_set.tres
 res://scenes/objects/tree/tree_shake.gdshader
@@ -6,6 +6,18 @@ res://tilesets/game_tile_set.tres
 res://dialogue/dialogue_balloon_theme.tres
 res://scenes/objects/rocks/rock_shake.gdshader
 res://scenes/characters/guide/replace_color.gdshader
-res://scenes/characters/ghost/ghost.gd
-res://scenes/test/test_scene_npc_ghost.tscn
 res://scripts/npc/npc_scheduler.gd
+res://scenes/characters/ghost/ghost.gd
+res://scenes/components/zones/zone.gd
+res://scenes/objects/tools/zone_creator.tscn
+res://scenes/objects/tools/zone_creator.gd
+res://scenes/test/test_scene_npc_zone_creator.tscn
+res://scenes/components/zones/Zone.tscn
+res://scenes/components/zones/zone.tscn
+res://scenes/components/zones/zone_data.gd
+res://scripts/globals/zone_manager.gd
+res://scenes/houses/door.tscn
+res://scenes/houses/door.gd
+res://scenes/characters/ghost/ghost.tscn
+res://scenes/components/interactable_component.gd
+res://scenes/characters/player/player.tscn

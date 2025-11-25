@@ -1,27 +1,43 @@
-[gd_scene load_steps=8 format=4 uid="uid://bpoyvj34hobo5"]
+[gd_scene load_steps=7 format=4 uid="uid://bpoyvj34hobo5"]
 
 [ext_resource type="TileSet" uid="uid://dcaqtdvfufe8g" path="res://tilesets/game_tile_set.tres" id="1_5y8lt"]
+[ext_resource type="Script" uid="uid://ddwhmbbjyjrf5" path="res://scenes/components/zones/zone.gd" id="1_cw3oh"]
 [ext_resource type="PackedScene" uid="uid://6fa2m4vt6287" path="res://scenes/characters/player/player.tscn" id="2_0rwfc"]
 [ext_resource type="PackedScene" uid="uid://cb842ucvodol1" path="res://scenes/characters/ghost/ghost.tscn" id="3_0rwfc"]
 [ext_resource type="PackedScene" uid="uid://8qpho0ri8727" path="res://scenes/ui/day_and_night_panel.tscn" id="4_6dyjq"]
 
-[sub_resource type="NavigationPolygon" id="NavigationPolygon_cw3oh"]
-vertices = PackedVector2Array(732.75, 192.92188, 730.22656, 297.1875, 605.3203, 299.78125, 608.6875, 192.0625)
-polygons = Array[PackedInt32Array]([PackedInt32Array(0, 1, 2, 3)])
-outlines = Array[PackedVector2Array]([PackedVector2Array(599, 182, 743, 183, 740, 307, 595, 310)])
-
-[sub_resource type="NavigationPolygon" id="NavigationPolygon_6dyjq"]
-vertices = PackedVector2Array(513.75, 383.15625, 498.35156, 416.52344, 395.6875, 425.14844, 394.3125, 376.5703)
-polygons = Array[PackedInt32Array]([PackedInt32Array(0, 1, 2, 3)])
-outlines = Array[PackedVector2Array]([PackedVector2Array(386, 436, 384, 366, 529, 374, 505, 426)])
-
 [sub_resource type="NavigationPolygon" id="NavigationPolygon_sxvv3"]
-vertices = PackedVector2Array(316.14063, 220.07031, 174.24219, 337.21875, 160.21875, 182.95313)
-polygons = Array[PackedInt32Array]([PackedInt32Array(0, 1, 2)])
-outlines = Array[PackedVector2Array]([PackedVector2Array(149, 170, 166, 357, 338, 215)])
+vertices = PackedVector2Array(196.45313, 355.1328, 157.35156, 358.9375, 163.70313, 155.85938, 307.7578, 153.86719, 360, 181.07031, 360, 316.28906, 610.72656, 327.39063, 599.77344, 180, 727.71094, 180, 678.3906, 300.71094, 684.35156, 395.10938, 504, 397.10938, 511.40625, 176.22656, 511.5703, 180.0625, 384.27344, 179.22656, 309.77344, 71.57031, 381.27344, 68.42969, 504, 425.92188, 395.47656, 425.0703, 393.45313, 387.64063, 736.28906, 296.71094, 506.21094, 333.46875, 202.52344, 394.6797, 501.14844, 312.22656)
+polygons = Array[PackedInt32Array]([PackedInt32Array(0, 1, 2, 3, 4, 5), PackedInt32Array(6, 7, 8, 9), PackedInt32Array(9, 10, 11, 6), PackedInt32Array(12, 13, 4, 14), PackedInt32Array(3, 15, 16, 14, 4), PackedInt32Array(11, 17, 18, 19), PackedInt32Array(8, 20, 9), PackedInt32Array(21, 6, 11, 19), PackedInt32Array(19, 22, 0, 5, 23, 21)])
+outlines = Array[PackedVector2Array]([PackedVector2Array(154, 146, 298, 144, 300, 62, 391, 58, 394, 169, 521, 166, 522, 190, 370, 191, 370, 306, 509, 302, 514, 323, 600, 318, 589, 170, 737, 170, 747, 306, 689, 310, 695, 405, 514, 407, 514, 436, 386, 435, 384, 398, 194, 405, 188, 366, 147, 370)])
+parsed_collision_mask = 4294967279
+source_geometry_mode = 2
 
-[node name="TestSceneNPCChicken" type="Node2D"]
+[node name="TestSceneNPCGhost" type="Node2D"]
 y_sort_enabled = true
+
+[node name="Zones" type="Node2D" parent="."]
+
+[node name="Kitchen" type="Area2D" parent="Zones" groups=["zones"]]
+script = ExtResource("1_cw3oh")
+zone_name = "Kitchen"
+
+[node name="CollisionPolygon2D" type="CollisionPolygon2D" parent="Zones/Kitchen"]
+polygon = PackedVector2Array(167, 160, 327, 165, 325, 232, 172, 223)
+
+[node name="HauntZone" type="Area2D" parent="Zones" groups=["zones"]]
+script = ExtResource("1_cw3oh")
+zone_name = "Haunt"
+
+[node name="CollisionPolygon2D" type="CollisionPolygon2D" parent="Zones/HauntZone"]
+polygon = PackedVector2Array(350, 326, 510, 331, 508, 398, 355, 389)
+
+[node name="SleepZone" type="Area2D" parent="Zones" groups=["zones"]]
+script = ExtResource("1_cw3oh")
+zone_name = "Sleep"
+
+[node name="CollisionPolygon2D" type="CollisionPolygon2D" parent="Zones/SleepZone"]
+polygon = PackedVector2Array(583, 176, 743, 181, 741, 248, 588, 239)
 
 [node name="GameTileMap" type="Node2D" parent="."]
 y_sort_enabled = true
@@ -43,6 +59,7 @@ tile_set = ExtResource("1_5y8lt")
 
 [node name="Objects" type="TileMapLayer" parent="GameTileMap"]
 y_sort_enabled = true
+tile_map_data = PackedByteArray("AAAkAA0ABQAAAAAAAAAkAA4ABQAAAAEAAAAkAA8ABQAAAAEAAAAkABAABQAAAAEAAAAkABEABQAAAAAAAAAkABIABQAAAAEAAAAkABMABQADAAIAAAAjABMABQACAAIAAAAiABMABQACAAIAAAAhABMABQACAAIAAAAgABMABQABAAIAAAAgABIABQADAAAAAAAfABIABQACAAIAAAAeABIABQACAAIAAAAdABIABQACAAIAAAAcABIABQACAAIAAAAbABIABQACAAIAAAAaABIABQACAAIAAAAZABIABQACAAIAAAAYABIABQACAAIAAAAXABIABQABAAIAAAAXABEABQAAAAEAAAAXABAABQAAAAAAAAAXAA8ABQAAAAEAAAAXAA4ABQAAAAAAAAAXAA0ABQAAAAEAAAAXAAwABQABAAAAAAAYAAwABQACAAIAAAAZAAwABQACAAIAAAAaAAwABQACAAIAAAAbAAwABQACAAIAAAAcAAwABQACAAIAAAAdAAwABQACAAIAAAAeAAwABQACAAIAAAAfAAwABQACAAIAAAAgAAwABQADAAIAAAA=")
 tile_set = ExtResource("1_5y8lt")
 
 [node name="Player" parent="." instance=ExtResource("2_0rwfc")]
@@ -53,21 +70,14 @@ position = Vector2(271, 266)
 [node name="Ghost" type="Node2D" parent="."]
 position = Vector2(-1, 0)
 
-[node name="HauntZone" type="NavigationRegion2D" parent="Ghost"]
-navigation_polygon = SubResource("NavigationPolygon_cw3oh")
-
-[node name="Ghost2" parent="Ghost" node_paths=PackedStringArray("sleep_zone", "eat_zone", "haunt_zone") instance=ExtResource("3_0rwfc")]
-position = Vector2(664, 260)
-sleep_zone = NodePath("../SleepZone")
-eat_zone = NodePath("../EatZone")
-haunt_zone = NodePath("../HauntZone")
+[node name="Ghost2" parent="Ghost" node_paths=PackedStringArray("eat_zone", "haunt_zone") instance=ExtResource("3_0rwfc")]
+position = Vector2(370, 168)
+eat_zone = NodePath("")
+haunt_zone = NodePath("")
 npc_name = "Ghost"
 
-[node name="EatZone" type="NavigationRegion2D" parent="Ghost"]
-position = Vector2(3, -14)
-navigation_polygon = SubResource("NavigationPolygon_6dyjq")
-
-[node name="SleepZone" type="NavigationRegion2D" parent="Ghost"]
-navigation_polygon = SubResource("NavigationPolygon_sxvv3")
-
 [node name="DayAndNightPanel" parent="." instance=ExtResource("4_6dyjq")]
+
+[node name="NavigationMesh" type="NavigationRegion2D" parent="."]
+position = Vector2(-1, 0)
+navigation_polygon = SubResource("NavigationPolygon_sxvv3")

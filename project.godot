@@ -30,6 +30,7 @@ GameDialogueManager="*res://scripts/globals/game_dialogue_manager.gd"
 SceneManager="*res://scripts/globals/scene_manager.gd"
 GameManager="*res://scripts/globals/game_manager.gd"
 JsonDataManager="*res://scripts/globals/json_data_manager.gd"
+ZoneManager="*res://scripts/globals/zone_manager.gd"
 
 [display]
 
@@ -60,6 +61,7 @@ folder_colors={
 
 navigation_polygon_source_geometry_group=""
 player=""
+door=""
 
 [input]
 

@@ -1,0 +1,45 @@
+[gd_scene load_steps=3 format=3 uid="uid://mrn0k5fxyys5"]
+
+[ext_resource type="Texture2D" uid="uid://7l1ckj2cg8uj" path="res://assets/ui/zone_highlight.png" id="2_trd3a"]
+
+[sub_resource type="GDScript" id="GDScript_iaypj"]
+script/source = "extends Area2D
+
+@export var zone_name: String = \"\"
+@export var show_visual: bool = true  # Toggle to hide/show sprite
+@export var visual_color: Color = Color(0, 0, 1, 0.3)  # semi-transparent
+
+func _ready():
+	print(\"zoned\")
+	# Find the CollisionPolygon2D child
+	var poly: CollisionPolygon2D = $CollisionPolygon2D
+	if not poly:
+		push_warning(\"Zone has no CollisionPolygon2D!\")
+		return
+
+	if show_visual:
+		# Add Polygon2D child for visual feedback
+		var visual: Polygon2D = Polygon2D.new()
+		visual.polygon = poly.polygon.duplicate()  # match collision shape
+		visual.color = visual_color
+		add_child(visual)
+
+
+#extends Area2D
+#
+#@export var zone_name: String = \"\"  # Unique identifier for this zone
+#@export var zone_color: Color = Color(1, 1, 1, 0.5) # Optional: for debug/visualization
+#
+#func _ready():
+	#print(\"zoned\")
+	#if zone_name == \"\":
+		#push_warning(\"Zone %s has no zone_name set!\" % name)
+"
+
+[node name="Zone" type="Area2D"]
+script = SubResource("GDScript_iaypj")
+
+[node name="CollisionPolygon2D" type="CollisionPolygon2D" parent="."]
+
+[node name="Polygon2D" type="Polygon2D" parent="."]
+texture = ExtResource("2_trd3a")

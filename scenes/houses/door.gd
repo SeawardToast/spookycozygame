@@ -5,6 +5,10 @@ extends StaticBody2D
 @onready var interactable_component: InteractableComponent = $InteractableComponent
 @onready var door_close_audio: AudioStreamPlayer2D = $door_close_audio
 @onready var door_open_audio: AudioStreamPlayer2D = $door_open_audio
+@export var zone_a: Area2D
+@export var zone_b: Area2D
+@export var is_open: bool = true
+
 
 func _ready() -> void:
 	interactable_component.interactable_activated.connect(on_interactable_activated)
@@ -15,11 +19,13 @@ func on_interactable_activated() -> void:
 	animated_sprite_2d.play("open_door")
 	door_open_audio.play()
 	collision_layer = 2
+	is_open = true
 	print("activated")
 	
 func on_interactable_deactivated() -> void:
 	animated_sprite_2d.play("close_door")
 	door_close_audio.play()
 	collision_layer = 1
+	is_open = false
 	print("deactivated")
 	

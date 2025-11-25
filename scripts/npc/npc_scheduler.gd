@@ -8,16 +8,15 @@ extends CharacterBody2D
 
 var daily_schedule: Array = []
 
-var current_target_zone: NavigationRegion2D = null
+var current_target_zone: Area2D = null
 var current_actions: Array = []
 var is_traveling: bool = false
-var completed_schedule_entries: Array = []  # store references to entries we've executed
+var completed_schedule_entries: Array = [] # store references to entries we've executed
 var current_schedule_entry: Dictionary = {}
 
 signal arrived_at_zone(zone: Node)
 signal action_attempted(action_name: String)
 signal action_failed(action_name: String, reason: String)
-
 
 # -------------------------------
 # Ready
@@ -36,35 +35,45 @@ func _on_time_tick(day: int, hour: int, minute: int) -> void:
 
 func _check_schedule(current_minute: int) -> void:
 	for entry in daily_schedule:
-		# Skip if already completed
 		if entry in completed_schedule_entries:
 			continue
 
 		var start_minute = entry.get("start_minute", 0)
 		var end_minute = entry.get("end_minute", 0)
 		if current_minute >= start_minute and current_minute < end_minute:
-			var zone = entry.get("zone", null)
+			var zone_name = entry.get("zone", "")
 			var actions = entry.get("actions", [])
-			if zone:
-				_start_travel_to_zone(zone, actions, entry)
+			if zone_name != "":
+				_start_travel_to_zone(zone_name, actions, entry)
 			elif actions:
 				_attempt_actions(actions)
 				completed_schedule_entries.append(entry)
 			break
 
-func _start_travel_to_zone(zone: NavigationRegion2D, actions: Array, entry: Dictionary):
-	if current_target_zone == zone:
+# -------------------------------
+# Start travel
+# -------------------------------
+func _start_travel_to_zone(zone_name: String, actions: Array, entry: Dictionary):
+	if current_target_zone != null and current_target_zone.get("zone") == zone_name:
 		return
-	current_target_zone = zone
+
+	var zone = null
+	for area in ZoneManager.get_zones():
+		if area.name == zone_name:
+			zone = area
+			break
+
+	if zone == null:
+		push_warning("Zone not found: %s" % zone_name)
+		return
+	current_target_zone = ZoneManager.create_area_from_zone_data(zone)
+	#current_target_zone = zone.polygon
 	current_actions = actions
 	is_traveling = true
-
-	# Store the entry so we can mark it completed on arrival
 	current_schedule_entry = entry
 
-	var random_point = _get_random_point_in_region(zone)
-	navigation_agent_2d.target_position = random_point
-
+	var door_or_random_point = _get_path_to_zone_via_door(current_target_zone)
+	navigation_agent_2d.target_position = door_or_random_point
 
 # -------------------------------
 # Physics movement
@@ -78,71 +87,93 @@ func _physics_process(delta: float) -> void:
 		_zone_arrival()
 		return
 
-	# Move toward next navigation path point
 	var next_pos = navigation_agent_2d.get_next_path_position()
 	var direction = global_position.direction_to(next_pos)
 	velocity = direction * speed
-
 	if animated_sprite_2d:
 		animated_sprite_2d.flip_h = velocity.x < 0
-
 	move_and_slide()
 
 # -------------------------------
 # Arrive at zone
 # -------------------------------
 func _zone_arrival() -> void:
+	print("arrived at zone")
 	emit_signal("arrived_at_zone", current_target_zone)
 	_attempt_actions(current_actions)
 
-	# Mark schedule entry as done
 	if !current_schedule_entry.is_empty():
 		completed_schedule_entries.append(current_schedule_entry)
-		current_schedule_entry = {}
 
+	current_schedule_entry = {}
 	current_target_zone = null
 	current_actions = []
 
+# -------------------------------
+# Get path to zone through a door
+# -------------------------------
+func _get_path_to_zone_via_door(target_zone: Area2D) -> Vector2:
+	# Already inside target zone?
+	#if current_target_zone == target_zone:
+		#return _get_random_point_in_area(target_zone)
 
-func _get_random_point_in_region(region: NavigationRegion2D) -> Vector2:
-	var nav_map = region.get_navigation_map()
-	if region == null or region.navigation_polygon == null:
-		return global_position  # fallback
+	# Get all doors from the global "door" group
+	var doors: Array = get_tree().get_nodes_in_group("door")
+	var chosen_door: Node2D = null  # <-- explicitly typed
 
-	var poly = region.navigation_polygon
-	var indices: PackedInt32Array = poly.get_polygon(0)
-	if indices.size() == 0:
-		return global_position
+	for door in doors:
+		#if door.is_open:
+			# Each door should have zone_a and zone_b properties linking zones
+		#if (door.zone_a == current_target_zone and door.zone_b == target_zone) \
+		#or (door.zone_b == current_target_zone and door.zone_a == target_zone):
+			chosen_door = door
+			break
 
-	# Build actual polygon points
-	var polygon_points: Array = []
-	for idx in indices:
-		polygon_points.append(poly.vertices[idx])
+	if chosen_door != null:
+		# Navigate to door first
+		return chosen_door.global_position
+	else:
+		# No door found, fallback to random point inside target zone
+		return _get_random_point_in_area(target_zone)
 
-	# Compute bounding box manually
-	var min_x = polygon_points[0].x
-	var max_x = polygon_points[0].x
-	var min_y = polygon_points[0].y
-	var max_y = polygon_points[0].y
 
-	for p in polygon_points:
-		min_x = min(min_x, p.x)
-		max_x = max(max_x, p.x)
-		min_y = min(min_y, p.y)
-		max_y = max(max_y, p.y)
+# -------------------------------
+# Get random point inside Area2D
+# -------------------------------
+func _get_random_point_in_area(area: Area2D) -> Vector2:
+	# Use CollisionPolygon2D child
+	var poly_node := area.get_node_or_null("CollisionPolygon2D")
+	if poly_node == null:
+		return area.global_position
 
-	# Try random points inside the bounding box
-	for i in range(20):
-		var point = Vector2(
-			randf_range(min_x, max_x),
-			randf_range(min_y, max_y)
-		)
-		if Geometry2D.is_point_in_polygon(point, polygon_points):
-			return NavigationServer2D.map_get_closest_point(nav_map, point)
+	var polygon: PackedVector2Array = poly_node.polygon
+	if polygon.size() == 0:
+		return area.global_position
 
-	# fallback
-	return NavigationServer2D.map_get_closest_point(nav_map, Vector2(min_x, min_y))
+	# Convert local polygon points to global coordinates
+	var points: Array[Vector2] = []
+	var xf: Transform2D = poly_node.global_transform
+	for p in polygon:
+		points.append(xf * p)  # Godot 4 uses '*' to transform Vector2 by Transform2D
 
+	# Compute bounding box
+	var min_x = points[0].x
+	var max_x = points[0].x
+	var min_y = points[0].y
+	var max_y = points[0].y
+	for pt in points:
+		min_x = min(min_x, pt.x)
+		max_x = max(max_x, pt.x)
+		min_y = min(min_y, pt.y)
+		max_y = max(max_y, pt.y)
+
+	# Random point sampling
+	for i in range(40):
+		var random_point = Vector2(randf_range(min_x, max_x), randf_range(min_y, max_y))
+		if Geometry2D.is_point_in_polygon(random_point, points):
+			return random_point
+
+	return points[0]  # fallback
 
 
 # -------------------------------

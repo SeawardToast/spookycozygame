@@ -97,7 +97,7 @@ data = PackedByteArray("cW9hZgAAm+0CAKxEFAAQKAAAAAAAAAAAAAAAAOAAQAAAAAAAAAAAAAAA
 format = 3
 stereo = true
 
-[node name="Door" type="StaticBody2D"]
+[node name="Door" type="StaticBody2D" groups=["door"]]
 script = ExtResource("1_act2a")
 
 [node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="."]
@@ -109,6 +109,7 @@ autoplay = "default"
 shape = SubResource("RectangleShape2D_bxi54")
 
 [node name="InteractableComponent" parent="." instance=ExtResource("3_1ugum")]
+collision_mask = 66
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="InteractableComponent"]
 position = Vector2(0, -3.5)

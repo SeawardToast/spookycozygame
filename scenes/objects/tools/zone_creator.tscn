@@ -1,0 +1,6 @@
+[gd_scene load_steps=2 format=3 uid="uid://bax4g3mp3xmv7"]
+
+[ext_resource type="Script" uid="uid://d2fwtsf32wcb2" path="res://scenes/objects/tools/zone_creator.gd" id="1_t38xv"]
+
+[node name="ZoneCreator" type="Node2D"]
+script = ExtResource("1_t38xv")

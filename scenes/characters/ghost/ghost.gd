@@ -10,9 +10,9 @@ func _ready():
 
 	# Define custom schedule
 	daily_schedule = [
-		{"start_minute": 250, "end_minute": 500, "zone": sleep_zone, "actions": [ Callable(self, "sleep")]},
-		{"start_minute": 550, "end_minute": 800, "zone": eat_zone, "actions": [ Callable(self, "eat")]},
-		{"start_minute": 900, "end_minute": 1440, "zone": haunt_zone, "actions": [ Callable(self, "haunt")]}
+		{"start_minute": 250, "end_minute": 600, "zone": "Kitchen", "actions": [ Callable(self, "eat")]},
+		{"start_minute": 601, "end_minute": 800, "zone": "Sleep", "actions": [ Callable(self, "sleep")]},
+		{"start_minute": 900, "end_minute": 1440, "zone": "Haunt", "actions": [ Callable(self, "haunt")]}
 	]
 
 func sleep():

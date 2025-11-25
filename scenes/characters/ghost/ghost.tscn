@@ -25,7 +25,7 @@ radius = 4.0
 collision_layer = 64
 collision_mask = 3
 script = ExtResource("1_fyj22")
-npc_name = "GHost"
+npc_name = "Ghost"
 animated_sprite_2d = NodePath("AnimatedSprite2D")
 navigation_agent_2d = NodePath("NavigationAgent2D")
 
@@ -35,7 +35,7 @@ sprite_frames = SubResource("SpriteFrames_oaboc")
 autoplay = "default"
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="."]
-position = Vector2(0, -4)
+position = Vector2(0, -12)
 shape = SubResource("CircleShape2D_be5x3")
 
 [node name="NavigationAgent2D" type="NavigationAgent2D" parent="."]
