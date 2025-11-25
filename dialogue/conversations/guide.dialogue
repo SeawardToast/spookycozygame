@@ -1,0 +1,12 @@
+~ start
+Marlow: [[Hi|Hello|Howdy]], nice to meet you.
+Marlow: Welcome to your new farm.
+Marlow: As you can see the cows and chickens are hungry...
+Marlow: In all honesty, we were hoping for more of a slave than an employee, but you should do just fine!
+Marlow: Here are some seeds to get started on the crops... I wouldn't dilly dally for too long or else father will be very angry..
+
+- Take crop seeds
+	Teemo: Yea I can grow some crops
+	do GameDialogueManager.action_give_crop_seeds()
+- No, I don't want to be a slave
+=> END

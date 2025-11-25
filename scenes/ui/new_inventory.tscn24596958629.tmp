@@ -1,0 +1,204 @@
+[gd_scene load_steps=6 format=3 uid="uid://c2px04rprr7jf"]
+
+[ext_resource type="Script" uid="uid://d1es0n16xgknl" path="res://scenes/ui/new_inventory.gd" id="1_0ogax"]
+[ext_resource type="Texture2D" uid="uid://cjs0gqmgnlj0p" path="res://assets/ui/default_inventory_background.png" id="1_kd8tg"]
+[ext_resource type="Texture2D" uid="uid://d13076p22nhfh" path="res://assets/ui/item_slot_default_background.png" id="2_0ogax"]
+[ext_resource type="Script" uid="uid://lg8ennmnq7vn" path="res://scenes/ui/inventory_slot.gd" id="4_umydw"]
+
+[sub_resource type="StyleBoxTexture" id="StyleBoxTexture_umydw"]
+texture = ExtResource("2_0ogax")
+
+[node name="NewInventory" type="CanvasLayer"]
+script = ExtResource("1_0ogax")
+
+[node name="MarginContainer" type="MarginContainer" parent="."]
+offset_right = 853.0
+offset_bottom = 480.0
+
+[node name="TextureRect" type="TextureRect" parent="MarginContainer"]
+custom_minimum_size = Vector2(300, 150)
+layout_mode = 2
+size_flags_horizontal = 4
+size_flags_vertical = 4
+texture = ExtResource("1_kd8tg")
+
+[node name="MarginContainer" type="MarginContainer" parent="MarginContainer/TextureRect"]
+layout_mode = 1
+anchors_preset = 11
+anchor_left = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -139.0
+offset_top = 42.0
+offset_right = -26.0
+offset_bottom = -24.0
+grow_horizontal = 0
+grow_vertical = 2
+
+[node name="GridContainer" type="GridContainer" parent="MarginContainer/TextureRect/MarginContainer"]
+layout_mode = 2
+size_flags_horizontal = 4
+size_flags_vertical = 4
+theme_override_constants/h_separation = 4
+theme_override_constants/v_separation = 4
+columns = 5
+
+[node name="Slot1" type="Panel" parent="MarginContainer/TextureRect/MarginContainer/GridContainer"]
+custom_minimum_size = Vector2(18, 18)
+layout_mode = 2
+size_flags_horizontal = 4
+size_flags_vertical = 4
+theme_override_styles/panel = SubResource("StyleBoxTexture_umydw")
+script = ExtResource("4_umydw")
+
+[node name="Slot2" type="Panel" parent="MarginContainer/TextureRect/MarginContainer/GridContainer"]
+custom_minimum_size = Vector2(18, 18)
+layout_mode = 2
+size_flags_horizontal = 4
+size_flags_vertical = 4
+theme_override_styles/panel = SubResource("StyleBoxTexture_umydw")
+script = ExtResource("4_umydw")
+
+[node name="Slot3" type="Panel" parent="MarginContainer/TextureRect/MarginContainer/GridContainer"]
+custom_minimum_size = Vector2(18, 18)
+layout_mode = 2
+size_flags_horizontal = 4
+size_flags_vertical = 4
+theme_override_styles/panel = SubResource("StyleBoxTexture_umydw")
+script = ExtResource("4_umydw")
+
+[node name="Slot4" type="Panel" parent="MarginContainer/TextureRect/MarginContainer/GridContainer"]
+custom_minimum_size = Vector2(18, 18)
+layout_mode = 2
+size_flags_horizontal = 4
+size_flags_vertical = 4
+theme_override_styles/panel = SubResource("StyleBoxTexture_umydw")
+script = ExtResource("4_umydw")
+
+[node name="Slot5" type="Panel" parent="MarginContainer/TextureRect/MarginContainer/GridContainer"]
+custom_minimum_size = Vector2(18, 18)
+layout_mode = 2
+size_flags_horizontal = 4
+size_flags_vertical = 4
+theme_override_styles/panel = SubResource("StyleBoxTexture_umydw")
+script = ExtResource("4_umydw")
+
+[node name="Slot6" type="Panel" parent="MarginContainer/TextureRect/MarginContainer/GridContainer"]
+custom_minimum_size = Vector2(18, 18)
+layout_mode = 2
+size_flags_horizontal = 4
+size_flags_vertical = 4
+theme_override_styles/panel = SubResource("StyleBoxTexture_umydw")
+script = ExtResource("4_umydw")
+
+[node name="Slot7" type="Panel" parent="MarginContainer/TextureRect/MarginContainer/GridContainer"]
+custom_minimum_size = Vector2(18, 18)
+layout_mode = 2
+size_flags_horizontal = 4
+size_flags_vertical = 4
+theme_override_styles/panel = SubResource("StyleBoxTexture_umydw")
+script = ExtResource("4_umydw")
+
+[node name="Slot8" type="Panel" parent="MarginContainer/TextureRect/MarginContainer/GridContainer"]
+custom_minimum_size = Vector2(18, 18)
+layout_mode = 2
+size_flags_horizontal = 4
+size_flags_vertical = 4
+theme_override_styles/panel = SubResource("StyleBoxTexture_umydw")
+script = ExtResource("4_umydw")
+
+[node name="Slot9" type="Panel" parent="MarginContainer/TextureRect/MarginContainer/GridContainer"]
+custom_minimum_size = Vector2(18, 18)
+layout_mode = 2
+size_flags_horizontal = 4
+size_flags_vertical = 4
+theme_override_styles/panel = SubResource("StyleBoxTexture_umydw")
+script = ExtResource("4_umydw")
+
+[node name="Slot10" type="Panel" parent="MarginContainer/TextureRect/MarginContainer/GridContainer"]
+custom_minimum_size = Vector2(18, 18)
+layout_mode = 2
+size_flags_horizontal = 4
+size_flags_vertical = 4
+theme_override_styles/panel = SubResource("StyleBoxTexture_umydw")
+script = ExtResource("4_umydw")
+
+[node name="Slot11" type="Panel" parent="MarginContainer/TextureRect/MarginContainer/GridContainer"]
+custom_minimum_size = Vector2(18, 18)
+layout_mode = 2
+size_flags_horizontal = 4
+size_flags_vertical = 4
+theme_override_styles/panel = SubResource("StyleBoxTexture_umydw")
+script = ExtResource("4_umydw")
+
+[node name="Slot12" type="Panel" parent="MarginContainer/TextureRect/MarginContainer/GridContainer"]
+custom_minimum_size = Vector2(18, 18)
+layout_mode = 2
+size_flags_horizontal = 4
+size_flags_vertical = 4
+theme_override_styles/panel = SubResource("StyleBoxTexture_umydw")
+script = ExtResource("4_umydw")
+
+[node name="Slot13" type="Panel" parent="MarginContainer/TextureRect/MarginContainer/GridContainer"]
+custom_minimum_size = Vector2(18, 18)
+layout_mode = 2
+size_flags_horizontal = 4
+size_flags_vertical = 4
+theme_override_styles/panel = SubResource("StyleBoxTexture_umydw")
+script = ExtResource("4_umydw")
+
+[node name="Slot14" type="Panel" parent="MarginContainer/TextureRect/MarginContainer/GridContainer"]
+custom_minimum_size = Vector2(18, 18)
+layout_mode = 2
+size_flags_horizontal = 4
+size_flags_vertical = 4
+theme_override_styles/panel = SubResource("StyleBoxTexture_umydw")
+script = ExtResource("4_umydw")
+
+[node name="Slot15" type="Panel" parent="MarginContainer/TextureRect/MarginContainer/GridContainer"]
+custom_minimum_size = Vector2(18, 18)
+layout_mode = 2
+size_flags_horizontal = 4
+size_flags_vertical = 4
+theme_override_styles/panel = SubResource("StyleBoxTexture_umydw")
+script = ExtResource("4_umydw")
+
+[node name="Slot16" type="Panel" parent="MarginContainer/TextureRect/MarginContainer/GridContainer"]
+custom_minimum_size = Vector2(18, 18)
+layout_mode = 2
+size_flags_horizontal = 4
+size_flags_vertical = 4
+theme_override_styles/panel = SubResource("StyleBoxTexture_umydw")
+script = ExtResource("4_umydw")
+
+[node name="Slot17" type="Panel" parent="MarginContainer/TextureRect/MarginContainer/GridContainer"]
+custom_minimum_size = Vector2(18, 18)
+layout_mode = 2
+size_flags_horizontal = 4
+size_flags_vertical = 4
+theme_override_styles/panel = SubResource("StyleBoxTexture_umydw")
+script = ExtResource("4_umydw")
+
+[node name="Slot18" type="Panel" parent="MarginContainer/TextureRect/MarginContainer/GridContainer"]
+custom_minimum_size = Vector2(18, 18)
+layout_mode = 2
+size_flags_horizontal = 4
+size_flags_vertical = 4
+theme_override_styles/panel = SubResource("StyleBoxTexture_umydw")
+script = ExtResource("4_umydw")
+
+[node name="Slot19" type="Panel" parent="MarginContainer/TextureRect/MarginContainer/GridContainer"]
+custom_minimum_size = Vector2(18, 18)
+layout_mode = 2
+size_flags_horizontal = 4
+size_flags_vertical = 4
+theme_override_styles/panel = SubResource("StyleBoxTexture_umydw")
+script = ExtResource("4_umydw")
+
+[node name="Slot20" type="Panel" parent="MarginContainer/TextureRect/MarginContainer/GridContainer"]
+custom_minimum_size = Vector2(18, 18)
+layout_mode = 2
+size_flags_horizontal = 4
+size_flags_vertical = 4
+theme_override_styles/panel = SubResource("StyleBoxTexture_umydw")
+script = ExtResource("4_umydw")

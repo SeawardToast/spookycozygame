@@ -1,0 +1,66 @@
+[gd_scene load_steps=15 format=3 uid="uid://cskjosvicxbqf"]
+
+[ext_resource type="Shader" uid="uid://07ldjbgqr05u" path="res://scenes/objects/tree/tree_shake.gdshader" id="1_7os7u"]
+[ext_resource type="Texture2D" uid="uid://o2nrs4lxpydc" path="res://assets/game/objects/Basic_Grass_Biom_things.png" id="2_7ulob"]
+[ext_resource type="Script" uid="uid://ddstflgc8gtyd" path="res://scenes/objects/rocks/small_rock.gd" id="3_5208l"]
+[ext_resource type="PackedScene" uid="uid://iw6ss4ln5i0p" path="res://scenes/components/hurt_component.tscn" id="4_afe7f"]
+[ext_resource type="PackedScene" uid="uid://csdxbnarg0twl" path="res://scenes/components/damage_component.tscn" id="5_a4y3k"]
+[ext_resource type="AudioStream" uid="uid://bp4g60sieml73" path="res://assets/game/sounds/rocks/pickaxe_1.wav" id="6_5208l"]
+[ext_resource type="AudioStream" uid="uid://de5ditpuhy0yl" path="res://assets/game/sounds/rocks/pickaxe_2.wav" id="7_obmq8"]
+[ext_resource type="AudioStream" uid="uid://ba2oku02f2e22" path="res://assets/game/sounds/rocks/pickaxe_3.wav" id="8_kwrvl"]
+[ext_resource type="AudioStream" uid="uid://58hgd26070dh" path="res://assets/game/sounds/rocks/pickaxe_4.wav" id="9_0lp7m"]
+[ext_resource type="AudioStream" uid="uid://cifb7orvcqsxp" path="res://assets/game/sounds/rocks/rock_break.wav" id="10_aw1ca"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_r35p6"]
+shader = ExtResource("1_7os7u")
+shader_parameter/shake_intensity = 0.0
+shader_parameter/shake_speed = 20.0
+shader_parameter/fall_progress = 0.0
+shader_parameter/fall_direction = Vector2(1, 0)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_1bff3"]
+atlas = ExtResource("2_7ulob")
+region = Rect2(128, 16, 16, 16)
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_4lwb8"]
+radius = 5.0
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_4lwb8"]
+size = Vector2(10, 12)
+
+[node name="SmallRock" type="Sprite2D"]
+material = SubResource("ShaderMaterial_r35p6")
+position = Vector2(0, -11)
+texture = SubResource("AtlasTexture_1bff3")
+script = ExtResource("3_5208l")
+
+[node name="StaticBody2D" type="StaticBody2D" parent="."]
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="StaticBody2D"]
+shape = SubResource("CircleShape2D_4lwb8")
+
+[node name="HurtComponent" parent="." instance=ExtResource("4_afe7f")]
+tool = 1
+
+[node name="HurtComponentCollisionShape2D" type="CollisionShape2D" parent="HurtComponent"]
+position = Vector2(0, -1)
+shape = SubResource("RectangleShape2D_4lwb8")
+debug_color = Color(0.74374807, 0.36183646, 0.7475644, 0.41960785)
+
+[node name="DamageComponent" parent="." instance=ExtResource("5_a4y3k")]
+max_damage = 3
+
+[node name="AudioStreamPlayer2D" type="AudioStreamPlayer2D" parent="."]
+stream = ExtResource("6_5208l")
+
+[node name="AudioStreamPlayer2D2" type="AudioStreamPlayer2D" parent="."]
+stream = ExtResource("7_obmq8")
+
+[node name="AudioStreamPlayer2D3" type="AudioStreamPlayer2D" parent="."]
+stream = ExtResource("8_kwrvl")
+
+[node name="AudioStreamPlayer2D4" type="AudioStreamPlayer2D" parent="."]
+stream = ExtResource("9_0lp7m")
+
+[node name="AudioStreamPlayer2DFell" type="AudioStreamPlayer2D" parent="."]
+stream = ExtResource("10_aw1ca")

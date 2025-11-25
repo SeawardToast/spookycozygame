@@ -1,0 +1,14 @@
+NavigationRegion2D
+AnimatedSprite2D
+Sprite2D
+Control
+Label
+Node2D
+TextureRect
+MarginContainer
+CanvasLayer
+Panel
+GridContainer
+AudioStreamPlayer2D
+Timer
+Node

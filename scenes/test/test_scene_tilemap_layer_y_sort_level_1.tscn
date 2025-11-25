@@ -1,0 +1,14 @@
+[gd_scene load_steps=3 format=3 uid="uid://vofhkj73cydl"]
+
+[ext_resource type="PackedScene" uid="uid://6fa2m4vt6287" path="res://scenes/characters/player/player.tscn" id="2_2qec6"]
+[ext_resource type="PackedScene" uid="uid://bvgxw7xbb6abd" path="res://scenes/levels/level_1.tscn" id="2_ejdkt"]
+
+[node name="TestSceneTileMap" type="Node2D"]
+y_sort_enabled = true
+
+[node name="Player" parent="." instance=ExtResource("2_2qec6")]
+position = Vector2(271, 266)
+
+[node name="Camera2D" type="Camera2D" parent="Player"]
+
+[node name="Level1" parent="." instance=ExtResource("2_ejdkt")]

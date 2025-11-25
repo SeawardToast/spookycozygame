@@ -1,0 +1,33 @@
+{
+	"Palm Tree": {
+		"ItemCategory": "Resource",
+		"StackSize": 99,
+		"Description": "A Florida palm tree. Can be used for crafting or building."
+	},
+	"Slime Potion": {
+		"ItemCategory": "Consumable",
+		"AddHealth": 5,
+		"AddEnergy": 32,
+		"StackSize": 99,
+		"Description": "A small green potion that restores health and energy."
+	},
+	"Iron Sword": {
+		"ItemCategory": "Equipment",
+		"StackSize": 1,
+		"Damage": 10,
+		"Durability": 100,
+		"Description": "A basic iron sword. Deals moderate damage to enemies."
+	},
+	"Magic Scroll": {
+		"ItemCategory": "Consumable",
+		"StackSize": 5,
+		"Description": "A scroll containing a single-use magical spell."
+	},
+	"Wooden Shield": {
+		"ItemCategory": "Equipment",
+		"StackSize": 1,
+		"Defense": 5,
+		"Durability": 50,
+		"Description": "A basic wooden shield to block attacks."
+	}
+}

@@ -1,0 +1,11 @@
+res://scenes/characters/ghost/ghost.tscn
+res://scenes/ui/game_ui_theme.tres
+res://tilesets/large_house_tile_set.tres
+res://scenes/objects/tree/tree_shake.gdshader
+res://tilesets/game_tile_set.tres
+res://dialogue/dialogue_balloon_theme.tres
+res://scenes/objects/rocks/rock_shake.gdshader
+res://scenes/characters/guide/replace_color.gdshader
+res://scenes/characters/ghost/ghost.gd
+res://scenes/test/test_scene_npc_ghost.tscn
+res://scripts/npc/npc_scheduler.gd

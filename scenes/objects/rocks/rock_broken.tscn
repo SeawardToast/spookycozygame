@@ -1,0 +1,26 @@
+[gd_scene load_steps=6 format=3 uid="uid://bd2q7mfour037"]
+
+[ext_resource type="Texture2D" uid="uid://o2nrs4lxpydc" path="res://assets/game/objects/Basic_Grass_Biom_things.png" id="1_ko7qd"]
+[ext_resource type="PackedScene" uid="uid://bos4u6mri0agg" path="res://scenes/components/collectable_component.tscn" id="2_ttmix"]
+[ext_resource type="AudioStream" uid="uid://b4i5wcy2yfrne" path="res://assets/game/sounds/items/item_pickup.wav" id="3_l64jr"]
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_p2mks"]
+atlas = ExtResource("1_ko7qd")
+region = Rect2(115, 18, 8, 7)
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_tiefq"]
+radius = 4.0
+
+[node name="Pebble" type="Sprite2D"]
+texture = SubResource("AtlasTexture_p2mks")
+
+[node name="CollectableComponent" parent="." instance=ExtResource("2_ttmix")]
+collectable_name = "Rock"
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="CollectableComponent"]
+position = Vector2(0, 1)
+shape = SubResource("CircleShape2D_tiefq")
+debug_color = Color(0, 0.63537985, 0.42167643, 0.41960785)
+
+[node name="AudioStreamPlayer2D" type="AudioStreamPlayer2D" parent="."]
+stream = ExtResource("3_l64jr")
