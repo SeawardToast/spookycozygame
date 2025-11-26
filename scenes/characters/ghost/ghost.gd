@@ -1,13 +1,9 @@
 extends ScheduledNPC
 
-@export var sleep_zone: NavigationRegion2D
-@export var eat_zone: NavigationRegion2D
-@export var haunt_zone: NavigationRegion2D
-
 func _ready():
 	# call parent ready to connect to clock
 	super._ready()
-
+	
 	# Define custom schedule
 	daily_schedule = [
 		{"start_minute": 250, "end_minute": 600, "zone": "Kitchen", "actions": [ Callable(self, "eat")]},

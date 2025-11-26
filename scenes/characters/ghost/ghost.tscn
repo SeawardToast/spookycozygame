@@ -19,11 +19,10 @@ animations = [{
 }]
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_be5x3"]
-radius = 4.0
+radius = 2.0
 
 [node name="Ghost" type="CharacterBody2D" node_paths=PackedStringArray("animated_sprite_2d", "navigation_agent_2d")]
 collision_layer = 64
-collision_mask = 3
 script = ExtResource("1_fyj22")
 npc_name = "Ghost"
 animated_sprite_2d = NodePath("AnimatedSprite2D")
@@ -35,11 +34,13 @@ sprite_frames = SubResource("SpriteFrames_oaboc")
 autoplay = "default"
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="."]
-position = Vector2(0, -12)
 shape = SubResource("CircleShape2D_be5x3")
+disabled = true
 
 [node name="NavigationAgent2D" type="NavigationAgent2D" parent="."]
-path_desired_distance = 10.0
+path_desired_distance = 5.0
+target_desired_distance = 5.0
+navigation_layers = 4
 path_postprocessing = 1
 avoidance_enabled = true
 radius = 5.0

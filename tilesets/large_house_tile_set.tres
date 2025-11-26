@@ -1,12 +1,19 @@
-[gd_resource type="TileSet" load_steps=7 format=3 uid="uid://bk0iolupu4pg"]
+[gd_resource type="TileSet" load_steps=8 format=3 uid="uid://bk0iolupu4pg"]
 
 [ext_resource type="Texture2D" uid="uid://bvigbp0ldbigu" path="res://assets/game/tilesets/Wooden_House_Walls_Tilset.png" id="1_rneel"]
 [ext_resource type="Texture2D" uid="uid://byyu1wy148ou" path="res://assets/game/objects/Basic Furniture.png" id="2_tn82m"]
 [ext_resource type="PackedScene" uid="uid://b8rmgeoryatiu" path="res://scenes/houses/door.tscn" id="3_j8al4"]
 
+[sub_resource type="NavigationPolygon" id="NavigationPolygon_h2vcf"]
+vertices = PackedVector2Array(8, 8, -8, 8, -8, -8, 8, -8)
+polygons = Array[PackedInt32Array]([PackedInt32Array(0, 1, 2, 3)])
+outlines = Array[PackedVector2Array]([PackedVector2Array(-8, -8, 8, -8, 8, 8, -8, 8)])
+agent_radius = 0.0
+
 [sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_tn82m"]
 texture = ExtResource("1_rneel")
 1:1/0 = 0
+1:1/0/navigation_layer_0/polygon = SubResource("NavigationPolygon_h2vcf")
 1:0/0 = 0
 1:0/0/physics_layer_0/polygon_0/points = PackedVector2Array(-8, -8, 8, -8, 8, 8, -8, 8)
 2:0/0 = 0
@@ -94,6 +101,7 @@ scenes/1/scene = ExtResource("3_j8al4")
 
 [resource]
 physics_layer_0/collision_layer = 1
+navigation_layer_0/layers = 4
 sources/0 = SubResource("TileSetAtlasSource_tn82m")
 sources/1 = SubResource("TileSetAtlasSource_j8al4")
 sources/2 = SubResource("TileSetScenesCollectionSource_oc2yr")

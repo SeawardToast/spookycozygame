@@ -1,4 +1,4 @@
-[gd_scene load_steps=18 format=4 uid="uid://b8rmgeoryatiu"]
+[gd_scene load_steps=19 format=4 uid="uid://b8rmgeoryatiu"]
 
 [ext_resource type="Script" uid="uid://7t6yuwog3uym" path="res://scenes/houses/door.gd" id="1_act2a"]
 [ext_resource type="Texture2D" uid="uid://c0jvdh04x8sme" path="res://assets/game/tilesets/Doors.png" id="1_bxi54"]
@@ -97,7 +97,13 @@ data = PackedByteArray("cW9hZgAAm+0CAKxEFAAQKAAAAAAAAAAAAAAAAOAAQAAAAAAAAAAAAAAA
 format = 3
 stereo = true
 
+[sub_resource type="NavigationPolygon" id="NavigationPolygon_1ugum"]
+vertices = PackedVector2Array(12.8671875, -29.859375, 12.1328125, 27, -11.1171875, 27, -11.859375, -32.046875)
+polygons = Array[PackedInt32Array]([PackedInt32Array(0, 1, 2, 3)])
+outlines = Array[PackedVector2Array]([PackedVector2Array(-22, -43, 23, -39, 22, 37, -21, 37)])
+
 [node name="Door" type="StaticBody2D" groups=["door"]]
+collision_mask = 0
 script = ExtResource("1_act2a")
 
 [node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="."]
@@ -107,6 +113,7 @@ autoplay = "default"
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="."]
 shape = SubResource("RectangleShape2D_bxi54")
+disabled = true
 
 [node name="InteractableComponent" parent="." instance=ExtResource("3_1ugum")]
 collision_mask = 66
@@ -114,6 +121,7 @@ collision_mask = 66
 [node name="CollisionShape2D" type="CollisionShape2D" parent="InteractableComponent"]
 position = Vector2(0, -3.5)
 shape = SubResource("RectangleShape2D_nno8d")
+disabled = true
 debug_color = Color(0.77058715, 0.37975913, 0.6092986, 0.41960785)
 
 [node name="door_open_audio" type="AudioStreamPlayer2D" parent="."]
@@ -121,3 +129,8 @@ stream = ExtResource("4_nno8d")
 
 [node name="door_close_audio" type="AudioStreamPlayer2D" parent="."]
 stream = SubResource("AudioStreamWAV_1ugum")
+
+[node name="NavigationRegion2D" type="NavigationRegion2D" parent="."]
+position = Vector2(0, 1)
+navigation_polygon = SubResource("NavigationPolygon_1ugum")
+navigation_layers = 4

@@ -88,7 +88,7 @@ func _confirm_zone(zone_name: String):
 
 	# Create ZoneData
 	var zone_data = zone_data_script.new()
-	zone_data.zone_type = default_zone_type
+	zone_data.zone_type = zone_name
 	zone_data.color = zone_color
 	zone_data.polygon = PackedVector2Array(polygon_points)
 	zone_data.name = zone_name
@@ -149,7 +149,7 @@ func _flood_fill_tiles(start_pos: Vector2) -> Array[Vector2i]:
 
 	return result
 	
-func _tiles_to_polygon(filled_tiles: Array[Vector2i], tile_size: int = 16, padding: int = 2) -> PackedVector2Array:
+func _tiles_to_polygon(filled_tiles: Array[Vector2i], tile_size: int = 16, padding: int = 0) -> PackedVector2Array:
 	# Convert to set for fast lookup
 	var tile_set := {}
 	for t in filled_tiles:

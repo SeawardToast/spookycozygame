@@ -41,8 +41,8 @@ func create_area_from_zone_data(zone_data: Resource) -> Area2D:
 	centroid /= poly.size()
 
 	area.global_position = centroid
-
-	# ---- Collision polygon ----
+	
+	 #---- Collision polygon ----
 	var collision := CollisionPolygon2D.new()
 	var local_poly := PackedVector2Array()
 
