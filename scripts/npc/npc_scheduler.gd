@@ -5,6 +5,7 @@ extends CharacterBody2D
 @export var speed: float = 100.0
 @export var animated_sprite_2d: AnimatedSprite2D
 @export var navigation_agent_2d: NavigationAgent2D
+var debug_target_point: Vector2 = Vector2.ZERO
 
 var daily_schedule: Array = []
 
@@ -95,6 +96,7 @@ func _start_travel_to_zone(zone_name: String, actions: Array, entry: Dictionary)
 
 	var door_or_random_point = _get_random_point_in_area(current_target_zone)
 	navigation_agent_2d.target_position = door_or_random_point
+	debug_target_point = door_or_random_point
 	
 	# Wait a frame for navigation to calculate
 	await get_tree().process_frame
@@ -116,6 +118,10 @@ func _start_travel_to_zone(zone_name: String, actions: Array, entry: Dictionary)
 	print("Target Reachable: ", navigation_agent_2d.is_target_reachable())
 	print("========================")
 
+func _draw() -> void:
+	if debug_target_point != Vector2.ZERO:
+		draw_circle(to_local(debug_target_point), 6.0, Color.RED)
+		
 # -------------------------------
 # Arrive at zone
 # -------------------------------
@@ -135,6 +141,7 @@ func _zone_arrival() -> void:
 # Physics movement
 # -------------------------------
 func _physics_process(delta: float) -> void:
+	queue_redraw()
 	if not is_traveling:
 		return
 
@@ -143,7 +150,7 @@ func _physics_process(delta: float) -> void:
 		_zone_arrival()
 		return
 	
-	
+
 	var next_pos = navigation_agent_2d.get_next_path_position()
 	var target_direction: Vector2 = global_position.direction_to(next_pos)
 	var velocity: Vector2 = target_direction * speed

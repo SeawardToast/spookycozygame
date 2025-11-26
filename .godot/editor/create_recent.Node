@@ -1,12 +1,12 @@
+Node2D
 NavigationRegion2D
+NavigationLink2D
 TileMapLayer
 Polygon2D
 Sprite2D
 TileMap
 CollisionPolygon2D
 Area2D
-Node2D
-NavigationLink2D
 AnimatedSprite2D
 Control
 Label

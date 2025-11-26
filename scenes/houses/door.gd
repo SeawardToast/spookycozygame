@@ -5,11 +5,10 @@ extends StaticBody2D
 @onready var interactable_component: InteractableComponent = $InteractableComponent
 @onready var door_close_audio: AudioStreamPlayer2D = $door_close_audio
 @onready var door_open_audio: AudioStreamPlayer2D = $door_open_audio
-@export var zone_a: Area2D
-@export var zone_b: Area2D
 @export var is_open: bool = true
 @onready var door_collider: CollisionShape2D = $CollisionShape2D
 
+	
 
 func _ready() -> void:
 	interactable_component.interactable_activated.connect(on_interactable_activated)
