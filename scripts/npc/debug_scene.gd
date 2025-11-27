@@ -57,6 +57,7 @@ func _spawn_visual_npc():
 	visual_npc = visual_scene.instantiate()
 	visual_npc.npc_id = debug_npc_id
 	visual_npc.npc_type = debug_npc_type
+	#visual_npc.name = debug_npc_name
 	visual_npc.global_position = spawn_position
 	add_child(visual_npc)
 	

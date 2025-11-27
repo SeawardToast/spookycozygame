@@ -2,8 +2,10 @@
 # Lightweight visual representation that syncs with simulation
 extends CharacterBody2D
 
+@onready var name_label: Label = $NameLabel
 @export var npc_id: String = ""
 @export var npc_type: String = ""
+@export var npc_name: String = ""
 @export var animated_sprite_2d: AnimatedSprite2D
 @export var navigation_agent_2d: NavigationAgent2D
 @export var use_navigation: bool = true # If false, just lerp to simulated position
@@ -26,6 +28,8 @@ func _ready():
 	# Get simulation state from manager
 	simulation_state = NPCSimulationManager.get_npc_state(npc_id)
 	
+	_set_npc_name_label()
+	
 	if simulation_state == null:
 		push_warning("No simulation state found for NPC: %s" % npc_id)
 		return
@@ -45,6 +49,13 @@ func _ready():
 		navigation_agent_2d.velocity_computed.connect(_on_navigation_agent_2d_velocity_computed)
 	
 	is_synced = true
+	
+func _set_npc_name_label() -> void:
+	if simulation_state.npc_name == "":
+		push_warning("%s has no AnimatedSprite2D assigned!" % npc_id)
+		return
+	
+	name_label.text = simulation_state.npc_name
 	
 func _select_sprite_for_type() -> void:
 	if animated_sprite_2d == null:

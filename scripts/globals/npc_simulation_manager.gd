@@ -66,7 +66,7 @@ func spawn_npc(npc_type: String, spawn_position: Vector2 = Vector2.ZERO) -> Stri
 	
 	var npc_id = _generate_npc_id(npc_type)
 	npc_definition.npc_id = npc_id
-	
+		
 	# Use spawn position if provided, otherwise use definition's default
 	var start_pos = spawn_position if spawn_position != Vector2.ZERO else npc_definition.start_position
 	

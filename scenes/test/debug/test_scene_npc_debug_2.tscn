@@ -10,6 +10,7 @@
 [node name="TestSceneNPCDebug" type="Node2D"]
 y_sort_enabled = true
 script = ExtResource("1_12qld")
+metadata/_edit_group_ = true
 
 [node name="Zones" type="Node2D" parent="."]
 
