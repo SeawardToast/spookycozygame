@@ -1,0 +1,7 @@
+[gd_scene load_steps=2 format=3 uid="uid://7g0uir0epcls"]
+
+[ext_resource type="SpriteFrames" uid="uid://6aanlec145q3" path="res://assets/game/characters/sprites/ghost.tres" id="1_t4w3y"]
+
+[node name="Ghost" type="AnimatedSprite2D"]
+sprite_frames = ExtResource("1_t4w3y")
+animation = &"idle"

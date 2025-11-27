@@ -1,0 +1,42 @@
+[gd_scene load_steps=4 format=3 uid="uid://i13cpmmsisal"]
+
+[ext_resource type="Script" uid="uid://dva7p3746d3mj" path="res://scenes/characters/base_npc/visual_npc.gd" id="1_cllpf"]
+
+[sub_resource type="SpriteFrames" id="SpriteFrames_fb5c6"]
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_cllpf"]
+
+[node name="VisualNPC" type="CharacterBody2D" node_paths=PackedStringArray("animated_sprite_2d", "navigation_agent_2d")]
+motion_mode = 1
+script = ExtResource("1_cllpf")
+animated_sprite_2d = NodePath("AnimatedSprite2D")
+navigation_agent_2d = NodePath("NavigationAgent2D")
+
+[node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="."]
+sprite_frames = SubResource("SpriteFrames_fb5c6")
+
+[node name="NavigationAgent2D" type="NavigationAgent2D" parent="."]
+path_desired_distance = 4.0
+target_desired_distance = 5.0
+path_max_distance = 10.0
+navigation_layers = 4
+avoidance_enabled = true
+radius = 16.0
+debug_enabled = true
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+shape = SubResource("CircleShape2D_cllpf")
+
+[node name="NameLabel" type="Label" parent="."]
+offset_left = -40.0
+offset_top = -50.0
+offset_right = 43.0
+offset_bottom = -27.0
+theme_override_font_sizes/font_size = 13
+text = "NPC Name"
+
+[node name="DebugVisuals" type="Node2D" parent="."]
+
+[node name="PathLine" type="Line2D" parent="DebugVisuals"]
+
+[node name="TargetMarker" type="Sprite2D" parent="DebugVisuals"]

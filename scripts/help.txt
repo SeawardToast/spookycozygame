@@ -1,0 +1,380 @@
+DEBUG SCENE
+
+# DebugScene.tscn - Manual Scene Setup Instructions
+# ===================================================
+# Since we can't create .tscn files directly, here's how to set it up:
+
+# STEP 1: Create New Scene
+# -------------------------
+# In Godot Editor:
+# 1. Scene -> New Scene
+# 2. Select "2D Scene" as root node
+# 3. Rename root node to "DebugScene"
+# 4. Attach DebugScene.gd script to root node
+
+# STEP 2: Add Required Child Nodes
+# ---------------------------------
+# Add these as children of DebugScene:
+
+# 1. Camera2D (for viewing the scene)
+#    - Set as current camera
+#    - Position: (0, 0)
+#    - Zoom: (1, 1) or adjust as needed
+
+# 2. NavigationRegion2D (if using pathfinding)
+#    - Add NavigationPolygon
+#    - Draw a large navigation area
+#    OR use TileMap with navigation layers
+
+# 3. Add some test zones (Area2D nodes):
+#    - Kitchen (Area2D)
+#      - CollisionPolygon2D (draw a rectangle)
+#      - Position: (200, 200)
+#    - Sleep (Area2D)
+#      - CollisionPolygon2D
+#      - Position: (600, 200)
+#    - Haunt (Area2D)
+#      - CollisionPolygon2D
+#      - Position: (400, 500)
+
+# STEP 3: Configure DebugScene Script Parameters
+# -----------------------------------------------
+# In the Inspector for DebugScene node, set:
+# - Debug Npc Type: "ghost" (or "vampire", "werewolf")
+# - Spawn Visual: true
+# - Spawn Position: (400, 300)
+# - Enable Auto Spawn: false
+# - Show Debug Info: true
+
+# STEP 4: Optional - Add Visual Elements
+# ---------------------------------------
+# Add a background ColorRect or Sprite2D for visual reference
+
+# STEP 5: Save and Run
+# --------------------
+# Save as res://scenes/DebugScene.tscn
+# Run this scene directly (F6) or set as main scene
+
+# ===================================================
+
+# QUICK SCENE TREE STRUCTURE:
+"""
+DebugScene (Node2D) [DebugScene.gd attached]
+├── Camera2D
+├── NavigationRegion2D
+│   └── NavigationPolygon
+├── Zones (Node2D) - Optional container
+│   ├── Kitchen (Area2D)
+│   │   └── CollisionPolygon2D
+│   ├── Sleep (Area2D)
+│   │   └── CollisionPolygon2D
+│   └── Haunt (Area2D)
+│       └── CollisionPolygon2D
+└── Background (ColorRect) - Optional
+"""
+
+# ALTERNATIVE: Programmatic Scene Setup
+# ======================================
+# If you prefer to create everything in code:
+
+extends Node2D
+
+func _ready():
+	_create_debug_scene()
+	# ... rest of DebugScene.gd code ...
+
+func _create_debug_scene():
+	# Add camera
+	var camera = Camera2D.new()
+	camera.enabled = true
+	add_child(camera)
+	
+	# Add background
+	var bg = ColorRect.new()
+	bg.color = Color(0.2, 0.2, 0.3)
+	bg.size = Vector2(1920, 1080)
+	bg.position = Vector2(-960, -540)
+	add_child(bg)
+	
+	# Create test zones
+	_create_zone("Kitchen", Vector2(200, 200), Vector2(150, 100))
+	_create_zone("Sleep", Vector2(600, 200), Vector2(150, 100))
+	_create_zone("Haunt", Vector2(400, 500), Vector2(200, 150))
+	
+	# Add navigation (simplified - single large area)
+	var nav_region = NavigationRegion2D.new()
+	var nav_poly = NavigationPolygon.new()
+	var outline = PackedVector2Array([
+		Vector2(-500, -500),
+		Vector2(1500, -500),
+		Vector2(1500, 1000),
+		Vector2(-500, 1000)
+	])
+	nav_poly.add_outline(outline)
+	nav_poly.make_polygons_from_outlines()
+	nav_region.navigation_polygon = nav_poly
+	add_child(nav_region)
+	
+	print("Debug scene created programmatically")
+
+func _create_zone(zone_name: String, pos: Vector2, size: Vector2):
+	var zone = Area2D.new()
+	zone.name = zone_name
+	
+	var collision = CollisionPolygon2D.new()
+	var half_size = size / 2
+	collision.polygon = PackedVector2Array([
+		Vector2(-half_size.x, -half_size.y),
+		Vector2(half_size.x, -half_size.y),
+		Vector2(half_size.x, half_size.y),
+		Vector2(-half_size.x, half_size.y)
+	])
+	
+	zone.add_child(collision)
+	zone.position = pos
+	
+	# Visual indicator
+	var shape = Polygon2D.new()
+	shape.polygon = collision.polygon
+	shape.color = Color(randf(), randf(), randf(), 0.3)
+	zone.add_child(shape)
+	
+	# Label
+	var label = Label.new()
+	label.text = zone_name
+	label.position = Vector2(-30, -50)
+	zone.add_child(label)
+	
+	add_child(zone)
+	
+	# Register with ZoneManager if available
+	if ZoneManager:
+		# You may need to adapt this based on your ZoneManager implementation
+		pass
+
+
+
+
+
+# Dynamic NPC Spawning - Complete Setup Guide
+# =============================================
+
+# STEP 1: Setup Autoloads in Project Settings
+# =============================================
+# Project -> Project Settings -> Autoload
+# Add these in order:
+# 1. NPCSimulationManager (res://NPCSimulationManager.gd)
+# 2. NPCTypeRegistry (res://NPCTypeRegistry.gd)
+
+# STEP 2: Add HotelGuestSpawner to your main scene
+# =============================================
+# Add HotelGuestSpawner.gd as a child of your main/hotel scene
+# Configure in inspector:
+#   - max_guests: 20
+#   - spawn_interval: 30.0
+#   - spawn_zones: ["Entrance", "Lobby"]
+
+# STEP 3: Basic Usage Examples
+# =============================================
+
+# In your HotelManager.gd or Main.gd:
+extends Node
+
+@onready var spawner = $HotelGuestSpawner
+
+func _ready():
+	# Connect to spawner events
+	NPCSimulationManager.npc_spawned.connect(_on_guest_arrived)
+	NPCSimulationManager.npc_despawned.connect(_on_guest_left)
+	NPCSimulationManager.npc_arrived_at_zone.connect(_on_guest_entered_zone)
+	NPCSimulationManager.npc_action_attempted.connect(_on_guest_action)
+	
+	# Optional: Start with some initial guests
+	spawner.spawn_guest_batch(5)
+
+# MANUAL SPAWNING
+# =============================================
+
+# Spawn a random guest type
+func spawn_random_guest():
+	spawner.try_spawn_guest()
+
+# Spawn specific guest type
+func spawn_ghost():
+	spawner.spawn_specific_guest("ghost")
+
+func spawn_vampire_at_location(position: Vector2):
+	spawner.spawn_specific_guest("vampire", position)
+
+# Spawn multiple guests at once
+func spawn_guest_wave():
+	spawner.spawn_guest_batch(3) # Spawn 3 guests
+
+# GUEST MANAGEMENT
+# =============================================
+
+# Check out a specific guest
+func checkout_guest(npc_id: String):
+	spawner.checkout_guest(npc_id)
+
+# Check out random guest
+func kick_out_random_guest():
+	spawner.checkout_random_guest()
+
+# Get current guest statistics
+func update_ui():
+	var stats = spawner.get_guest_stats()
+	print("Guests: %d/%d" % [stats.total, stats.max_capacity])
+	print("Ghosts: %d, Vampires: %d, Werewolves: %d" % 
+		[stats.ghosts, stats.vampires, stats.werewolves])
+
+# SPAWN CONTROL
+# =============================================
+
+# Pause/resume automatic spawning
+func toggle_spawning():
+	spawner.set_spawn_enabled(!spawner.spawn_enabled)
+
+# Adjust spawn rate (guests per minute)
+func set_busy_hour():
+	spawner.set_spawn_interval(10.0) # Spawn every 10 seconds
+
+func set_quiet_hour():
+	spawner.set_spawn_interval(60.0) # Spawn every 60 seconds
+
+# Adjust spawn probabilities
+func make_ghosts_more_common():
+	spawner.set_spawn_weight("ghost", 20)  # Double the ghost spawn rate
+	spawner.set_spawn_weight("vampire", 5) # Reduce vampires
+	spawner.set_spawn_weight("werewolf", 2) # Rare werewolves
+
+# VISUAL NPC SPAWNING (Optimized for Performance)
+# =============================================
+
+# Only spawn visuals for nearby NPCs
+var visual_npcs: Dictionary = {} # npc_id -> VisualNPC node
+
+func _process(delta):
+	var player_pos = get_player_position()
+	var render_distance = 500.0
+	
+	# Check all simulated NPCs
+	for npc_id in NPCSimulationManager.get_all_npc_states():
+		var state = NPCSimulationManager.get_npc_state(npc_id)
+		var distance = player_pos.distance_to(state.current_position)
+		
+		# Spawn visual if close and not already spawned
+		if distance < render_distance and npc_id not in visual_npcs:
+			spawn_visual_npc(npc_id, state.npc_type)
+		
+		# Despawn visual if too far
+		elif distance >= render_distance and npc_id in visual_npcs:
+			despawn_visual_npc(npc_id)
+
+func spawn_visual_npc(npc_id: String, npc_type: String):
+	var visual_scene = load("res://scenes/VisualNPC.tscn")
+	var visual_npc = visual_scene.instantiate()
+	visual_npc.npc_id = npc_id
+	
+	# Get current simulated position
+	var state = NPCSimulationManager.get_npc_state(npc_id)
+	visual_npc.global_position = state.current_position
+	
+	add_child(visual_npc)
+	visual_npcs[npc_id] = visual_npc
+	
+	print("Spawned visual for: %s" % npc_id)
+
+func despawn_visual_npc(npc_id: String):
+	if npc_id in visual_npcs:
+		visual_npcs[npc_id].queue_free()
+		visual_npcs.erase(npc_id)
+		print("Despawned visual for: %s" % npc_id)
+
+# QUERY NPC DATA
+# =============================================
+
+# Get specific NPC info
+func get_npc_info(npc_id: String):
+	var state = NPCSimulationManager.get_npc_state(npc_id)
+	if state:
+		print("NPC: %s (%s)" % [state.npc_name, state.npc_type])
+		print("Position: %s" % state.current_position)
+		print("Traveling: %s" % state.is_traveling)
+		print("Current zone: %s" % state.current_target_zone_name)
+
+# Get all NPCs in a zone
+func get_guests_in_zone(zone_name: String) -> Array:
+	var guests = []
+	for npc_id in NPCSimulationManager.get_all_npc_states():
+		var state = NPCSimulationManager.get_npc_state(npc_id)
+		if state.current_target_zone_name == zone_name:
+			guests.append(state)
+	return guests
+
+# Get all vampires
+func get_all_vampires() -> Array:
+	return NPCSimulationManager.get_npcs_by_type("vampire")
+
+# EVENT CALLBACKS
+# =============================================
+
+func _on_guest_arrived(npc_id: String, npc_type: String, position: Vector2):
+	print("New guest checked in: %s at %s" % [npc_type, position])
+	# Update UI, play sound, etc.
+	
+	# Maybe spawn visual immediately for new arrivals
+	spawn_visual_npc(npc_id, npc_type)
+
+func _on_guest_left(npc_id: String):
+	print("Guest checked out: %s" % npc_id)
+	# Update UI, clean up visual if exists
+	despawn_visual_npc(npc_id)
+
+func _on_guest_entered_zone(npc_id: String, zone_name: String, position: Vector2):
+	var state = NPCSimulationManager.get_npc_state(npc_id)
+	print("%s entered %s" % [state.npc_name, zone_name])
+	# Trigger zone-specific events
+
+func _on_guest_action(npc_id: String, action_name: String):
+	var state = NPCSimulationManager.get_npc_state(npc_id)
+	print("%s performed action: %s" % [state.npc_name, action_name])
+	# Update stats, trigger effects, etc.
+
+# ADVANCED: CUSTOM NPC TYPE
+# =============================================
+
+# Create a new NPC type (ZombieNPCDefinition.gd):
+"""
+extends RefCounted
+
+var npc_id: String = ""
+var npc_name: String = "Zombie"
+var start_position: Vector2 = Vector2.ZERO
+var speed: float = 50.0
+
+func _init():
+	npc_name = "Zombie #" + str(randi() % 100)
+	speed = randf_range(30.0, 70.0)
+
+func get_schedule() -> Array:
+	return [
+		{"start_minute": 0, "end_minute": 1440, "zone": "Graveyard", "actions": [Callable(self, "shamble")]}
+	]
+
+func shamble():
+	print("%s is shambling around..." % npc_name)
+	return [true, ""]
+"""
+
+# Register it in NPCTypeRegistry._register_default_types():
+# register_type("zombie", ZombieNPCDefinition)
+
+# Then use it:
+func spawn_zombie():
+	spawner.spawn_specific_guest("zombie")
+
+# Helper function
+func get_player_position() -> Vector2:
+	# Your player position logic
+	return Vector2.ZERO

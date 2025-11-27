@@ -31,6 +31,21 @@ func set_intial_time() -> void:
 	var initial_total_minutes = initial_day * MINUTES_PER_DAY + (initial_hour * MINUTES_PER_HOUR) + initial_minute
 	
 	time = initial_total_minutes * GAME_MINUTE_DURATION
+
+func get_current_time() -> Dictionary:
+	var total_minutes: int = int(time / GAME_MINUTE_DURATION)
+	var day: int = total_minutes / MINUTES_PER_DAY
+	var current_day_minutes: int = total_minutes % MINUTES_PER_DAY
+	var hour: int = current_day_minutes / MINUTES_PER_HOUR
+	var minute: int = current_day_minutes % MINUTES_PER_HOUR
+
+	return {
+		"day": day,
+		"hour": hour,
+		"minute": minute
+	}
+
+	
 	
 func recalculate_time() -> void:
 	var total_minutes: int = int(time / GAME_MINUTE_DURATION)

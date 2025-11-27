@@ -1,6 +1,8 @@
-res://scripts/globals
+res://assets/game/characters/sprites
 res://assets/game/characters
-C:/Users/aidan/Documents/croptails/resources/data
+C:/Users/aidan/Documents/spookycozygame/scenes/characters/base_npc
+res://scripts/globals
+C:/Users/aidan/Documents/spookycozygame/scripts
 res://scenes/ui
 res://audio/sfx
 res://scenes/components
@@ -18,5 +20,3 @@ res://assets/ui/fonts
 res://Tilesets
 res://scenes/characters/cow
 res://scenes/characters/chicken
-res://assets/game/sounds/items
-res://scenes/objects/tree

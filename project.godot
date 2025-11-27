@@ -31,6 +31,8 @@ SceneManager="*res://scripts/globals/scene_manager.gd"
 GameManager="*res://scripts/globals/game_manager.gd"
 JsonDataManager="*res://scripts/globals/json_data_manager.gd"
 ZoneManager="*res://scripts/globals/zone_manager.gd"
+NPCSimulationManager="*res://scripts/globals/npc_simulation_manager.gd"
+NPCTypeRegistry="*res://scripts/globals/npc_type_registry.gd"
 
 [display]
 
