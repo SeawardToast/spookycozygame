@@ -29,12 +29,13 @@ func _ready() -> void:
 	# --- Create ZoneData resource ---
 	zone_data = load("res://scripts/ZoneData.gd").new()
 	zone_data.name = zone_name
-	zone_data.zone_type = zone_type
+	zone_data.type = zone_type
 	zone_data.color = color
 	zone_data.polygon = collision_poly.polygon
+	zone_data.position = collision_poly.polygon[0]
 
 	# --- Register with manager ---
-	ZoneManager.add_zone(zone_data)
+	ZoneManager.register_zone(zone_data)
 	print("✅ Registered zone:", zone_name, "as", zone_type)
 
 

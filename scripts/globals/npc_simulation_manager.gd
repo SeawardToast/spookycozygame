@@ -17,6 +17,9 @@ class NPCSimulationState:
 	var npc_id: String
 	var npc_type: String # Type identifier (e.g., "ghost", "vampire", "werewolf")
 	var npc_name: String
+	var current_floor: int = 1
+	var target_floor: int = 1
+	var is_changing_floors: bool = false
 	var current_position: Vector2
 	var target_position: Vector2
 	var speed: float
@@ -30,6 +33,15 @@ class NPCSimulationState:
 	var travel_duration: float
 	var npc_instance: Node # Optional reference to actual NPC if spawned
 	var behavior_data: Dictionary # Store custom data for this NPC
+	
+	func update_floor_from_position():
+		"""Automatically determine current floor from position"""
+		current_floor = FloorManager.get_floor_from_position(current_position)
+
+	func update_target_floor_from_zone(zone_id: int):
+		"""Look up which floor the target zone is on"""
+		target_floor = ZoneManager.get_zone_floor(zone_id)
+		is_changing_floors = (current_floor != target_floor)
 	
 	func _init(id: String, type: String, name: String, start_pos: Vector2, spd: float, schedule: Array):
 		npc_id = id
@@ -85,6 +97,9 @@ func spawn_npc(npc_type: String, spawn_position: Vector2 = Vector2.ZERO) -> Stri
 	print("Spawned NPC: %s (%s) at %s" % [npc_definition.npc_name, npc_type, start_pos])
 	
 	return npc_id
+	
+
+
 
 # Despawn an NPC (remove from simulation)
 func despawn_npc(npc_id: String) -> void:
@@ -175,23 +190,39 @@ func _check_schedule(state: NPCSimulationState, current_minute: int) -> void:
 			state.completed_schedule_entries.append(entry)
 			state.active_schedule_entry = {}
 
-# Start travel to zone (simulated)
+# Enhanced _start_travel_to_zone with floor lookup:
 func _start_travel_to_zone(state: NPCSimulationState, zone_name: String, actions: Array, entry: Dictionary):
-	var zone = null
-	for area in ZoneManager.get_zones():
-		if area.name == zone_name:
-			zone = area
-			break
-
-	if zone == null:
-		push_warning("Zone not found: %s" % zone_name)
+	# Look up the zone's floor dynamically
+	var closest_zone_id_of_type = ZoneManager.get_closest_zone_of_type_from_position(zone_name, state.current_position)
+	var zone: ZoneData = ZoneManager.get_zone_data(closest_zone_id_of_type)
+	var target_floor = zone.floor
+	
+	if zone.position == Vector2.ZERO:
+		push_warning("Zone '%s' not found for NPC %s" % [zone_name, state.npc_name])
 		state.active_schedule_entry = {}
 		return
 	
-	var target_area = ZoneManager.create_area_from_zone_data(zone)
-	var target_point = _get_random_point_in_area(target_area)
+	# Update floor tracking
+	state.update_target_floor_from_zone(closest_zone_id_of_type)
 	
-	# Calculate travel duration based on distance and speed
+	# If changing floors, log it
+	if state.is_changing_floors:
+		print("%s traveling from floor %d to floor %d (zone: %s)" % 
+			[state.npc_name, state.current_floor, target_floor, zone_name])
+	
+	# Get zone area if floor is loaded, otherwise use position directly
+	var zone_area = ZoneManager.get_zone_area(closest_zone_id_of_type)
+	var target_point: Vector2
+	
+	if zone_area:
+		# Floor is loaded, use actual zone area
+		target_point = _get_random_point_in_area(zone_area)
+	else:
+		# Floor not loaded, use zone position from registry
+		target_point = zone.position
+		print("Zone '%s' floor not loaded, using registry position" % zone_name)
+	
+	# Calculate travel duration
 	var distance = state.current_position.distance_to(target_point)
 	state.travel_duration = distance / state.speed
 	state.travel_start_time = Time.get_ticks_msec() / 1000.0
@@ -203,8 +234,9 @@ func _start_travel_to_zone(state: NPCSimulationState, zone_name: String, actions
 	emit_signal("npc_started_traveling", state.npc_id, state.current_position, target_point, zone_name)
 	
 	print("=== SIMULATION: %s traveling to %s ===" % [state.npc_name, zone_name])
-	print("From: %s To: %s (Distance: %.1f, Duration: %.1fs)" % [state.current_position, target_point, distance, state.travel_duration])
-
+	print("From: Floor %d (%s) To: Floor %d (%s)" % 
+		[state.current_floor, state.current_position, target_floor, target_point])
+		
 # Update simulation (called every frame)
 func _process(delta: float) -> void:
 	var current_time = Time.get_ticks_msec() / 1000.0
@@ -216,14 +248,22 @@ func _process(delta: float) -> void:
 			var elapsed = current_time - state.travel_start_time
 			
 			if elapsed >= state.travel_duration:
-				# Arrived at destination
 				state.current_position = state.target_position
 				state.is_traveling = false
+				state.update_floor_from_position()  # Update floor after arrival
 				_zone_arrival(state)
 			else:
-				# Interpolate position
 				var progress = elapsed / state.travel_duration
 				state.current_position = state.current_position.lerp(state.target_position, progress * delta * 60.0)
+				
+				# Continuously update floor during travel (for floor transitions)
+				var old_floor = state.current_floor
+				state.update_floor_from_position()
+				
+				# Detect when NPC changes floors mid-travel
+				if old_floor != state.current_floor:
+					print("%s crossed from floor %d to floor %d" % 
+						[state.npc_name, old_floor, state.current_floor])
 
 # Zone arrival handler
 func _zone_arrival(state: NPCSimulationState) -> void:

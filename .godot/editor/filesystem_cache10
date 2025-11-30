@@ -1,5 +1,5 @@
 f098f8d3115d962055284dee314b4f89
-::res://::1764261682
+::res://::1764529560
 icon.svg::CompressedTexture2D::3053163727042408893::1763326809::1763326818::1::::<><><>0<>0<>e099212b1e657305b48fcfbb4a281d3f<>res://.godot/imported/icon.svg-218a8f2b3041327d8a5756f3a245f83b.ctex::
 ::res://addons/::1763527664
 ::res://addons/dialogue_manager/::1763527665
@@ -97,8 +97,8 @@ Free Cow Sprites.png::CompressedTexture2D::8170074430563285550::1763327164::1763
 free_chicken_sprites.png::CompressedTexture2D::8264389111440904384::1763327164::1763327288::1::::<><><>0<>0<>9af0997423b2e8841bc012bfdfb00004<>res://.godot/imported/free_chicken_sprites.png-3412dd2f42c15e3f17baad1a01274ce2.ctex::
 ghost.png::CompressedTexture2D::8824411399589652080::1763960539::1763960540::1::::<><><>0<>0<>3f47537701666257ab2fe5abf9b73df0<>res://.godot/imported/ghost.png-d31235ee5febe252ccb8b067acc22f70.ctex::
 tools.png::CompressedTexture2D::7235108073932010837::1763327164::1763327288::1::::<><><>0<>0<>9870369e4f1b14e4acbb24e3358a703b<>res://.godot/imported/tools.png-fd1589cd903747a3dfbf58973d871f71.ctex::
-::res://assets/game/characters/sprites/::1764221653
-ghost.tres::SpriteFrames::2175877952162627452::1764221633::0::1::::<><><>0<>0<><>::uid://dxyu1ccckttx5::::res://assets/game/characters/ghost.png
+::res://assets/game/characters/sprites/::1764261726
+ghost.tres::SpriteFrames::2175877952162627452::1764261726::0::1::::<><><>0<>0<><>::uid://dxyu1ccckttx5::::res://assets/game/characters/ghost.png
 ghost.tscn::PackedScene::2259983351228953896::1764221653::0::1::::<><><>0<>0<><>::uid://6aanlec145q3::::res://assets/game/characters/sprites/ghost.tres
 ::res://assets/game/objects/::1763481578
 Basic Furniture.png::CompressedTexture2D::121228234159134332::1763327164::1763327288::1::::<><><>0<>0<>933caa41e8e8321560025dbb1fd9fcb1<>res://.godot/imported/Basic Furniture.png-536d5e576d27a7ad3c4c4dcb5289243c.ctex::
@@ -177,9 +177,9 @@ chicken_cluck_2sfx.tscn::PackedScene::6774431348582995661::1763672536::0::1::::<
 chicken_cluck_3sfx.tscn::PackedScene::8664049298952124357::1763672555::0::1::::<><><>0<>0<><>::uid://drrh7vjbno5g6::::res://assets/audio/sfx/chicken_cluck_3.ogg
 chicken_cluck_multiple_sfx.tscn::PackedScene::6847368947795684817::1763672948::0::1::::<><><>0<>0<><>::uid://dwbhvvday1cel::::res://assets/audio/sfx/chicken_cluck_1.ogg<>uid://qunfxm602hjr::::res://assets/audio/sfx/chicken_cluck_2.ogg<>uid://drrh7vjbno5g6::::res://assets/audio/sfx/chicken_cluck_3.ogg
 cow_moo_sfx.tscn::PackedScene::4626191041586859396::1763672578::0::1::::<><><>0<>0<><>::uid://b3yqr0totko6r::::res://assets/audio/sfx/cow-moo.ogg
-::res://dialogue/::1764175187
+::res://dialogue/::1764261726
 base_game_dialog_baloon.gd::GDScript::8445343345574060775::1763527810::0::1::::BaseGameDialougeBalloon<>CanvasLayer<><>0<>0<><>::
-dialogue_balloon_theme.tres::Theme::3530634826654240386::1764175187::0::1::::<><><>0<>0<><>::uid://cd8tuel5gyu8h::::res://assets/ui/basic_ui_sprites.png
+dialogue_balloon_theme.tres::Theme::3530634826654240386::1764261726::0::1::::<><><>0<>0<><>::uid://cd8tuel5gyu8h::::res://assets/ui/basic_ui_sprites.png
 game_dialogue_balloon.gd::GDScript::9189268703930498957::1763603035::0::1::::<>BaseGameDialougeBalloon<><>0<>0<><>::
 game_dialogue_balloon.tscn::PackedScene::6841896393846610568::1763604177::0::1::::<><><>0<>0<><>::uid://d36l6bn7om2mj::::res://dialogue/game_dialogue_balloon.gd<>uid://ckvgyvclnwggo::::res://addons/dialogue_manager/dialogue_label.tscn<>uid://bqkjbl73pj63w::::res://dialogue/dialogue_balloon_theme.tres<>uid://bb52rsfwhkxbn::::res://addons/dialogue_manager/dialogue_responses_menu.gd<>uid://8f4petbcqx7d::::res://scenes/ui/emotes_panel.tscn
 ::res://dialogue/conversations/::1763608762
@@ -201,10 +201,10 @@ item_data.txt::TextFile::-1::1763697500::0::1::::<><><>0<>0<><>::
 main_scene.tscn::PackedScene::6591998053743148824::1763671858::0::1::::<><><>0<>0<><>::uid://6jlbsxeiqvss::::res://scenes/components/day_night_cycle_component.tscn<>uid://duydlmwxcwuwx::::res://scenes/components/mouse_cursor_component.tscn<>uid://d0dhtip02w7f6::::res://scenes/ui/game_screen.tscn<>uid://dp56w8u0qmk14::::res://assets/ui/mouse_icon.png<>uid://bvgxw7xbb6abd::::res://scenes/levels/level_1.tscn<>uid://6fa2m4vt6287::::res://scenes/characters/player/player.tscn
 ::res://scenes/characters/::1764216871
 non_playable_character.gd::GDScript::1121697777121717254::1763431421::0::1::::NonPlayableCharacter<>CharacterBody2D<><>0<>0<><>::
-::res://scenes/characters/base_npc/::1764222512
+::res://scenes/characters/base_npc/::1764264329
 usage.txt::TextFile::-1::1764221079::0::1::::<><><>0<>0<><>::
-visual_npc.gd::GDScript::8635199019601833273::1764221744::0::1::::<>CharacterBody2D<><>0<>0<><>::
-visual_npc.tscn::PackedScene::616889025052603571::1764222512::0::1::::<><><>0<>0<><>::uid://dva7p3746d3mj::::res://scenes/characters/base_npc/visual_npc.gd
+visual_npc.gd::GDScript::8635199019601833273::1764264329::0::1::::<>CharacterBody2D<><>0<>0<><>::
+visual_npc.tscn::PackedScene::616889025052603571::1764263961::0::1::::<><><>0<>0<><>::uid://dva7p3746d3mj::::res://scenes/characters/base_npc/visual_npc.gd
 ::res://scenes/characters/chicken/::1763963799
 chicken.gd::GDScript::8337563209074886012::1763431399::0::1::::<>NonPlayableCharacter<><>0<>0<><>::
 chicken.tscn::PackedScene::1036887978986058795::1763963799::0::1::::<><><>0<>0<><>::uid://dp0ljtdgrqr8k::::res://assets/game/characters/free_chicken_sprites.png<>uid://dq11ph2b6y4ds::::res://scenes/characters/chicken/chicken.gd<>uid://ts6w1rrej2q3::::res://scripts/state_machine/node_state_machine.gd<>uid://b5mm6p0dxpxwo::::res://scenes/characters/npc_states/idle_state.gd<>uid://tb1kecp0fsp7::::res://scenes/characters/npc_states/walk_state.gd<>uid://bg8jc3cgnprge::::res://scenes/components/audio_play_time_component.tscn<>uid://c4s6fwcvw81kn::::res://audio/sfx/chicken_cluck_multiple_sfx.tscn
@@ -214,10 +214,10 @@ cow.tscn::PackedScene::8447331079085513388::1763685615::0::1::::<><><>0<>0<><>::
 ::res://scenes/characters/ghost/::1764185227
 ghost.gd::GDScript::4955422953880892896::1764175181::0::1::::<>ScheduledNPC<><>0<>0<><>::
 ghost.tscn::PackedScene::4912964740663465568::1764185227::0::1::::<><><>0<>0<><>::uid://ccupdeodfop1q::::res://scenes/characters/ghost/ghost.gd<>uid://dxyu1ccckttx5::::res://assets/game/characters/ghost.png
-::res://scenes/characters/guide/::1764175187
+::res://scenes/characters/guide/::1764261726
 guide.gd::GDScript::4162700934014024012::1763593306::0::1::::<>Node2D<><>0<>0<><>::
 guide.tscn::PackedScene::7655948664994184657::1763593369::0::1::::<><><>0<>0<><>::uid://bmarq4qqx6143::::res://assets/game/characters/basic_character_spritesheet.png<>uid://cuyu3uy4pvf5w::::res://scenes/characters/guide/replace_color.gdshader<>uid://b0kpcudfqf7u3::::res://scenes/characters/guide/guide.gd<>uid://basw62h85rk21::::res://scenes/components/interactable_component.tscn<>uid://bbkvroxuk3ta::::res://scenes/components/interactable_label_component.tscn
-replace_color.gdshader::Shader::6227428737209764190::1764175187::0::1::::<><><>0<>0<><>::
+replace_color.gdshader::Shader::6227428737209764190::1764261726::0::1::::<><><>0<>0<><>::
 ::res://scenes/characters/npc_states/::1763433132
 idle_state.gd::GDScript::4517643316045060702::1763432924::0::1::::<>NodeState<><>0<>0<><>::
 walk_state.gd::GDScript::1337249120525819134::1763432376::0::1::::<>NodeState<><>0<>0<><>::
@@ -286,19 +286,19 @@ tomato.gd::GDScript::3905125993087461573::1763519809::0::1::::<>Node2D<><>0<>0<>
 tomato.tscn::PackedScene::3892448365074197374::1763522070::0::1::::<><><>0<>0<><>::uid://bvvw4b4voudrx::::res://scenes/objects/plants/tomato.gd<>uid://ces4og4p3j8lw::::res://assets/game/objects/basic_plants.png<>uid://blmeefima2bp5::::res://scenes/objects/plants/flowering_particles.tscn<>uid://d35nqmh1c0xnj::::res://scenes/objects/plants/watering_particles.tscn<>uid://kkp3h0edbpq7::::res://scenes/objects/plants/grow_cycle_component.tscn<>uid://iw6ss4ln5i0p::::res://scenes/components/hurt_component.tscn<>uid://ch0ildoohd3bq::::res://scenes/components/save_data_component.tscn<>uid://sbybiywmb8mp::::res://resources/scene_data_resource.tres
 tomato_harvest.tscn::PackedScene::3956343162282134935::1763610419::0::1::::<><><>0<>0<><>::uid://n0edou1klo15::::res://assets/game/objects/Basic Plants.png<>uid://bos4u6mri0agg::::res://scenes/components/collectable_component.tscn
 watering_particles.tscn::PackedScene::9187299541453281543::1763481990::0::1::::<><><>0<>0<><>::
-::res://scenes/objects/rocks/::1764175187
+::res://scenes/objects/rocks/::1764261726
 rock_broken.tscn::PackedScene::2653754669923776772::1763440501::0::1::::<><><>0<>0<><>::uid://o2nrs4lxpydc::::res://assets/game/objects/Basic_Grass_Biom_things.png<>uid://bos4u6mri0agg::::res://scenes/components/collectable_component.tscn<>uid://b4i5wcy2yfrne::::res://assets/game/sounds/items/item_pickup.wav
-rock_shake.gdshader::Shader::9050833551352120465::1764175187::0::1::::<><><>0<>0<><>::
+rock_shake.gdshader::Shader::9050833551352120465::1764261726::0::1::::<><><>0<>0<><>::
 small_rock.gd::GDScript::7408150520559470207::1763440597::0::1::::<>Sprite2D<><>0<>0<><>::
 small_rock.tscn::PackedScene::6057456762689206593::1763440597::0::1::::<><><>0<>0<><>::uid://07ldjbgqr05u::::res://scenes/objects/tree/tree_shake.gdshader<>uid://o2nrs4lxpydc::::res://assets/game/objects/Basic_Grass_Biom_things.png<>uid://ddstflgc8gtyd::::res://scenes/objects/rocks/small_rock.gd<>uid://iw6ss4ln5i0p::::res://scenes/components/hurt_component.tscn<>uid://csdxbnarg0twl::::res://scenes/components/damage_component.tscn<>uid://bp4g60sieml73::::res://assets/game/sounds/rocks/pickaxe_1.wav<>uid://de5ditpuhy0yl::::res://assets/game/sounds/rocks/pickaxe_2.wav<>uid://ba2oku02f2e22::::res://assets/game/sounds/rocks/pickaxe_3.wav<>uid://58hgd26070dh::::res://assets/game/sounds/rocks/pickaxe_4.wav<>uid://cifb7orvcqsxp::::res://assets/game/sounds/rocks/rock_break.wav
 ::res://scenes/objects/tools/::1764182578
 zone_creator.gd::GDScript::9066053376454996325::1764182578::0::1::::<>Node2D<><>0<>0<><>::
 zone_creator.tscn::PackedScene::2435674369501457138::1764123993::0::1::::<><><>0<>0<><>::uid://d2fwtsf32wcb2::::res://scenes/objects/tools/zone_creator.gd
-::res://scenes/objects/tree/::1764175187
+::res://scenes/objects/tree/::1764261726
 log.tscn::PackedScene::6290102100811295754::1763704584::0::1::::<><><>0<>0<><>::uid://o2nrs4lxpydc::::res://assets/game/objects/Basic_Grass_Biom_things.png<>uid://bos4u6mri0agg::::res://scenes/components/collectable_component.tscn<>uid://b4i5wcy2yfrne::::res://assets/game/sounds/items/item_pickup.wav
 small_tree.gd::GDScript::9023614031355131415::1763357810::0::1::::<>Sprite2D<><>0<>0<><>::
 small_tree.tscn::PackedScene::4138376536369781005::1764119286::0::1::::<><><>0<>0<><>::uid://07ldjbgqr05u::::res://scenes/objects/tree/tree_shake.gdshader<>uid://o2nrs4lxpydc::::res://assets/game/objects/Basic_Grass_Biom_things.png<>uid://d1tdutckl37f4::::res://scenes/objects/tree/small_tree.gd<>uid://iw6ss4ln5i0p::::res://scenes/components/hurt_component.tscn<>uid://csdxbnarg0twl::::res://scenes/components/damage_component.tscn<>uid://durvl4e6d6qx4::::res://assets/game/sounds/trees/wood_cut.wav<>uid://cuor22o6p4r4n::::res://assets/game/sounds/trees/wood_cut_2.wav<>uid://dg45l7pms2l0s::::res://assets/game/sounds/trees/wood_cut_3.wav<>uid://c7trvg7a4sjln::::res://assets/game/sounds/trees/wood_cut_4.wav<>uid://c7xdvwj8qddeu::::res://assets/game/sounds/trees/tree_fell.wav
-tree_shake.gdshader::Shader::1821454897932515964::1764175187::0::1::::<><><>0<>0<><>::
+tree_shake.gdshader::Shader::1821454897932515964::1764261726::0::1::::<><><>0<>0<><>::
 ::res://scenes/test/::1764219777
 grass.gd::GDScript::7944363817585216759::1764183358::0::1::::<>TileMapLayer<><>0<>0<><>::
 test_scene_audio.tscn::PackedScene::8322111944545356226::1763673025::0::1::::<><><>0<>0<><>::uid://dcaqtdvfufe8g::::res://tilesets/game_tile_set.tres<>uid://6fa2m4vt6287::::res://scenes/characters/player/player.tscn<>uid://cyqtsmm6de6kv::::res://audio/music/on_the_farm_music.tscn<>uid://dsl7kq4hvi781::::res://scenes/characters/cow/cow.tscn<>uid://o1jnm6arnte6::::res://scenes/characters/chicken/chicken.tscn
@@ -322,12 +322,12 @@ test_scene_player.tscn::PackedScene::7003031285111619709::1763510101::0::1::::<>
 test_scene_tilemap_layer_y_sort.tscn::PackedScene::8138166448350525446::1763612412::0::1::::<><><>0<>0<><>::uid://dcaqtdvfufe8g::::res://tilesets/game_tile_set.tres<>uid://6fa2m4vt6287::::res://scenes/characters/player/player.tscn
 test_scene_tilemap_layer_y_sort_level_1.tscn::PackedScene::1503183631104882145::1763612495::0::1::::<><><>0<>0<><>::uid://6fa2m4vt6287::::res://scenes/characters/player/player.tscn<>uid://bvgxw7xbb6abd::::res://scenes/levels/level_1.tscn
 test_scene_tile_map.tscn::PackedScene::3375219655694224372::1763515323::0::1::::<><><>0<>0<><>::uid://dcaqtdvfufe8g::::res://tilesets/game_tile_set.tres
-::res://scenes/test/debug/::1764222616
+::res://scenes/test/debug/::1764264355
 debug_npc.gd::GDScript::6363196370034652300::1764218956::0::1::::<>Node2D<><>0<>0<><>::
-debug_npc.tscn::PackedScene::5583078003742827195::1764218956::0::1::::<><><>0<>0<><>::uid://cwwm6dhcrw8rg::::res://scenes/test/debug/debug_npc.gd
+debug_npc.tscn::PackedScene::5583078003742827195::1764264085::0::1::::<><><>0<>0<><>::uid://cwwm6dhcrw8rg::::res://scenes/test/debug/debug_npc.gd
 grass.gd::GDScript::345625776393836734::1764222403::0::1::::<>TileMapLayer<><>0<>0<><>::
-test_scene_npc_debug_2.tscn::PackedScene::7530523672949711692::1764222616::0::1::::<><><>0<>0<><>::uid://ctygb6k0vhulp::::res://scripts/npc/debug_scene.gd<>uid://dcaqtdvfufe8g::::res://tilesets/game_tile_set.tres<>uid://b6s08yav4lhwr::::res://scripts/scene_helpers/zone_auto_register.gd<>uid://6fa2m4vt6287::::res://scenes/characters/player/player.tscn<>uid://e6on2na0ba4m::::res://scenes/test/debug/grass.gd<>uid://8qpho0ri8727::::res://scenes/ui/day_and_night_panel.tscn
-::res://scenes/ui/::1764175187
+test_scene_npc_debug_2.tscn::PackedScene::7530523672949711692::1764264355::0::1::::<><><>0<>0<><>::uid://ctygb6k0vhulp::::res://scripts/npc/debug_scene.gd<>uid://dcaqtdvfufe8g::::res://tilesets/game_tile_set.tres<>uid://b6s08yav4lhwr::::res://scripts/scene_helpers/zone_auto_register.gd<>uid://6fa2m4vt6287::::res://scenes/characters/player/player.tscn<>uid://e6on2na0ba4m::::res://scenes/test/debug/grass.gd<>uid://8qpho0ri8727::::res://scenes/ui/day_and_night_panel.tscn
+::res://scenes/ui/::1764261726
 day_and_night_panel.gd::GDScript::7157796901250717671::1763446854::0::1::::<>Control<><>0<>0<><>::
 day_and_night_panel.tscn::PackedScene::2350185914300296606::1763446813::0::1::::<><><>0<>0<><>::uid://ljcck66th0xd::::res://scenes/ui/game_ui_theme.tres<>uid://cd8tuel5gyu8h::::res://assets/ui/basic_ui_sprites.png<>uid://c88j4s15oi1xr::::res://scenes/ui/day_and_night_panel.gd
 emotes_panel.gd::GDScript::1670247312220557469::1763604222::0::1::::<>Panel<><>0<>0<><>::
@@ -337,7 +337,7 @@ game_menu_screen.tscn::PackedScene::775410171035500706::1763671901::0::1::::<><>
 game_menu_screen_background.gd::GDScript::5325157031009575265::1763615225::0::1::::<>Node2D<><>0<>0<><>::
 game_menu_screen_background.tscn::PackedScene::9038399091333272132::1763615357::0::1::::<><><>0<>0<><>::uid://ch4ss8m4cu5aj::::res://scenes/ui/game_menu_screen_background.gd<>uid://dcaqtdvfufe8g::::res://tilesets/game_tile_set.tres<>uid://6fa2m4vt6287::::res://scenes/characters/player/player.tscn<>uid://dsl7kq4hvi781::::res://scenes/characters/cow/cow.tscn<>uid://o1jnm6arnte6::::res://scenes/characters/chicken/chicken.tscn
 game_screen.tscn::PackedScene::8920635668857586313::1763960843::0::1::::<><><>0<>0<><>::uid://icj1aql0pt0v::::res://scenes/ui/tools_panel.tscn<>uid://ljcck66th0xd::::res://scenes/ui/game_ui_theme.tres<>uid://8qpho0ri8727::::res://scenes/ui/day_and_night_panel.tscn<>uid://lbu5loesr2ao::::res://scenes/ui/game_menu_screen.tscn<>uid://c2px04rprr7jf::::res://scenes/ui/inventory.tscn
-game_ui_theme.tres::Theme::790782259934868605::1764175187::0::1::::<><><>0<>0<><>::uid://cd8tuel5gyu8h::::res://assets/ui/basic_ui_sprites.png<>uid://ifuaiodn04dj::::res://assets/ui/fonts/zx_palm_variation.tres<>uid://2pfwl33qn5vf::::res://assets/ui/fonts/pixelFont-7-8x14-sproutLands.ttf
+game_ui_theme.tres::Theme::790782259934868605::1764261726::0::1::::<><><>0<>0<><>::uid://cd8tuel5gyu8h::::res://assets/ui/basic_ui_sprites.png<>uid://ifuaiodn04dj::::res://assets/ui/fonts/zx_palm_variation.tres<>uid://2pfwl33qn5vf::::res://assets/ui/fonts/pixelFont-7-8x14-sproutLands.ttf
 inventory.gd::GDScript::8993567771809751405::1763958653::0::1::::<>Node2D<><>0<>0<><>::
 inventory.tscn::PackedScene::6700348497749007983::1763964000::0::1::::<><><>0<>0<><>::uid://d1es0n16xgknl::::res://scenes/ui/inventory.gd<>uid://cjs0gqmgnlj0p::::res://assets/ui/default_inventory_background.png<>uid://d13076p22nhfh::::res://assets/ui/item_slot_default_background.png<>uid://lg8ennmnq7vn::::res://scenes/ui/inventory_slot.gd<>uid://ceilhgv74stw3::::res://scenes/ui/inventory_item.gd
 inventory_item.gd::GDScript::5070792500522986356::1763957425::0::1::::<>Node2D<><>0<>0<><>::
@@ -352,21 +352,21 @@ tools_panel.tscn::PackedScene::566232413439485211::1763593306::0::1::::<><><>0<>
 game_input_event.gd::GDScript::7323712106281106288::1763334665::0::1::::GameInputEvents<>RefCounted<><>0<>0<><>::
 help.txt::TextFile::-1::1764218791::0::1::::<><><>0<>0<><>::
 ZoneData.gd::GDScript::5409161133316838825::1764135095::0::1::::<>Resource<><>0<>0<><>::
-::res://scripts/globals/::1764219613
+::res://scripts/globals/::1764263961
 data_types.gd::GDScript::4170577919018042605::1763482473::0::1::::DataTypes<>RefCounted<><>0<>0<><>::
 day_and_night_cycle_manager.gd::GDScript::684559007732322680::1764219613::0::1::::<>Node<><>0<>0<><>::
 game_dialogue_manager.gd::GDScript::6892134012561956391::1763608701::0::1::::<>Node<><>0<>0<><>::
 game_manager.gd::GDScript::4037987226221951533::1763618944::0::1::::<>Node<><>0<>0<><>::
 inventory_manager.gd::GDScript::1247852292753083504::1763704091::0::1::::<>Node<><>0<>0<><>::
 json_data_manager.gd::GDScript::401699560313027409::1763699292::0::1::::<>Node<><>0<>0<><>::
-npc_simulation_manager.gd::GDScript::2332105331156520165::1764217430::0::1::::<>Node<><>0<>0<><>::
+npc_simulation_manager.gd::GDScript::2332105331156520165::1764263961::0::1::::<>Node<><>0<>0<><>::
 npc_type_registry.gd::GDScript::7386767881742969998::1764218376::0::1::::<>Node<><>0<>0<><>::
 save_game_manager.gd::GDScript::7370899906734172015::1763618967::0::1::::<>Node<><>0<>0<><>::
 scene_manager.gd::GDScript::1786552992295145747::1763617263::0::1::::<>Node<><>0<>0<><>::
 tool_manager.gd::GDScript::2452089405846764416::1763593022::0::1::::<>Node<><>0<>0<><>::
 zone_manager.gd::GDScript::497457827633160059::1764135162::0::1::::<>Node<><>0<>0<><>::
-::res://scripts/npc/::1764221947
-debug_scene.gd::GDScript::6156342195192901629::1764221947::0::1::::<>Node2D<><>0<>0<><>::
+::res://scripts/npc/::1764264180
+debug_scene.gd::GDScript::6156342195192901629::1764264180::0::1::::<>Node2D<><>0<>0<><>::
 npc_scheduler.gd::GDScript::6146349263521723980::1764183778::0::1::::ScheduledNPC<>CharacterBody2D<><>0<>0<><>::
 npc_set_routine.gd::GDScript::1562146421347058251::1763959849::0::1::::NPC<>CharacterBody2D<><>0<>0<><>::
 ::res://scripts/npc/custom_npcs/::1764217261
@@ -381,6 +381,6 @@ zone_auto_register.gd::GDScript::4601011753616946401::1764222206::0::1::::ZoneAu
 ::res://scripts/state_machine/::1763421594
 node_state.gd::GDScript::1341854970550851869::1763331193::0::1::::NodeState<>Node<><>0<>0<><>::
 node_state_machine.gd::GDScript::1372669735584271248::1763421594::0::1::::NodeStateMachine<>Node<><>0<>0<><>::
-::res://tilesets/::1764175187
-game_tile_set.tres::TileSet::7300645330588873664::1764175187::0::1::::<><><>0<>0<><>::uid://chnvtwwtkgskb::::res://assets/game/tilesets/Water.png<>uid://c6p4eggyakn24::::res://assets/game/tilesets/Grass.png<>uid://bmnsmsgjcskj3::::res://assets/game/tilesets/Tilled_Dirt_Wide.png<>uid://o2nrs4lxpydc::::res://assets/game/objects/Basic_Grass_Biom_things.png<>uid://dbbthp3ec1lx2::::res://scenes/houses/large_house.tscn<>uid://by7wpshfrsp7r::::res://scenes/objects/tree/small_tree.tscn<>uid://cskjosvicxbqf::::res://scenes/objects/rocks/small_rock.tscn<>uid://cjfmxgur8vbpv::::res://assets/game/tilesets/Fences.png<>uid://l3jmp644glc4::::res://assets/game/tilesets/tilled_dirt_wide_crop_field.png
-large_house_tile_set.tres::TileSet::92365585598355144::1764175187::0::1::::<><><>0<>0<><>::uid://bvigbp0ldbigu::::res://assets/game/tilesets/Wooden_House_Walls_Tilset.png<>uid://byyu1wy148ou::::res://assets/game/objects/Basic Furniture.png<>uid://b8rmgeoryatiu::::res://scenes/houses/door.tscn
+::res://tilesets/::1764261726
+game_tile_set.tres::TileSet::7300645330588873664::1764261726::0::1::::<><><>0<>0<><>::uid://chnvtwwtkgskb::::res://assets/game/tilesets/Water.png<>uid://c6p4eggyakn24::::res://assets/game/tilesets/Grass.png<>uid://bmnsmsgjcskj3::::res://assets/game/tilesets/Tilled_Dirt_Wide.png<>uid://o2nrs4lxpydc::::res://assets/game/objects/Basic_Grass_Biom_things.png<>uid://dbbthp3ec1lx2::::res://scenes/houses/large_house.tscn<>uid://by7wpshfrsp7r::::res://scenes/objects/tree/small_tree.tscn<>uid://cskjosvicxbqf::::res://scenes/objects/rocks/small_rock.tscn<>uid://cjfmxgur8vbpv::::res://assets/game/tilesets/Fences.png<>uid://l3jmp644glc4::::res://assets/game/tilesets/tilled_dirt_wide_crop_field.png
+large_house_tile_set.tres::TileSet::92365585598355144::1764261726::0::1::::<><><>0<>0<><>::uid://bvigbp0ldbigu::::res://assets/game/tilesets/Wooden_House_Walls_Tilset.png<>uid://byyu1wy148ou::::res://assets/game/objects/Basic Furniture.png<>uid://b8rmgeoryatiu::::res://scenes/houses/door.tscn
