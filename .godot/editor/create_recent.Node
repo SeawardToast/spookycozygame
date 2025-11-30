@@ -1,8 +1,8 @@
 Area2D
-AnimatedSprite2D
 Sprite2D
-Line2D
 Node2D
+AnimatedSprite2D
+Line2D
 Label
 CollisionShape2D
 NavigationAgent2D
@@ -12,4 +12,3 @@ NavigationLink2D
 TileMapLayer
 Polygon2D
 TileMap
-CollisionPolygon2D

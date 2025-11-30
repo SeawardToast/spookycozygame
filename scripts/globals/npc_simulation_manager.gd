@@ -34,10 +34,10 @@ class NPCSimulationState:
 	var npc_instance: Node # Optional reference to actual NPC if spawned
 	var behavior_data: Dictionary # Store custom data for this NPC
 	
-	func update_floor_from_position():
-		"""Automatically determine current floor from position"""
-		current_floor = FloorManager.get_floor_from_position(current_position)
-
+	func update_floor(floor_number: int):
+		"""Manually set the NPC's current floor"""
+		current_floor = floor_number
+		
 	func update_target_floor_from_zone(zone_id: int):
 		"""Look up which floor the target zone is on"""
 		target_floor = ZoneManager.get_zone_floor(zone_id)
@@ -98,8 +98,6 @@ func spawn_npc(npc_type: String, spawn_position: Vector2 = Vector2.ZERO) -> Stri
 	
 	return npc_id
 	
-
-
 
 # Despawn an NPC (remove from simulation)
 func despawn_npc(npc_id: String) -> void:
@@ -250,7 +248,7 @@ func _process(delta: float) -> void:
 			if elapsed >= state.travel_duration:
 				state.current_position = state.target_position
 				state.is_traveling = false
-				state.update_floor_from_position()  # Update floor after arrival
+				#state.update()  # Update floor after arrival
 				_zone_arrival(state)
 			else:
 				var progress = elapsed / state.travel_duration
@@ -258,7 +256,7 @@ func _process(delta: float) -> void:
 				
 				# Continuously update floor during travel (for floor transitions)
 				var old_floor = state.current_floor
-				state.update_floor_from_position()
+				#state.update_floor_from_position()
 				
 				# Detect when NPC changes floors mid-travel
 				if old_floor != state.current_floor:

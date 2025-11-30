@@ -2,9 +2,10 @@ extends Area2D
 class_name ZoneAutoRegister
 
 @export var zone_name: String = ""
+@export var zone_floor: int = 1
 @export var zone_type: String = ""   # e.g. "bedroom", "kitchen", "spa"
 @export var color: Color = Color.YELLOW  # optional, if your ZoneData uses it
-
+@export var id: int = 1
 var zone_data: Resource
 
 func _ready() -> void:
@@ -29,8 +30,10 @@ func _ready() -> void:
 	# --- Create ZoneData resource ---
 	zone_data = load("res://scripts/ZoneData.gd").new()
 	zone_data.name = zone_name
+	zone_data.id = id
 	zone_data.type = zone_type
 	zone_data.color = color
+	zone_data.floor = zone_floor
 	zone_data.polygon = collision_poly.polygon
 	zone_data.position = collision_poly.polygon[0]
 
@@ -41,5 +44,5 @@ func _ready() -> void:
 
 func _exit_tree() -> void:
 	if zone_data and ZoneManager:
-		ZoneManager.remove_zone(zone_data)
+		ZoneManager.unregister_zone(id)
 		print("❎ Unregistered zone:", zone_name)
