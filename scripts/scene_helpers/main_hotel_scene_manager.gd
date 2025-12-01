@@ -27,6 +27,9 @@ func _ready():
 	# Load and activate starting floor
 	change_floor(starting_floor, true)
 	
+	# Load remaining floors
+	load_floor(2, true)
+	
 	# Spawn some initial guests
 	call_deferred("_spawn_initial_guests")
 
@@ -67,6 +70,16 @@ func change_floor(new_floor: int, initializing = false):
 	# Position camera/player for new floor (if needed)
 	# In 2D, floors are at same position, just different scenes shown
 	print("MainScene: Now on floor %d" % new_floor)
+	
+func load_floor(floor: int, initializing = false):
+	"""Change to a different floor"""
+	if floor not in FloorManager.get_all_floors():
+		push_warning("Floor %d does not exist" % floor)
+		return
+	
+	# Set the new active floor (loads if needed, shows it)
+	FloorManager.load_floor(floor)
+
 
 func _process(delta: float):
 	_update_visible_npcs()
@@ -136,6 +149,7 @@ func spawn_guest_on_current_floor(npc_type: String = "") -> String:
 
 # Signal handlers
 func _on_floor_changed(old_floor: int, new_floor: int):
+	current_player_floor = new_floor
 	print("MainScene: Floor changed %d -> %d" % [old_floor, new_floor])
 
 func _on_floor_loaded(floor_number: int):

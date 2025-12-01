@@ -45,11 +45,14 @@ func _setup_hotel_floors():
 	
 	print("FloorManager: Initialized with %d floors" % floors.size())
 
-func register_floor(floor_number: int, scene_path: String = ""):
+func register_floor(floor_number: int, scene_path: String = "", autoload: bool = true):
 	"""Register a floor with its scene path"""
 	var floor_data = FloorData.new(floor_number, scene_path)
 	floors[floor_number] = floor_data
 	print("FloorManager: Registered floor %d -> %s" % [floor_number, scene_path])
+	if autoload:
+		print("Autoloading floor %d" % [floor_number])
+		load_floor(floor_number)
 
 func set_main_container(container: Node2D):
 	"""Set the main scene container where floors will be added"""
@@ -114,16 +117,6 @@ func unload_floor(floor_number: int):
 	
 	print("FloorManager: Unloading floor %d" % floor_number)
 	
-	# Unregister all zones from ZoneManager
-	for zone_id in floor_data.zones:
-		ZoneManager.unregister_zone(zone_id)
-	floor_data.zones.clear()
-	
-	# Remove from scene tree and free
-	#if floor_data.floor_node:
-		#floor_data.floor_node.queue_free()
-		#floor_data.floor_node = null
-	
 	floor_data.is_loaded = false
 	
 	emit_signal("floor_unloaded", floor_number)
@@ -163,38 +156,6 @@ func set_active_floor(floor_number: int, initializing: bool = false):
 	
 	emit_signal("floor_changed", old_floor, floor_number)
 	print("FloorManager: Active floor changed: %d -> %d" % [old_floor, floor_number])
-
-#func _register_floor_zones(floor_data: FloorData):
-	#"""Find and register all zones in a floor scene with ZoneManager"""
-	#if not floor_data.floor_node:
-		#return
-	#
-	#var zones_container = floor_data.floor_node.get_node_or_null("Zones")
-	#if not zones_container:
-		#push_warning("FloorManager: No 'Zones' container found in floor %d scene" % floor_data.floor_number)
-		#return
-	#
-	#var zone_count = 0
-	#for child in zones_container.get_children():
-		#if child is Area2D:
-			## Zone type is the node name (e.g., "Kitchen", "Bedroom_201")
-			#var zone_type = child.name
-			#var zone_position = child.global_position
-			#
-			#var zone_id = ZoneManager.register_zone(
-				#zone_type,
-				#floor_data.floor_number,
-				#zone_position,
-				#child
-			#)
-			#
-			#if zone_id != -1:
-				#floor_data.zones.append(zone_id)
-				#zone_count += 1
-				#print("FloorManager: Registered zone '%s' (ID: %d) on floor %d" % 
-					#[zone_type, zone_id, floor_data.floor_number])
-	#
-	#print("FloorManager: Registered %d zones for floor %d" % [zone_count, floor_data.floor_number])
 
 func _create_fallback_floor(floor_number: int) -> Node2D:
 	"""Create a basic fallback floor if scene doesn't exist"""

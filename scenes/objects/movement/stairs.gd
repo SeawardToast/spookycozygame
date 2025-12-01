@@ -1,9 +1,13 @@
 extends Area2D
 
 @export var direction: String = "up" # "up" or "down"
+@export var floor: int = 1 # "up" or "down"
 @export var floor_change_delay: float = 0.2 # Optional delay to avoid multiple triggers
 
 var _can_use: bool = true
+
+func _ready() -> void:
+	add_to_group("stairs")
 
 func _on_body_entered(body: Node2D) -> void:
 	if not _can_use:

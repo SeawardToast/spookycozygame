@@ -13,37 +13,11 @@ metadata/_edit_group_ = true
 
 [node name="Kitchen" type="Area2D" parent="Zones" groups=["zones"]]
 script = ExtResource("2_2d04r")
-zone_name = "Kitchen"
-zone_floor = 2
-zone_type = "Kitchen"
-
-[node name="CollisionPolygon2D" type="CollisionPolygon2D" parent="Zones/Kitchen"]
-polygon = PackedVector2Array(167, 160, 327, 165, 325, 232, 172, 223)
-
-[node name="Kitchen2" type="Area2D" parent="Zones" groups=["zones"]]
-script = ExtResource("2_2d04r")
-zone_name = "Kitchen"
-zone_floor = 2
-zone_type = "Kitchen"
-
-[node name="CollisionPolygon2D" type="CollisionPolygon2D" parent="Zones/Kitchen2"]
-polygon = PackedVector2Array(435, 326, 595, 331, 593, 398, 440, 389)
-
-[node name="HauntZone" type="Area2D" parent="Zones" groups=["zones"]]
-script = ExtResource("2_2d04r")
 zone_name = "Haunt"
 zone_type = "Haunt"
 
-[node name="CollisionPolygon2D" type="CollisionPolygon2D" parent="Zones/HauntZone"]
-polygon = PackedVector2Array(350, 326, 510, 331, 508, 398, 355, 389)
-
-[node name="SleepZone" type="Area2D" parent="Zones" groups=["zones"]]
-script = ExtResource("2_2d04r")
-zone_name = "Sleep"
-zone_type = "Sleep"
-
-[node name="CollisionPolygon2D" type="CollisionPolygon2D" parent="Zones/SleepZone"]
-polygon = PackedVector2Array(583, 176, 743, 181, 741, 248, 588, 239)
+[node name="CollisionPolygon2D" type="CollisionPolygon2D" parent="Zones/Kitchen"]
+polygon = PackedVector2Array(167, 160, 327, 165, 325, 232, 172, 223)
 
 [node name="Stairs" parent="." instance=ExtResource("2_sv8ea")]
 position = Vector2(233, 215)

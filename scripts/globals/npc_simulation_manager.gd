@@ -20,6 +20,7 @@ class NPCSimulationState:
 	var current_floor: int = 1
 	var target_floor: int = 1
 	var is_changing_floors: bool = false
+	var direction_changing_floors: String = ""
 	var current_position: Vector2
 	var target_position: Vector2
 	var speed: float
@@ -169,16 +170,34 @@ func _check_schedule(state: NPCSimulationState, current_minute: int) -> void:
 		var end_minute = entry.get("end_minute", 0)
 		
 		if current_minute >= start_minute and current_minute < end_minute:
+
+			if state.is_traveling:
+				return
+				
 			if state.active_schedule_entry == entry:
 				return
 			
-			state.active_schedule_entry = entry
 			var zone_name = entry.get("zone", "")
 			var actions = entry.get("actions", [])
-			
+			print("gotta go to zoneee", zone_name)
+			print("active schedule entry", state.active_schedule_entry)
+			print("entry", entry)
+
 			if zone_name != "":
-				_start_travel_to_zone(state, zone_name, actions, entry)
+				# is our target zone on a different floor? if so, walk to the stairs
+				var closest_zone_id_of_type = ZoneManager.get_closest_zone_of_type_from_position(zone_name, state.current_position)
+				var zone: ZoneData = ZoneManager.get_zone_data(closest_zone_id_of_type)
+				var target_floor = zone.floor
+				var direction = "up" if target_floor > state.current_floor else "down"
+				# If the NPC is not on the same floor as the zone, walk to the staircase that it would logically take
+				if target_floor != state.current_floor:
+					state.target_floor = target_floor
+					_start_travel_to_staircase(state, state.current_floor, direction)
+				else:
+					_start_travel_to_zone(state, zone_name, actions, entry)
+
 			elif actions:
+				state.active_schedule_entry = entry
 				_attempt_actions(state, actions)
 				state.completed_schedule_entries.append(entry)
 				state.active_schedule_entry = {}
@@ -235,21 +254,66 @@ func _start_travel_to_zone(state: NPCSimulationState, zone_name: String, actions
 	print("From: Floor %d (%s) To: Floor %d (%s)" % 
 		[state.current_floor, state.current_position, target_floor, target_point])
 		
+		
+# Enhanced _start_travel_to_zone with floor lookup:
+func _start_travel_to_staircase(state: NPCSimulationState, current_floor: int, direction: String):
+	# Look up the stairs on the current floor for the target direction 
+	# Fetch all nodes in a group
+	var stairs = get_tree().get_nodes_in_group("stairs")
+	var target_stairset
+	state.direction_changing_floors = direction
+	# Iterate through them
+	for stairset in stairs:
+		print("Stairset floor:", stairset.floor)
+		if stairset.direction == direction and stairset.floor == current_floor:
+			target_stairset = stairset
+	
+	if target_stairset.position == Vector2.ZERO:
+		push_warning("Position not found for stairset on floor %s when attempting to path NPC" % [target_stairset.floor])
+		state.active_schedule_entry = {}
+		return
+	
+	# If changing floors, log it
+	state.is_changing_floors = true
+	var target_point = target_stairset.position
+	
+	# Calculate travel duration
+	var distance = state.current_position.distance_to(target_point)
+	state.travel_duration = distance / state.speed
+	state.travel_start_time = Time.get_ticks_msec() / 1000.0
+	state.target_position = target_point
+	state.is_traveling = true
+	
+	emit_signal("npc_started_traveling", state.npc_id, state.current_position, target_point,"Staircase %s" % [target_stairset.floor])
+	
+	print("=== SIMULATION: %s traveling to %s ===" % [state.npc_name, "Staircase %s" % [target_stairset.floor]])
+
+		
 # Update simulation (called every frame)
 func _process(delta: float) -> void:
 	var current_time = Time.get_ticks_msec() / 1000.0
 	
 	for npc_id in simulated_npcs:
 		var state = simulated_npcs[npc_id]
-		
 		if state.is_traveling:
 			var elapsed = current_time - state.travel_start_time
 			
 			if elapsed >= state.travel_duration:
 				state.current_position = state.target_position
 				state.is_traveling = false
-				#state.update()  # Update floor after arrival
-				_zone_arrival(state)
+				
+				# did we arrive at a staircase, do we need to take a direciton action
+				if state.is_changing_floors:
+					state.is_changing_floors = false
+					if state.direction_changing_floors == "up":
+						print("NPC current floor updating")
+						state.current_floor += 1
+					elif state.direction_changing_floors == "down":
+						print("NPC current floor updating")
+						state.current_floor -= 1
+				else:
+					print("running zone arrival")
+					_zone_arrival(state)
 			else:
 				var progress = elapsed / state.travel_duration
 				state.current_position = state.current_position.lerp(state.target_position, progress * delta * 60.0)
@@ -275,6 +339,11 @@ func _zone_arrival(state: NPCSimulationState) -> void:
 
 	state.current_target_zone_name = ""
 	state.current_actions = []
+	
+# Staircase arrival handler
+func _staircase_arrival(state: NPCSimulationState) -> void:
+	print("SIMULATION: %s arrived at floor %s" % [state.npc_name, state.target_floor])
+	emit_signal("npc_arrived_at_zone", state.npc_id, state.target_floor, state.current_position)
 
 # Attempt actions
 func _attempt_actions(state: NPCSimulationState, actions: Array = []):
