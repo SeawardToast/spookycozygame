@@ -157,11 +157,16 @@ func get_npc_count_by_type(npc_type: String) -> int:
 # Time tick handler
 func _on_time_tick(day: int, hour: int, minute: int) -> void:
 	var total_minute = hour * 60 + minute
+	print("total minutes", total_minute)
 	for npc_id in simulated_npcs:
 		_check_schedule(simulated_npcs[npc_id], total_minute)
 
 # Check schedule for a specific NPC
 func _check_schedule(state: NPCSimulationState, current_minute: int) -> void:
+	# have we completed all of our entries? if yes, reset them	
+	if state.completed_schedule_entries == state.daily_schedule:
+		print("resetting daily schedule, all entries completed")
+		state.completed_schedule_entries = []
 	for entry in state.daily_schedule:
 		if entry in state.completed_schedule_entries:
 			continue
@@ -182,6 +187,7 @@ func _check_schedule(state: NPCSimulationState, current_minute: int) -> void:
 			print("gotta go to zoneee", zone_name)
 			print("active schedule entry", state.active_schedule_entry)
 			print("entry", entry)
+			print("completed schedule entries", state.completed_schedule_entries)
 
 			if zone_name != "":
 				# is our target zone on a different floor? if so, walk to the stairs
@@ -195,17 +201,11 @@ func _check_schedule(state: NPCSimulationState, current_minute: int) -> void:
 					_start_travel_to_staircase(state, state.current_floor, direction)
 				else:
 					_start_travel_to_zone(state, zone_name, actions, entry)
-
-			elif actions:
-				state.active_schedule_entry = entry
-				_attempt_actions(state, actions)
+		
+		if current_minute >= end_minute:
+			if state.active_schedule_entry == entry:
 				state.completed_schedule_entries.append(entry)
 				state.active_schedule_entry = {}
-			return
-		
-		if current_minute >= end_minute and state.active_schedule_entry == entry:
-			state.completed_schedule_entries.append(entry)
-			state.active_schedule_entry = {}
 
 # Enhanced _start_travel_to_zone with floor lookup:
 func _start_travel_to_zone(state: NPCSimulationState, zone_name: String, actions: Array, entry: Dictionary):
@@ -247,7 +247,7 @@ func _start_travel_to_zone(state: NPCSimulationState, zone_name: String, actions
 	state.current_target_zone_name = zone_name
 	state.current_actions = actions
 	state.is_traveling = true
-	
+	state.active_schedule_entry = entry
 	emit_signal("npc_started_traveling", state.npc_id, state.current_position, target_point, zone_name)
 	
 	print("=== SIMULATION: %s traveling to %s ===" % [state.npc_name, zone_name])
