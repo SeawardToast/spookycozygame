@@ -3,63 +3,62 @@ extends RefCounted
 class_name Werewolf
 
 var npc_id: String = ""
-var npc_name: String = "Wolfgang"
-var start_position: Vector2 = Vector2(200, 100)
+var npc_name: String = "Howling Wolf"
+var start_position: Vector2 = Vector2(300, 300)
 var speed: float = 150.0
 
-var sprite_texture: String = "res://sprites/werewolf.png"
-var sprite_animation: String = "werewolf_idle"
+var moon_phase: float = 0.5  # 0 = new moon, 1 = full moon
+var rage: int = 0
 
-var is_full_moon: bool = false
-var wildness: int = 50
-var pack_loyalty: int = 80
-
-func _init():
-	var werewolf_names = ["Wolfgang", "Luna", "Fang", "Howler", "Moonpaw", "Silverfur"]
-	npc_name = werewolf_names[randi() % werewolf_names.size()]
+func get_schedule() -> Array[ScheduleEntry]:
+	var schedule: Array[ScheduleEntry] = []
 	
-	speed = randf_range(130.0, 170.0) # Werewolves are fast!
-	wildness = randi_range(30, 70)
+	# Morning patrol
+	var patrol = ScheduleEntry.create("morning_patrol", 360, 540, "Forest")
+	patrol.add_action(NPCAction.create("patrol", "Patrol Territory", patrol_territory))
+	patrol.add_action(NPCAction.create("mark", "Mark Territory", mark_territory))
+	schedule.append(patrol)
 	
-	# Check if it's full moon (simplified)
-	is_full_moon = randi() % 30 == 0
+	# Evening hunting
+	var hunt = ScheduleEntry.create("evening_hunt", 1080, 1200, "Forest")
+	hunt.add_action(NPCAction.create("hunt", "Hunt for Food", hunt_for_food))
+	hunt.priority = 10  # Very important
+	schedule.append(hunt)
+	
+	# Full moon transformation (conditional)
+	if moon_phase > 0.8:
+		var transform = ScheduleEntry.create("transformation", 0, 60, "Courtyard")
+		transform.add_action(NPCAction.create("howl", "Howl at Moon", howl_at_moon))
+		transform.add_action(NPCAction.create("rampage", "Rampage", rampage))
+		transform.priority = 100  # Highest priority
+		schedule.append(transform)
+	
+	return schedule
 
-func get_schedule() -> Array:
-	# Schedule changes based on moon phase
-	if is_full_moon:
-		return [
-			{"start_minute": 1200, "end_minute": 1440, "zone": "Courtyard", "actions": [Callable(self, "howl_at_moon")]},
-			{"start_minute": 0, "end_minute": 300, "zone": "Forest", "actions": [Callable(self, "hunt")]}
-		]
+func patrol_territory() -> Dictionary:
+	print("%s is patrolling the forest" % npc_name)
+	return {"success": true, "area_covered": "50%"}
+
+func mark_territory() -> bool:
+	print("%s marked territory" % npc_name)
+	return true
+
+func hunt_for_food() -> Array:
+	var success = randf() > 0.3
+	if success:
+		print("%s caught prey!" % npc_name)
+		rage = max(0, rage - 20)
 	else:
-		return [
-			{"start_minute": 420, "end_minute": 600, "zone": "Kitchen", "actions": [Callable(self, "eat_meat")]},
-			{"start_minute": 720, "end_minute": 900, "zone": "Gym", "actions": [Callable(self, "exercise")]},
-			{"start_minute": 1320, "end_minute": 1440, "zone": "Sleep", "actions": [Callable(self, "sleep")]}
-		]
+		print("%s hunting failed" % npc_name)
+		rage += 10
+	return [success, "No prey found" if not success else ""]
 
-func eat_meat():
-	print("%s is devouring meat..." % npc_name)
-	wildness = max(0, wildness - 10)
-	return [true, ""]
+func howl_at_moon() -> bool:
+	print("%s howls at the full moon! AWOOOO!" % npc_name)
+	rage = 100
+	return true
 
-func exercise():
-	print("%s is working out at the gym..." % npc_name)
-	wildness = max(0, wildness - 5)
-	return [true, ""]
-
-func sleep():
-	if wildness > 80:
-		return [false, "too wild to sleep"]
-	print("%s is sleeping peacefully..." % npc_name)
-	return [true, ""]
-
-func howl_at_moon():
-	print("%s is HOWLING at the full moon! AROOOOO!" % npc_name)
-	wildness = min(100, wildness + 20)
-	return [true, ""]
-
-func hunt():
-	print("%s is hunting in the forest..." % npc_name)
-	wildness = max(0, wildness - 30)
-	return [true, ""]
+func rampage() -> Dictionary:
+	print("%s is in a rampage!" % npc_name)
+	rage = max(0, rage - 50)
+	return {"success": true, "damage_done": rage}

@@ -12,7 +12,6 @@ func _ready():
 # Register all default NPC types
 func _register_default_types():
 	register_type("ghost", Ghost)
-	register_type("vampire", Vampire)
 	register_type("werewolf", Werewolf)
 	# Add more types here as you create them
 

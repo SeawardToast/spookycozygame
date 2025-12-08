@@ -9,3 +9,17 @@ res://scripts/globals/npc_simulation_manager.gd
 res://scripts/npc/npc_state_machine.gd
 res://scenes/test/report_board/test_scene_report_board.tscn
 res://scripts/scene_helpers/main_hotel_scene_manager.gd
+res://scripts/npc/npc_action.gd
+res://scripts/npc/npc_navigation.gd
+res://scripts/npc/schedule_entry.gd
+res://scripts/npc/custom_npcs/ghost/ghost_definition.gd
+res://scripts/npc/npc_state.gd
+res://assets/game/characters/sprites/ghost.tres
+res://scripts/npc/custom_npcs/vampire/vampire_definition.gd
+res://scripts/npc/custom_npcs/werewolf/werewolf_definition.gd
+res://scenes/characters/base_npc/visual_npc.gd
+res://scripts/npc/visual_npc_spawner.gd
+res://scripts/globals/npc_type_registry.gd
+res://scenes/floors/Floor1.tscn
+res://scripts/globals/zone_manager.gd
+res://scenes/characters/base_npc/visual_npc.tscn

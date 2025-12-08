@@ -21,7 +21,7 @@ target_desired_distance = 5.0
 path_max_distance = 10.0
 navigation_layers = 4
 avoidance_enabled = true
-radius = 16.0
+radius = 15.0
 debug_enabled = true
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="."]

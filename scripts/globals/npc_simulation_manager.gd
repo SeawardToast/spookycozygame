@@ -1,76 +1,94 @@
-# NPCSimulationManager.gd (Refactored)
+# NPCSimulationManager.gd
+# Refactored with clean architecture
 extends Node
 
 var simulated_npcs: Dictionary = {}
 var npc_id_counter: int = 0
 
-signal npc_arrived_at_zone(npc_id: String, zone_name: String, position: Vector2)
-signal npc_action_attempted(npc_id: String, action_name: String)
-signal npc_action_failed(npc_id: String, action_name: String, reason: String)
-signal npc_started_traveling(npc_id: String, from_pos: Vector2, to_pos: Vector2, zone_name: String)
 signal npc_spawned(npc_id: String, npc_type: String, position: Vector2)
 signal npc_despawned(npc_id: String)
 signal npc_state_changed(npc_id: String, old_state: int, new_state: int)
+signal npc_arrived_at_zone(npc_id: String, zone_name: String, position: Vector2)
+signal npc_waypoint_reached(npc_id: String, waypoint_type: String, position: Vector2)
+signal npc_action_attempted(npc_id: String, action: NPCAction, success: bool)
+signal npc_started_traveling(npc_id: String, from_pos: Vector2, to_pos: Vector2, destination: String)
 
+## NPC Simulation State - Clean version
 class NPCSimulationState:
 	var npc_id: String
 	var npc_type: String
 	var npc_name: String
+	
+	# Position & Movement
 	var current_floor: int = 1
-	var target_floor: int = 1
 	var current_position: Vector2
 	var target_position: Vector2
 	var speed: float
-	var daily_schedule: Array
-	var completed_schedule_entries: Array
-	var active_schedule_entry: Dictionary
-	var current_target_zone_name: String
-	var current_actions: Array
-	var is_traveling: bool
-	var is_changing_floors: bool
-	var direction_changing_floors: String
-	var travel_start_time: float
-	var travel_duration: float
-	var npc_instance: Node
-	var behavior_data: Dictionary
 	
-	# State machine
-	var state_machine: NPCStateMachine
+	# State Machine (simplified)
+	var state: NPCState
+	var navigation: NPCNavigation
 	
-	func update_floor(floor_number: int):
-		"""Manually set the NPC's current floor"""
-		current_floor = floor_number
+	# Schedule
+	var schedule: Array[ScheduleEntry] = []
+	var active_entry: ScheduleEntry = null
+	var current_action_index: int = 0
 	
-	func _init(id: String, type: String, name: String, start_pos: Vector2, spd: float, schedule: Array):
+	# Travel tracking
+	var travel_start_time: float = 0.0
+	var travel_duration: float = 0.0
+	
+	# Optional visual instance
+	var npc_instance: Node = null
+	
+	# Custom behavior data
+	var behavior_data: Dictionary = {}
+	
+	func _init(id: String, type: String, name: String, pos: Vector2, spd: float):
 		npc_id = id
 		npc_type = type
 		npc_name = name
-		current_position = start_pos
-		target_position = start_pos
+		current_position = pos
+		target_position = pos
 		speed = spd
-		daily_schedule = schedule
-		completed_schedule_entries = []
-		active_schedule_entry = {}
-		current_target_zone_name = ""
-		current_actions = []
-		is_traveling = false
-		is_changing_floors = false
-		direction_changing_floors = ""
-		travel_start_time = 0.0
-		travel_duration = 0.0
-		npc_instance = null
-		behavior_data = {}
-		
-		# Initialize state machine
-		state_machine = NPCStateMachine.new(self)
+		state = NPCState.new()
+		navigation = NPCNavigation.new(self)
+	
+	func is_idle() -> bool:
+		return state.type == NPCState.Type.IDLE
+	
+	func is_busy() -> bool:
+		return state.is_busy()
+	
+	func debug_info() -> String:
+		return """
+		NPC: %s (%s)
+		State: %s
+		Floor: %d
+		Position: %s
+		Schedule Entry: %s
+		Actions: %d/%d
+		Navigation: %s
+		""" % [
+			npc_name, npc_id,
+			state.get_name(),
+			current_floor,
+			current_position,
+			active_entry.id if active_entry else "None",
+			current_action_index,
+			active_entry.actions.size() if active_entry else 0,
+			navigation.to_string()
+		]
 
 func _ready():
-	DayAndNightCycleManager.time_tick.connect(_on_time_tick)
+	if DayAndNightCycleManager:
+		DayAndNightCycleManager.time_tick.connect(_on_time_tick)
 
 func _generate_npc_id(npc_type: String) -> String:
 	npc_id_counter += 1
 	return "%s_%d" % [npc_type, npc_id_counter]
 
+## Spawn an NPC using the type registry
 func spawn_npc(npc_type: String, spawn_position: Vector2 = Vector2.ZERO) -> String:
 	var npc_definition = NPCTypeRegistry.create_npc_definition(npc_type)
 	if npc_definition == null:
@@ -78,25 +96,64 @@ func spawn_npc(npc_type: String, spawn_position: Vector2 = Vector2.ZERO) -> Stri
 		return ""
 	
 	var npc_id = _generate_npc_id(npc_type)
-	npc_definition.npc_id = npc_id
-		
 	var start_pos = spawn_position if spawn_position != Vector2.ZERO else npc_definition.start_position
 	
-	register_npc(
+	# Create simulation state
+	var state = NPCSimulationState.new(
 		npc_id,
 		npc_type,
 		npc_definition.npc_name,
 		start_pos,
-		npc_definition.speed,
-		npc_definition.get_schedule(),
-		npc_definition
+		npc_definition.speed
 	)
 	
-	emit_signal("npc_spawned", npc_id, npc_type, start_pos)
-	print("Spawned NPC: %s (%s) at %s" % [npc_definition.npc_name, npc_type, start_pos])
+	# Store definition reference
+	state.behavior_data["definition"] = npc_definition
 	
+	# Convert old schedule format to new format
+	state.schedule = _convert_schedule(npc_definition.get_schedule(), npc_definition)
+	
+	# Connect state change signal
+	state.state.state_changed.connect(
+		func(old_state, new_state):
+			_on_npc_state_changed(npc_id, old_state, new_state)
+	)
+	
+	simulated_npcs[npc_id] = state
+	emit_signal("npc_spawned", npc_id, npc_type, start_pos)
+	
+	print("Spawned NPC: %s (%s) at %s" % [state.npc_name, npc_type, start_pos])
 	return npc_id
 
+## Convert old schedule format to new ScheduleEntry format
+func _convert_schedule(old_schedule: Array, definition) -> Array[ScheduleEntry]:
+	var new_schedule: Array[ScheduleEntry] = []
+	var entry_counter = 0
+	
+	for old_entry in old_schedule:
+		var start_min = old_entry.get("start_minute", 0)
+		var end_min = old_entry.get("end_minute", 0)
+		var zone = old_entry.get("zone", "")
+		var old_actions = old_entry.get("actions", [])
+		
+		# Create new schedule entry
+		var entry_id = "%s_entry_%d" % [definition.npc_name.to_lower().replace(" ", "_"), entry_counter]
+		var entry = ScheduleEntry.create(entry_id, start_min, end_min, zone)
+		
+		# Convert callables to NPCActions
+		for action_callable in old_actions:
+			if action_callable is Callable:
+				var method_name = action_callable.get_method()
+				var action_id = "%s_%s" % [entry_id, method_name]
+				var action = NPCAction.create(action_id, method_name, action_callable)
+				entry.add_action(action)
+		
+		new_schedule.append(entry)
+		entry_counter += 1
+	
+	return new_schedule
+
+## Despawn an NPC
 func despawn_npc(npc_id: String) -> void:
 	var state = simulated_npcs.get(npc_id)
 	if state == null:
@@ -109,35 +166,15 @@ func despawn_npc(npc_id: String) -> void:
 	emit_signal("npc_despawned", npc_id)
 	print("Despawned NPC: %s" % npc_id)
 
-func register_npc(npc_id: String, npc_type: String, npc_name: String, start_position: Vector2, speed: float, schedule: Array, definition = null) -> void:
-	var state = NPCSimulationState.new(npc_id, npc_type, npc_name, start_position, speed, schedule)
-	
-	if definition != null:
-		state.behavior_data["definition"] = definition
-	
-	# Connect state machine signals
-	state.state_machine.state_changed.connect(
-		func(old_state, new_state): 
-			_on_npc_state_changed(npc_id, old_state, new_state)
-	)
-	
-	simulated_npcs[npc_id] = state
-	print("Registered NPC for simulation: %s (%s) at %s" % [npc_name, npc_type, start_position])
-
-func _on_npc_state_changed(npc_id: String, old_state: int, new_state: int) -> void:
-	emit_signal("npc_state_changed", npc_id, old_state, new_state)
-	print("NPC %s: %s -> %s" % [
-		npc_id, 
-		NPCStateMachine.State.keys()[old_state],
-		NPCStateMachine.State.keys()[new_state]
-	])
-
+## Get NPC state
 func get_npc_state(npc_id: String) -> NPCSimulationState:
 	return simulated_npcs.get(npc_id)
 
+## Get all NPC states
 func get_all_npc_states() -> Dictionary:
 	return simulated_npcs
 
+## Get NPCs by type
 func get_npcs_by_type(npc_type: String) -> Array:
 	var npcs = []
 	for npc_id in simulated_npcs:
@@ -146,211 +183,206 @@ func get_npcs_by_type(npc_type: String) -> Array:
 			npcs.append(state)
 	return npcs
 
+## Get NPC count
 func get_npc_count() -> int:
 	return simulated_npcs.size()
 
+## Get NPC count by type
+func get_npc_count_by_type(npc_type: String) -> int:
+	return get_npcs_by_type(npc_type).size()
+
+func _on_npc_state_changed(npc_id: String, old_state: int, new_state: int) -> void:
+	emit_signal("npc_state_changed", npc_id, old_state, new_state)
+	
+	var state = get_npc_state(npc_id)
+	if state:
+		print("%s: %s -> %s" % [
+			state.npc_name,
+			NPCState.Type.keys()[old_state],
+			NPCState.Type.keys()[new_state]
+		])
+
+## Main update loop
+func _process(delta: float) -> void:
+	for npc_id in simulated_npcs:
+		var npc: NPCSimulationState = simulated_npcs[npc_id]
+		_update_npc(npc, delta)
+
+## Update individual NPC
+func _update_npc(npc: NPCSimulationState, delta: float) -> void:
+	match npc.state.type:
+		NPCState.Type.NAVIGATING:
+			_update_navigation(npc, delta)
+		
+		NPCState.Type.PERFORMING_ACTIONS:
+			_update_actions(npc, delta)
+
+## Update NPC navigation
+func _update_navigation(npc: NPCSimulationState, delta: float) -> void:
+	var current_time = Time.get_ticks_msec() / 1000.0
+	var elapsed = current_time - npc.travel_start_time
+	
+	if elapsed >= npc.travel_duration:
+		# Arrived at waypoint
+		npc.current_position = npc.target_position
+		_handle_waypoint_arrival(npc)
+	else:
+		# Update position along path
+		var progress = elapsed / npc.travel_duration
+		npc.current_position = npc.current_position.lerp(
+			npc.target_position,
+			progress * delta * 60.0
+		)
+
+## Handle arrival at a waypoint
+func _handle_waypoint_arrival(npc: NPCSimulationState) -> void:
+	var waypoint = npc.navigation.get_current_waypoint()
+	if waypoint == null:
+		return
+	
+	emit_signal("npc_waypoint_reached", npc.npc_id, waypoint.type, npc.current_position)
+	
+	# Handle floor changes
+	if waypoint.type == "stairs_up" or waypoint.type == "stairs_down":
+		var target_floor = waypoint.metadata.get("target_floor", npc.current_floor)
+		npc.current_floor = target_floor
+		print("%s changed to floor %d" % [npc.npc_name, npc.current_floor])
+	
+	# Check if more waypoints
+	if npc.navigation.advance_waypoint():
+		# More waypoints to go
+		_start_travel_to_waypoint(npc, npc.navigation.get_current_waypoint())
+	else:
+		# Reached final destination
+		var zone_name = waypoint.metadata.get("zone_name", "unknown")
+		emit_signal("npc_arrived_at_zone", npc.npc_id, zone_name, npc.current_position)
+		
+		# Start performing actions
+		npc.state.change_to(NPCState.Type.PERFORMING_ACTIONS, {
+			"zone": zone_name,
+			"position": npc.current_position
+		})
+		npc.current_action_index = 0
+
+## Start travel to a specific waypoint
+func _start_travel_to_waypoint(npc: NPCSimulationState, waypoint: NPCNavigation.NavWaypoint) -> void:
+	var distance = npc.current_position.distance_to(waypoint.position)
+	npc.travel_duration = distance / npc.speed if npc.speed > 0 else 0.1
+	npc.travel_start_time = Time.get_ticks_msec() / 1000.0
+	npc.target_position = waypoint.position
+	
+	var destination = waypoint.metadata.get("zone_name", waypoint.type)
+	emit_signal("npc_started_traveling", npc.npc_id, npc.current_position, waypoint.position, destination)
+
+## Update NPC actions
+func _update_actions(npc: NPCSimulationState, delta: float) -> void:
+	if npc.active_entry == null:
+		npc.state.change_to(NPCState.Type.IDLE)
+		return
+	
+	# Execute actions sequentially
+	if npc.current_action_index < npc.active_entry.actions.size():
+		var action = npc.active_entry.actions[npc.current_action_index]
+		var result = action.execute()
+		
+		# Emit action result
+		emit_signal("npc_action_attempted", npc.npc_id, action, result.success)
+		
+		if result.success:
+			print("%s completed: %s" % [npc.npc_name, action.display_name])
+		else:
+			print("%s failed: %s (%s)" % [npc.npc_name, action.display_name, result.reason])
+		
+		npc.current_action_index += 1
+	else:
+		# All actions complete
+		npc.active_entry.mark_complete()
+		npc.active_entry = null
+		npc.current_action_index = 0
+		npc.state.change_to(NPCState.Type.IDLE)
+
+## Handle time tick from day/night cycle
 func _on_time_tick(day: int, hour: int, minute: int) -> void:
 	var total_minute = hour * 60 + minute
+	
 	for npc_id in simulated_npcs:
 		_check_schedule(simulated_npcs[npc_id], total_minute)
 
-func _check_schedule(state: NPCSimulationState, current_minute: int) -> void:
+## Check if any schedule entries should activate
+func _check_schedule(npc: NPCSimulationState, current_minute: int) -> void:
 	# Don't interrupt busy NPCs
-	if state.state_machine.is_busy():
+	if npc.is_busy():
 		return
 	
-	if state.completed_schedule_entries == state.daily_schedule:
-		state.completed_schedule_entries = []
-	
-	for entry in state.daily_schedule:
-		if entry in state.completed_schedule_entries:
-			continue
+	# Find active schedule entry
+	for entry in npc.schedule:
+		if entry.is_active(current_minute):
+			if npc.active_entry != entry:
+				# New schedule entry activated
+				_activate_schedule_entry(npc, entry)
+			return
 
-		var start_minute = entry.get("start_minute", 0)
-		var end_minute = entry.get("end_minute", 0)
+## Activate a schedule entry
+func _activate_schedule_entry(npc: NPCSimulationState, entry: ScheduleEntry) -> void:
+	npc.active_entry = entry
+	npc.current_action_index = 0
+	
+	print("%s activating schedule: %s" % [npc.npc_name, entry.to_string()])
+	
+	# Get target floor from zone
+	var target_floor = _get_zone_floor(entry.zone_name, npc)
+	
+	# Plan route
+	if npc.navigation.set_destination(entry.zone_name, target_floor, ZoneManager):
+		# Start navigating
+		npc.state.change_to(NPCState.Type.NAVIGATING, {
+			"destination": entry.zone_name,
+			"target_floor": target_floor
+		})
 		
-		if current_minute >= start_minute and current_minute < end_minute:
-			if state.active_schedule_entry == entry:
-				return
-			
-			var zone_name = entry.get("zone", "")
-			var actions = entry.get("actions", [])
-
-			if zone_name != "":
-				var closest_zone_id = ZoneManager.get_closest_zone_of_type_from_position(zone_name, state.current_position)
-				var zone: ZoneData = ZoneManager.get_zone_data(closest_zone_id)
-				var target_floor = zone.floor
-				
-				if target_floor != state.current_floor:
-					var direction = "up" if target_floor > state.current_floor else "down"
-					state.target_floor = target_floor
-					_start_travel_to_staircase(state, direction, zone_name, actions, entry)
-				else:
-					_start_travel_to_zone(state, zone_name, actions, entry)
-		
-		if current_minute >= end_minute:
-			if state.active_schedule_entry == entry:
-				state.completed_schedule_entries.append(entry)
-				state.active_schedule_entry = {}
-
-func _start_travel_to_zone(state: NPCSimulationState, zone_name: String, actions: Array, entry: Dictionary):
-	var closest_zone_id = ZoneManager.get_closest_zone_of_type_from_position(zone_name, state.current_position)
-	var zone: ZoneData = ZoneManager.get_zone_data(closest_zone_id)
-	
-	if zone.position == Vector2.ZERO:
-		push_warning("Zone '%s' not found for NPC %s" % [zone_name, state.npc_name])
-		return
-	
-	var zone_area = ZoneManager.get_zone_area(closest_zone_id)
-	var target_point: Vector2
-	
-	if zone_area:
-		target_point = _get_random_point_in_area(zone_area)
+		var first_waypoint = npc.navigation.get_current_waypoint()
+		if first_waypoint:
+			_start_travel_to_waypoint(npc, first_waypoint)
 	else:
-		target_point = zone.position
+		push_error("Failed to plan route for %s to %s" % [npc.npc_name, entry.zone_name])
+		npc.active_entry = null
+
+## Get floor number for a zone
+func _get_zone_floor(zone_name: String, npc: NPCSimulationState) -> int:
+	if not ZoneManager:
+		return 1
 	
-	var distance = state.current_position.distance_to(target_point)
-	state.travel_duration = distance / state.speed
-	state.travel_start_time = Time.get_ticks_msec() / 1000.0
-	state.target_position = target_point
-	state.current_target_zone_name = zone_name
-	state.current_actions = actions
-	state.active_schedule_entry = entry
-	
-	# Use state machine
-	state.state_machine.change_state(NPCStateMachine.State.TRAVELING_TO_ZONE, {
-		"zone_name": zone_name,
-		"actions": actions
-	})
-	
-	emit_signal("npc_started_traveling", state.npc_id, state.current_position, target_point, zone_name)
+	# This is a simplified version - adjust to match your ZoneManager API
+	var closest_zone_id = ZoneManager.get_closest_zone_of_type_from_position(zone_name, npc.current_position)
+	var zone: ZoneData = ZoneManager.get_zone_data(closest_zone_id)
+	if zone:
+		return zone.floor
+	return 1
 
-func _start_travel_to_staircase(state: NPCSimulationState, direction: String, final_zone: String, actions: Array, entry: Dictionary):
-	var stairs = get_tree().get_nodes_in_group("stairs")
-	var target_stairset = null
-	
-	for stairset in stairs:
-		if stairset.direction == direction and stairset.floor == state.current_floor:
-			target_stairset = stairset
-			break
-	
-	if target_stairset == null or target_stairset.position == Vector2.ZERO:
-		push_warning("No stairs found for floor %d direction %s" % [state.current_floor, direction])
-		return
-	
-	var target_point = target_stairset.position
-	var distance = state.current_position.distance_to(target_point)
-	state.travel_duration = distance / state.speed
-	state.travel_start_time = Time.get_ticks_msec() / 1000.0
-	state.target_position = target_point
-	state.direction_changing_floors = direction
-	state.active_schedule_entry = entry
-	
-	# Use state machine
-	state.state_machine.change_state(NPCStateMachine.State.TRAVELING_TO_STAIRS, {
-		"floor": state.current_floor,
-		"direction": direction,
-		"final_zone_name": final_zone,
-		"actions": actions
-	})
-	
-	emit_signal("npc_started_traveling", state.npc_id, state.current_position, target_point, "Staircase")
-
-func _process(delta: float) -> void:
-	var current_time = Time.get_ticks_msec() / 1000.0
-	
-	for npc_id in simulated_npcs:
-		var state = simulated_npcs[npc_id]
-		state.state_machine.update(delta, current_time)
-		
-		# Handle state-specific logic
-		_handle_state_updates(state, current_time)
-
-func _handle_state_updates(state: NPCSimulationState, current_time: float):
-	match state.state_machine.current_state:
-		NPCStateMachine.State.TRAVELING_TO_STAIRS:
-			if not state.is_traveling:
-				# Arrived at stairs
-				state.state_machine.change_state(NPCStateMachine.State.CHANGING_FLOORS, {
-					"direction": state.direction_changing_floors
-				})
-		
-		NPCStateMachine.State.CHANGING_FLOORS:
-			# After floor change, resume journey
-			if state.current_floor == state.target_floor:
-				var data = state.state_machine.state_data
-				var zone_name = data.get("final_zone_name", "")
-				if zone_name != "":
-					_start_travel_to_zone(state, zone_name, 
-						data.get("actions", []), 
-						state.active_schedule_entry)
-		
-		NPCStateMachine.State.PERFORMING_ACTIONS:
-			_zone_arrival(state)
-			state.state_machine.change_state(NPCStateMachine.State.IDLE)
-
-func _zone_arrival(state: NPCSimulationState) -> void:
-	print("SIMULATION: %s arrived at %s" % [state.npc_name, state.current_target_zone_name])
-	emit_signal("npc_arrived_at_zone", state.npc_id, state.current_target_zone_name, state.current_position)
-	_attempt_actions(state, state.current_actions)
-
-	if not state.active_schedule_entry.is_empty():
-		state.completed_schedule_entries.append(state.active_schedule_entry)
-		state.active_schedule_entry = {}
-
-	state.current_target_zone_name = ""
-	state.current_actions = []
-
-func _attempt_actions(state: NPCSimulationState, actions: Array = []):
-	for action in actions:
-		if typeof(action) == TYPE_CALLABLE:
-			var result = action.call()
-			var success = true
-			var reason = ""
-			if typeof(result) == TYPE_ARRAY and result.size() == 2:
-				success = result[0]
-				reason = result[1]
-			elif typeof(result) == TYPE_BOOL:
-				success = result
-			if success:
-				emit_signal("npc_action_attempted", state.npc_id, str(action))
-			else:
-				emit_signal("npc_action_failed", state.npc_id, str(action), reason)
-
-func _get_random_point_in_area(area: Area2D) -> Vector2:
-	var poly_node := area.get_node_or_null("CollisionPolygon2D")
-	if poly_node == null:
-		return area.global_position
-
-	var polygon: PackedVector2Array = poly_node.polygon
-	if polygon.size() == 0:
-		return area.global_position
-
-	var points: Array[Vector2] = []
-	var xf: Transform2D = poly_node.global_transform
-	for p in polygon:
-		points.append(xf * p)
-
-	var min_x = points[0].x
-	var max_x = points[0].x
-	var min_y = points[0].y
-	var max_y = points[0].y
-	for pt in points:
-		min_x = min(min_x, pt.x)
-		max_x = max(max_x, pt.x)
-		min_y = min(min_y, pt.y)
-		max_y = max(max_y, pt.y)
-
-	for i in range(40):
-		var random_point = Vector2(randf_range(min_x, max_x), randf_range(min_y, max_y))
-		if Geometry2D.is_point_in_polygon(random_point, points):
-			return random_point
-
-	return points[0]
-
+## Reset all schedules (call at midnight)
 func reset_daily_schedules() -> void:
 	for npc_id in simulated_npcs:
-		var state = simulated_npcs[npc_id]
-		state.completed_schedule_entries.clear()
-		state.active_schedule_entry = {}
-		state.state_machine.change_state(NPCStateMachine.State.IDLE)
+		var npc: NPCSimulationState = simulated_npcs[npc_id]
+		for entry in npc.schedule:
+			entry.reset()
+		npc.active_entry = null
+		npc.current_action_index = 0
+		npc.state.change_to(NPCState.Type.IDLE)
+	
+	print("Reset all NPC schedules")
+
+## Debug: Print info for a specific NPC
+func debug_npc(npc_id: String) -> void:
+	var npc = get_npc_state(npc_id)
+	if npc:
+		print(npc.debug_info())
+	else:
+		print("NPC not found: %s" % npc_id)
+
+## Debug: Print info for all NPCs
+func debug_all_npcs() -> void:
+	print("=== NPC Simulation Status ===")
+	print("Total NPCs: %d" % simulated_npcs.size())
+	for npc_id in simulated_npcs:
+		var npc: NPCSimulationState = simulated_npcs[npc_id]
+		print("%s - %s - Floor %d" % [npc.npc_name, npc.state.get_name(), npc.current_floor])
