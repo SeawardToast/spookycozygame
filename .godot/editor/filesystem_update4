@@ -1,10 +1,11 @@
-res://scenes/test/debug/test_scene_multi_floor.tscn
+res://scenes/ui/report_board/report_board.tscn
 res://scenes/ui/game_ui_theme.tres
 res://tilesets/large_house_tile_set.tres
 res://scenes/objects/tree/tree_shake.gdshader
 res://tilesets/game_tile_set.tres
-res://scenes/characters/guide/replace_color.gdshader
-res://dialogue/dialogue_balloon_theme.tres
-res://assets/game/characters/sprites/ghost.tres
 res://scenes/objects/rocks/rock_shake.gdshader
+res://scenes/characters/guide/replace_color.gdshader
 res://scripts/globals/npc_simulation_manager.gd
+res://scripts/npc/npc_state_machine.gd
+res://scenes/test/report_board/test_scene_report_board.tscn
+res://scripts/scene_helpers/main_hotel_scene_manager.gd

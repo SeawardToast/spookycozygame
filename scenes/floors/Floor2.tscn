@@ -13,9 +13,9 @@ metadata/_edit_group_ = true
 
 [node name="HauntZone" type="Area2D" parent="Zones" groups=["zones"]]
 script = ExtResource("1_g66gy")
-zone_name = "Kitchen"
+zone_name = "Haunt"
 zone_floor = 2
-zone_type = "Kitchen"
+zone_type = "Haunt"
 
 [node name="CollisionPolygon2D" type="CollisionPolygon2D" parent="Zones/HauntZone"]
 polygon = PackedVector2Array(350, 326, 510, 331, 508, 398, 355, 389)

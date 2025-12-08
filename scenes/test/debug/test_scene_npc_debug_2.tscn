@@ -24,6 +24,7 @@ zone_type = "Kitchen"
 polygon = PackedVector2Array(167, 160, 327, 165, 325, 232, 172, 223)
 
 [node name="Kitchen2" type="Area2D" parent="Zones" groups=["zones"]]
+visible = false
 script = ExtResource("2_12qld")
 zone_name = "Kitchen"
 zone_floor = 2

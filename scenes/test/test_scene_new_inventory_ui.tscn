@@ -13,6 +13,8 @@
 [node name="TestSceneTileMap" type="Node2D"]
 y_sort_enabled = true
 
+[node name="NewInventory" parent="." instance=ExtResource("8_wpwvk")]
+
 [node name="GameTileMap" type="Node2D" parent="."]
 y_sort_enabled = true
 
@@ -73,7 +75,5 @@ position = Vector2(243, 320)
 position = Vector2(205, 300)
 
 [node name="GameScreen" parent="." instance=ExtResource("8_dyfor")]
-
-[node name="NewInventory" parent="GameScreen/MarginContainer" index="4" instance=ExtResource("8_wpwvk")]
 
 [editable path="GameScreen"]

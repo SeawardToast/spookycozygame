@@ -4,14 +4,14 @@ extends Node2D
 
 @onready var floor_container = $FloorContainer
 @onready var player = $Player
-@onready var camera = $Camera2D
+@onready var camera: Camera2D = $Player/Camera2D
 
 @export var starting_floor: int = 1
 @export var preload_adjacent_floors: bool = false  # Usually false for 2D
 
 var spawned_visuals: Dictionary = {}
 var current_player_floor: int = 1
-
+		
 func _ready():
 	print("=== HOTEL INITIALIZATION ===")
 	

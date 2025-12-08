@@ -32,7 +32,7 @@ func get_schedule() -> Array:
 		{"start_minute": 601, "end_minute": 800, "zone": "Sleep", "actions": [Callable(self, "sleep")]},
 		{"start_minute": 900, "end_minute": 1440, "zone": "Haunt", "actions": [Callable(self, "haunt")]}
 	]
-
+	
 func sleep():
 	if not tired:
 		return [false, "not tired"]

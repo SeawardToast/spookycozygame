@@ -1,5 +1,10 @@
 extends Node
 
+class Date:
+	var day: int
+	var minute: int
+	var hour: int
+
 const MINUTES_PER_DAY: int = 24 * 60
 const MINUTES_PER_HOUR: int = 60
 const GAME_MINUTE_DURATION: float = TAU / MINUTES_PER_DAY
@@ -44,8 +49,6 @@ func get_current_time() -> Dictionary:
 		"hour": hour,
 		"minute": minute
 	}
-
-	
 	
 func recalculate_time() -> void:
 	var total_minutes: int = int(time / GAME_MINUTE_DURATION)
