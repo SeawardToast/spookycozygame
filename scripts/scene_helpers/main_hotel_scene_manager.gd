@@ -51,22 +51,8 @@ func change_floor(new_floor: int, initializing = false):
 		push_warning("Floor %d does not exist" % new_floor)
 		return
 	
-	var old_floor = current_player_floor
-	current_player_floor = new_floor
-	
-	print("MainScene: Changing to floor %d" % new_floor)
-	
-	# Clear visuals from old floor
-	
-	# Optionally unload old floor to save memory
-	if not preload_adjacent_floors and old_floor != new_floor:
-		FloorManager.unload_floor(old_floor)
-	
 	# Set the new active floor (loads if needed, shows it)
 	FloorManager.set_active_floor(new_floor, initializing)
-	
-	# Position camera/player for new floor (if needed)
-	# In 2D, floors are at same position, just different scenes shown
 	print("MainScene: Now on floor %d" % new_floor)
 	
 func load_floor(floor: int, initializing = false):

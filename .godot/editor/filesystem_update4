@@ -23,3 +23,10 @@ res://scripts/globals/npc_type_registry.gd
 res://scenes/floors/Floor1.tscn
 res://scripts/globals/zone_manager.gd
 res://scenes/characters/base_npc/visual_npc.tscn
+res://scripts/npc/npc_scheduler.gd
+res://scripts/npc/npc_set_routine.gd
+res://scripts/npc/debug_scene.gd
+res://scenes/floors/Floor2.tscn
+res://scripts/scene_helpers/manager_guide.txt
+res://scripts/globals/floor_manager.gd
+res://scenes/objects/movement/stairs.gd

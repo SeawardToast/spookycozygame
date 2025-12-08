@@ -110,9 +110,7 @@ func spawn_npc(npc_type: String, spawn_position: Vector2 = Vector2.ZERO) -> Stri
 	# Store definition reference
 	state.behavior_data["definition"] = npc_definition
 	
-	# Convert old schedule format to new format
-	state.schedule = _convert_schedule(npc_definition.get_schedule(), npc_definition)
-	
+	state.schedule = npc_definition.get_schedule()
 	# Connect state change signal
 	state.state.state_changed.connect(
 		func(old_state, new_state):
@@ -124,34 +122,6 @@ func spawn_npc(npc_type: String, spawn_position: Vector2 = Vector2.ZERO) -> Stri
 	
 	print("Spawned NPC: %s (%s) at %s" % [state.npc_name, npc_type, start_pos])
 	return npc_id
-
-## Convert old schedule format to new ScheduleEntry format
-func _convert_schedule(old_schedule: Array, definition) -> Array[ScheduleEntry]:
-	var new_schedule: Array[ScheduleEntry] = []
-	var entry_counter = 0
-	
-	for old_entry in old_schedule:
-		var start_min = old_entry.get("start_minute", 0)
-		var end_min = old_entry.get("end_minute", 0)
-		var zone = old_entry.get("zone", "")
-		var old_actions = old_entry.get("actions", [])
-		
-		# Create new schedule entry
-		var entry_id = "%s_entry_%d" % [definition.npc_name.to_lower().replace(" ", "_"), entry_counter]
-		var entry = ScheduleEntry.create(entry_id, start_min, end_min, zone)
-		
-		# Convert callables to NPCActions
-		for action_callable in old_actions:
-			if action_callable is Callable:
-				var method_name = action_callable.get_method()
-				var action_id = "%s_%s" % [entry_id, method_name]
-				var action = NPCAction.create(action_id, method_name, action_callable)
-				entry.add_action(action)
-		
-		new_schedule.append(entry)
-		entry_counter += 1
-	
-	return new_schedule
 
 ## Despawn an NPC
 func despawn_npc(npc_id: String) -> void:
@@ -267,7 +237,8 @@ func _handle_waypoint_arrival(npc: NPCSimulationState) -> void:
 ## Start travel to a specific waypoint
 func _start_travel_to_waypoint(npc: NPCSimulationState, waypoint: NPCNavigation.NavWaypoint) -> void:
 	var distance = npc.current_position.distance_to(waypoint.position)
-	npc.travel_duration = distance / npc.speed if npc.speed > 0 else 0.1
+	# this distance does not take into account our A* I don't think, so padding with extra time for now
+	npc.travel_duration = (distance / npc.speed) + 10 if npc.speed > 0 else 0.1
 	npc.travel_start_time = Time.get_ticks_msec() / 1000.0
 	npc.target_position = waypoint.position
 	
@@ -290,8 +261,10 @@ func _update_actions(npc: NPCSimulationState, delta: float) -> void:
 		
 		if result.success:
 			print("%s completed: %s" % [npc.npc_name, action.display_name])
+			DailyReportManager.report_task_completion(npc.npc_id, npc.npc_name, action.display_name, "location", {})
 		else:
 			print("%s failed: %s (%s)" % [npc.npc_name, action.display_name, result.reason])
+			DailyReportManager.report_task_failure(npc.npc_id, npc.npc_name, action.display_name, "failure reason", "location", {})
 		
 		npc.current_action_index += 1
 	else:

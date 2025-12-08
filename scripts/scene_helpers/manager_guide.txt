@@ -1,0 +1,268 @@
+# GameManager.gd
+# Complete example showing how to use the refactored NPC system
+extends Node
+
+@onready var visual_spawner = $VisualNPCSpawner
+@onready var player = $Player
+
+var game_started: bool = false
+
+func _ready():
+	# Wait for autoloads to initialize
+	await get_tree().process_frame
+	
+	# Connect to simulation events for debugging
+	_connect_debug_signals()
+	
+	# Spawn initial NPCs
+	_spawn_initial_npcs()
+	
+	game_started = true
+
+# =============================================================================
+# INITIALIZATION
+# =============================================================================
+
+func _spawn_initial_npcs() -> void:
+	print("=== Spawning NPCs ===")
+	
+	# Spawn some ghosts
+	for i in range(3):
+		var ghost_id = NPCSimulationManager.spawn_npc("ghost")
+		print("Spawned: %s" % ghost_id)
+	
+	# You can spawn at specific positions too
+	NPCSimulationManager.spawn_npc("ghost", Vector2(500, 500))
+	
+	# Spawn other NPC types
+	# NPCSimulationManager.spawn_npc("vampire", Vector2(300, 300))
+	# NPCSimulationManager.spawn_npc("werewolf", Vector2(700, 700))
+	
+	print("Total NPCs: %d" % NPCSimulationManager.get_npc_count())
+
+func _connect_debug_signals() -> void:
+	# Log important events
+	NPCSimulationManager.npc_state_changed.connect(_on_debug_state_changed)
+	NPCSimulationManager.npc_arrived_at_zone.connect(_on_debug_arrived)
+	NPCSimulationManager.npc_action_attempted.connect(_on_debug_action)
+
+# =============================================================================
+# DEBUG SIGNAL HANDLERS
+# =============================================================================
+
+func _on_debug_state_changed(npc_id: String, old_state: int, new_state: int) -> void:
+	var npc = NPCSimulationManager.get_npc_state(npc_id)
+	if npc:
+		print("[STATE] %s: %s -> %s" % [
+			npc.npc_name,
+			NPCState.Type.keys()[old_state],
+			NPCState.Type.keys()[new_state]
+		])
+
+func _on_debug_arrived(npc_id: String, zone_name: String, position: Vector2) -> void:
+	var npc = NPCSimulationManager.get_npc_state(npc_id)
+	if npc:
+		print("[ARRIVAL] %s arrived at %s (floor %d)" % [
+			npc.npc_name,
+			zone_name,
+			npc.current_floor
+		])
+
+func _on_debug_action(npc_id: String, action: NPCAction, success: bool) -> void:
+	var npc = NPCSimulationManager.get_npc_state(npc_id)
+	if npc:
+		var status = "✓" if success else "✗"
+		print("[ACTION] %s %s %s" % [
+			status,
+			npc.npc_name,
+			action.display_name
+		])
+
+# =============================================================================
+# INPUT HANDLING (for testing)
+# =============================================================================
+
+func _input(event: Input) -> void:
+	if not game_started:
+		return
+	
+	# F1: Debug all NPCs
+	if event.is_action_pressed("debug_npcs"):
+		NPCSimulationManager.debug_all_npcs()
+		if visual_spawner:
+			print(visual_spawner.debug_info())
+	
+	# F2: Spawn new ghost
+	if event.is_action_pressed("spawn_npc"):
+		var pos = player.global_position if player else Vector2.ZERO
+		var ghost_id = NPCSimulationManager.spawn_npc("ghost", pos)
+		print("Spawned new ghost: %s" % ghost_id)
+	
+	# F3: Change floor
+	if event.is_action_pressed("change_floor"):
+		if visual_spawner:
+			var new_floor = (visual_spawner.current_floor % 3) + 1
+			visual_spawner.change_floor(new_floor)
+			print("Changed to floor %d" % new_floor)
+	
+	# F4: Query specific NPC
+	if event.is_action_pressed("query_npc"):
+		var npcs = NPCSimulationManager.get_all_npc_states()
+		if npcs.size() > 0:
+			var first_npc_id = npcs.keys()[0]
+			NPCSimulationManager.debug_npc(first_npc_id)
+
+# =============================================================================
+# RUNTIME NPC MANAGEMENT EXAMPLES
+# =============================================================================
+
+## Example: Interrupt an NPC's schedule
+func interrupt_npc(npc_id: String, new_zone: String) -> void:
+	var npc = NPCSimulationManager.get_npc_state(npc_id)
+	if npc == null or npc.is_busy():
+		return
+	
+	# Create a temporary high-priority schedule entry
+	var urgent_task = ScheduleEntry.create("urgent_task", 0, 1440, new_zone)
+	urgent_task.priority = 999
+	urgent_task.add_action(NPCAction.create("urgent", "Handle Emergency", func(): 
+		print("%s handling emergency!" % npc.npc_name)
+		return [true, ""]
+	))
+	
+	# Insert at front of schedule
+	npc.schedule.insert(0, urgent_task)
+	print("Interrupted %s with urgent task" % npc.npc_name)
+
+## Example: Make NPC follow player
+func make_npc_follow_player(npc_id: String, duration_minutes: int = 60) -> void:
+	var npc = NPCSimulationManager.get_npc_state(npc_id)
+	if npc == null:
+		return
+	
+	# Get current time
+	var current_time = DayAndNightCycleManager.get_current_time_minutes()
+	
+	# Create follow schedule
+	var follow_entry = ScheduleEntry.create(
+		"follow_player",
+		current_time,
+		current_time + duration_minutes,
+		"PlayerLocation"  # Special zone that updates dynamically
+	)
+	follow_entry.priority = 100
+	
+	npc.schedule.insert(0, follow_entry)
+	print("%s is now following player for %d minutes" % [npc.npc_name, duration_minutes])
+
+## Example: Check NPC stats
+func get_npc_stats(npc_id: String) -> Dictionary:
+	var npc = NPCSimulationManager.get_npc_state(npc_id)
+	if npc == null:
+		return {}
+	
+	var definition = npc.behavior_data.get("definition")
+	
+	return {
+		"name": npc.npc_name,
+		"type": npc.npc_type,
+		"state": npc.state.get_name(),
+		"floor": npc.current_floor,
+		"position": npc.current_position,
+		"is_busy": npc.is_busy(),
+		"has_visual": npc.npc_instance != null,
+		"schedule_progress": "%d/%d" % [
+			npc.schedule.filter(func(e): return e.completed_today).size(),
+			npc.schedule.size()
+		],
+		# NPC-specific stats (if definition has them)
+		"custom_stats": {
+			"hunger": definition.hunger if definition and "hunger" in definition else null,
+			"tired": definition.tired if definition and "tired" in definition else null,
+		}
+	}
+
+## Example: Batch query for UI
+func get_all_npc_stats() -> Array:
+	var stats = []
+	for npc_id in NPCSimulationManager.get_all_npc_states():
+		stats.append(get_npc_stats(npc_id))
+	return stats
+
+## Example: Find NPCs in a zone
+func get_npcs_in_zone(zone_name: String) -> Array:
+	var npcs = []
+	for npc_id in NPCSimulationManager.get_all_npc_states():
+		var npc = NPCSimulationManager.get_npc_state(npc_id)
+		if npc and npc.state.context.get("zone", "") == zone_name:
+			npcs.append(npc)
+	return npcs
+
+## Example: Custom event - all NPCs react
+func trigger_fire_alarm() -> void:
+	print("🚨 FIRE ALARM! All NPCs evacuating!")
+	
+	for npc_id in NPCSimulationManager.get_all_npc_states():
+		var npc = NPCSimulationManager.get_npc_state(npc_id)
+		if npc == null:
+			continue
+		
+		# Create emergency evacuation entry
+		var evacuate = ScheduleEntry.create("evacuate", 0, 1440, "Courtyard")
+		evacuate.priority = 1000  # Highest priority
+		evacuate.can_interrupt = false
+		evacuate.add_action(NPCAction.create("flee", "Evacuate", func():
+			print("%s evacuating!" % npc.npc_name)
+			return [true, ""]
+		))
+		
+		# Clear current activity and force evacuation
+		npc.schedule.clear()
+		npc.schedule.append(evacuate)
+		npc.active_entry = null
+		npc.state.change_to(NPCState.Type.IDLE)
+
+# =============================================================================
+# UI INTEGRATION EXAMPLE
+# =============================================================================
+
+class NPCListItem:
+	var npc_id: String
+	var display_text: String
+	var state_color: Color
+	
+	func _init(id: String, text: String, color: Color):
+		npc_id = id
+		display_text = text
+		state_color = color
+
+func get_npc_list_for_ui() -> Array[NPCListItem]:
+	var items: Array[NPCListItem] = []
+	
+	for npc_id in NPCSimulationManager.get_all_npc_states():
+		var npc = NPCSimulationManager.get_npc_state(npc_id)
+		if npc == null:
+			continue
+		
+		var state_name = npc.state.get_name()
+		var color = _get_state_color(npc.state.type)
+		var floor_text = "F%d" % npc.current_floor
+		
+		var display = "%s [%s] - %s" % [npc.npc_name, floor_text, state_name]
+		
+		items.append(NPCListItem.new(npc_id, display, color))
+	
+	return items
+
+func _get_state_color(state_type: int) -> Color:
+	match state_type:
+		NPCState.Type.IDLE:
+			return Color.GRAY
+		NPCState.Type.NAVIGATING:
+			return Color.YELLOW
+		NPCState.Type.PERFORMING_ACTIONS:
+			return Color.GREEN
+		NPCState.Type.WAITING:
+			return Color.ORANGE
+		_:
+			return Color.WHITE

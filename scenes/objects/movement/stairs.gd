@@ -44,12 +44,6 @@ func _change_floor(new_floor: int) -> void:
 	# Tell FloorManager to set the new active floor
 	FloorManager.set_active_floor(new_floor)
 	
-	# Update the player's floor if they have a method for it
-	if has_node("/root/MainHotelScene"): 
-		var main_scene = get_node("/root/MainHotelScene")
-		if main_scene.has_method("current_player_floor"):
-			main_scene.current_player_floor = new_floor
-	
 	# Cooldown before stairs can be used again
 	await get_tree().create_timer(floor_change_delay)
 	_can_use = true

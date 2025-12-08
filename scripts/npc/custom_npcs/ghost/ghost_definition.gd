@@ -29,49 +29,8 @@ func _init():
 	hunger = randi_range(50, 100)
 	spookiness = randi_range(20, 80)
 
-## Get schedule in OLD format (for compatibility)
-## This will be converted automatically by NPCSimulationManager
-func get_schedule() -> Array:
-	return [
-		{
-			"start_minute": 250,   # ~4:10 AM
-			"end_minute": 360,     # 6:00 AM
-			"zone": "Kitchen",
-			"actions": [
-				Callable(self, "eat_breakfast"),
-				Callable(self, "read_newspaper")
-			]
-		},
-		{
-			"start_minute": 361,   # 6:01 AM
-			"end_minute": 540,     # 9:00 AM
-			"zone": "Sleep",
-			"actions": [
-				Callable(self, "go_to_sleep")
-			]
-		},
-		{
-			"start_minute": 900,   # 3:00 PM
-			"end_minute": 1080,    # 6:00 PM
-			"zone": "Haunt",
-			"actions": [
-				Callable(self, "haunt_halls"),
-				Callable(self, "practice_scares")
-			]
-		},
-		{
-			"start_minute": 1200,  # 8:00 PM
-			"end_minute": 1439,    # 11:59 PM
-			"zone": "Library",
-			"actions": [
-				Callable(self, "read_spooky_books"),
-				Callable(self, "contemplate_existence")
-			]
-		}
-	]
-
 ## Alternative: Get schedule in NEW format (preferred)
-func get_schedule_new() -> Array[ScheduleEntry]:
+func get_schedule() -> Array[ScheduleEntry]:
 	var schedule: Array[ScheduleEntry] = []
 	
 	# Morning breakfast

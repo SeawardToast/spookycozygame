@@ -5,6 +5,7 @@
 [sub_resource type="SpriteFrames" id="SpriteFrames_fb5c6"]
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_cllpf"]
+radius = 3.0
 
 [node name="VisualNPC" type="CharacterBody2D" node_paths=PackedStringArray("animated_sprite_2d", "navigation_agent_2d")]
 motion_mode = 1

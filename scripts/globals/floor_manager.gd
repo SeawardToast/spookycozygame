@@ -45,14 +45,25 @@ func _setup_hotel_floors():
 	
 	print("FloorManager: Initialized with %d floors" % floors.size())
 
+func _setup_floor_metadata(floor_node: Node, floor_number: int) -> void:
+	# Add metadata to floor node if it doesn't exist
+	if not "floor_number" in floor_node:
+		floor_node.set_meta("floor_number", floor_number)
+	
+	# Tag all children with floor number
+	_tag_children_recursively(floor_node, floor_number)
+
+func _tag_children_recursively(node: Node, floor_number: int) -> void:
+	node.set_meta("floor_number", floor_number)
+	for child in node.get_children():
+		_tag_children_recursively(child, floor_number)
+		
 func register_floor(floor_number: int, scene_path: String = "", autoload: bool = true):
 	"""Register a floor with its scene path"""
 	var floor_data = FloorData.new(floor_number, scene_path)
 	floors[floor_number] = floor_data
 	print("FloorManager: Registered floor %d -> %s" % [floor_number, scene_path])
-	if autoload:
-		print("Autoloading floor %d" % [floor_number])
-		load_floor(floor_number)
+	load_floor(floor_number)
 
 func set_main_container(container: Node2D):
 	"""Set the main scene container where floors will be added"""
@@ -95,11 +106,15 @@ func load_floor(floor_number: int) -> Node2D:
 	# Add floor node to main container
 	main_scene_container.add_child(floor_data.floor_node)
 
+	_setup_floor_metadata(floor_data.floor_node, floor_number)
+
 	# Hide by default
 	floor_data.floor_node.visible = false
 	floor_data.floor_node.process_mode = Node.PROCESS_MODE_DISABLED
+	_set_floor_collisions(floor_data.floor_node, false)
 	floor_data.is_loaded = true
-
+	
+	# disable collisions
 	emit_signal("floor_loaded", floor_number)
 	print("FloorManager: Loaded floor %d" % floor_number)
 
@@ -139,6 +154,8 @@ func set_active_floor(floor_number: int, initializing: bool = false):
 		if old_floor_node:
 			old_floor_node.visible = false
 			old_floor_node.process_mode = Node.PROCESS_MODE_DISABLED
+			_set_floor_collisions(old_floor_node, false)
+			print("Setting old floor node collisions to false")
 		floors[old_floor].is_active = false
 	
 	# Load new floor if not loaded
@@ -150,6 +167,7 @@ func set_active_floor(floor_number: int, initializing: bool = false):
 	if new_floor_node:
 		new_floor_node.visible = true
 		new_floor_node.process_mode = Node.PROCESS_MODE_INHERIT
+		_set_floor_collisions(new_floor_node, true)
 	floors[floor_number].is_active = true
 	
 	current_floor = floor_number
@@ -181,6 +199,72 @@ func _create_fallback_floor(floor_number: int) -> Node2D:
 		zones.add_child(zone)
 	
 	return floor
+	
+func _set_floor_collisions(floor_node: Node, enabled: bool) -> void:
+	# Handle different collision node types
+	for node in _get_all_descendants(floor_node):
+		_set_node_collision(node, enabled)
+		
+func _set_node_collision(node: Node, enabled: bool) -> void:
+	# TileMap (Godot 4.x)
+	if node is TileMapLayer:
+		_set_tilemap_collision(node, enabled)
+	
+	# StaticBody2D / RigidBody2D / CharacterBody2D
+	elif node is CollisionObject2D:
+		_set_collision_object_state(node, enabled)
+	
+	# Area2D
+	elif node is Area2D:
+		node.monitoring = enabled
+		node.monitorable = enabled
+		_set_collision_object_state(node, enabled)
+
+func _set_tilemap_collision(tilemap: TileMapLayer, enabled: bool) -> void:
+	# In Godot 4, TileMaps have collision layers
+	if enabled:
+		tilemap.collision_enabled = true
+		# Store original collision mask/layer if not stored
+		#if not tilemap.has_meta("original_collision_layer"):
+			#tilemap.set_meta("original_collision_layer", tilemap.collision_layer)
+			#tilemap.set_meta("original_collision_mask", tilemap.collision_mask)
+		##
+		### Restore original values
+		#tilemap.collision_layer = tilemap.get_meta("original_collision_layer")
+		#tilemap.collision_mask = tilemap.get_meta("original_collision_mask")
+	else:
+		# Disable all collision layers
+		tilemap.collision_enabled = false
+		print("tilemap collision layer disabled")
+		#tilemap.collision_layer = 0
+		#tilemap.collision_mask = 0
+
+		
+func _set_collision_object_state(collision_object: CollisionObject2D, enabled: bool) -> void:
+	if enabled:
+		# Restore original collision settings
+		if collision_object.has_meta("original_collision_layer"):
+			collision_object.collision_layer = collision_object.get_meta("original_collision_layer")
+			collision_object.collision_mask = collision_object.get_meta("original_collision_mask")
+	else:
+		# Store original and disable
+		if not collision_object.has_meta("original_collision_layer"):
+			collision_object.set_meta("original_collision_layer", collision_object.collision_layer)
+			collision_object.set_meta("original_collision_mask", collision_object.collision_mask)
+		
+		collision_object.collision_layer = 0
+		collision_object.collision_mask = 0
+	
+	# Also disable collision shapes
+	for child in collision_object.get_children():
+		if child is CollisionShape2D or child is CollisionPolygon2D:
+			child.set_deferred("disabled", not enabled)
+			
+func _get_all_descendants(node: Node) -> Array:
+	var descendants = [node]
+	for child in node.get_children():
+		descendants.append_array(_get_all_descendants(child))
+	return descendants
 
 func _create_zone_area(zone_name: String, pos: Vector2, size: Vector2) -> Area2D:
 	"""Helper to create a basic zone Area2D"""
