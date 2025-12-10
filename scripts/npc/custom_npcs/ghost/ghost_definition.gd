@@ -6,11 +6,7 @@ class_name Ghost
 var npc_id: String = ""
 var npc_name: String = "Ghostly Guest"
 var start_position: Vector2 = Vector2(100, 100)
-var speed: float = 100.0
-
-# Visual properties
-var sprite_texture: String = "res://sprites/ghost.png"
-var sprite_animation: String = "ghost_idle"
+var speed: float = 5.0
 
 # Ghost state
 var tired: bool = true

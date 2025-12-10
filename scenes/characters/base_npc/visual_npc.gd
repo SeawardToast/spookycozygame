@@ -14,7 +14,8 @@ var current_animation: String = ""
 
 # Preload scenes or sprite frames for each type
 const SPRITE_LIBRARY := {
-	"ghost": preload("res://assets/game/characters/sprites/ghost.tres"),
+	"ghost": preload("res://assets/game/characters/sprites/girl_ghost_1/girl_ghost_1.tres"),
+	"vampire": preload("res://assets/game/characters/sprites/vampires/vampire_1/vampire_1.tres"),
 	# Add more NPC types here
 }
 
@@ -52,7 +53,7 @@ func _ready():
 	
 	# Setup navigation
 	if navigation_agent_2d and use_navigation:
-		navigation_agent_2d.target_desired_distance = 4.0
+		navigation_agent_2d.target_desired_distance = 1
 		navigation_agent_2d.velocity_computed.connect(_on_navigation_velocity_computed)
 	
 	# Connect to simulation signals
@@ -147,7 +148,6 @@ func _on_npc_started_traveling(id: String, from_pos: Vector2, to_pos: Vector2, d
 	
 	if navigation_agent_2d and use_navigation:
 		navigation_agent_2d.target_position = to_pos
-	
 	_play_animation("walk")
 
 func _on_npc_arrived_at_zone(id: String, zone_name: String, position: Vector2):
@@ -266,22 +266,32 @@ func _update_navigation(delta: float) -> void:
 				velocity = vel
 				move_and_slide()
 	else:
-		# Simple lerp to simulated position (for distant NPCs)
-		global_position = global_position.lerp(simulation_state.current_position, delta * 5.0)
+		# Move at same speed as simulation, not smoothing lerp
+		var distance = global_position.distance_to(simulation_state.target_position)
 		
-		# Calculate velocity for animation purposes
-		var direction = simulation_state.target_position - global_position
-		if direction.length() > 1.0:
-			velocity = direction.normalized() * simulation_state.speed
-		else:
+		if distance <= 4.0:
 			velocity = Vector2.ZERO
+			return
+		
+		# Move directly toward target at simulation speed
+		var direction = global_position.direction_to(simulation_state.target_position)
+		velocity = direction * simulation_state.speed
+		
+		# Update position
+		var move_amount = simulation_state.speed * delta
+		if move_amount >= distance:
+			global_position = simulation_state.target_position
+			velocity = Vector2.ZERO
+		else:
+			global_position += velocity * delta
 
 func _update_idle(delta: float) -> void:
 	# Smoothly stop movement
 	velocity = velocity.lerp(Vector2.ZERO, delta * 10.0)
-	
-	# Ensure we're at the simulated position
-	if global_position.distance_to(simulation_state.current_position) > 5.0:
+
+#	 Ensure we're at the simulated position
+	var distance_to = global_position.distance_to(simulation_state.current_position)
+	if distance_to > 1.0:
 		global_position = global_position.lerp(simulation_state.current_position, delta * 3.0)
 
 func _update_performing_actions(delta: float) -> void:

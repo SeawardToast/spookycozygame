@@ -188,21 +188,31 @@ func _update_npc(npc: NPCSimulationState, delta: float) -> void:
 			_update_actions(npc, delta)
 
 ## Update NPC navigation
+## This is purely for simulation purposes unless the NPC is rendered, then we take that current position to account for collisions, and A* pathfinding
 func _update_navigation(npc: NPCSimulationState, delta: float) -> void:
-	var current_time = Time.get_ticks_msec() / 1000.0
-	var elapsed = current_time - npc.travel_start_time
+	# If visual NPC exists with navigation agent, use its position as source of truth
+	if npc.npc_instance != null and npc.npc_instance.navigation_agent_2d != null:
+		npc.current_position = npc.npc_instance.global_position
+		
+		# Check if navigation agent has reached destination
+		if npc.npc_instance.navigation_agent_2d.is_navigation_finished():
+			_handle_waypoint_arrival(npc)
+		return
 	
-	if elapsed >= npc.travel_duration:
-		# Arrived at waypoint
-		npc.current_position = npc.target_position
+	# Fallback: Simulate movement for NPCs without visual instances
+	var distance = npc.current_position.distance_to(npc.target_position)
+	if distance <= 4:
 		_handle_waypoint_arrival(npc)
+		return
+	
+	# Move at exact speed
+	var direction = (npc.target_position - npc.current_position).normalized()
+	var move_amount = npc.speed * delta
+	
+	if move_amount >= distance:
+		npc.current_position = npc.target_position
 	else:
-		# Update position along path
-		var progress = elapsed / npc.travel_duration
-		npc.current_position = npc.current_position.lerp(
-			npc.target_position,
-			progress * delta * 60.0
-		)
+		npc.current_position += direction * move_amount
 
 ## Handle arrival at a waypoint
 func _handle_waypoint_arrival(npc: NPCSimulationState) -> void:
@@ -218,8 +228,11 @@ func _handle_waypoint_arrival(npc: NPCSimulationState) -> void:
 		npc.current_floor = target_floor
 		print("%s changed to floor %d" % [npc.npc_name, npc.current_floor])
 	
+	# grab next waypoint
+	var next_waypoint = npc.navigation.advance_waypoint()
+	
 	# Check if more waypoints
-	if npc.navigation.advance_waypoint():
+	if next_waypoint:
 		# More waypoints to go
 		_start_travel_to_waypoint(npc, npc.navigation.get_current_waypoint())
 	else:

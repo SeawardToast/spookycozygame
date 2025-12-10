@@ -53,6 +53,7 @@ func _setup_floor_metadata(floor_node: Node, floor_number: int) -> void:
 	# Tag all children with floor number
 	_tag_children_recursively(floor_node, floor_number)
 
+# this is so we can do things to these objects like change collision layers and what not
 func _tag_children_recursively(node: Node, floor_number: int) -> void:
 	node.set_meta("floor_number", floor_number)
 	for child in node.get_children():
@@ -108,7 +109,7 @@ func load_floor(floor_number: int) -> Node2D:
 
 	_setup_floor_metadata(floor_data.floor_node, floor_number)
 
-	# Hide by default
+	# Hide by default12
 	floor_data.floor_node.visible = false
 	floor_data.floor_node.process_mode = Node.PROCESS_MODE_DISABLED
 	_set_floor_collisions(floor_data.floor_node, false)
@@ -119,7 +120,6 @@ func load_floor(floor_number: int) -> Node2D:
 	print("FloorManager: Loaded floor %d" % floor_number)
 
 	return floor_data.floor_node
-
 
 func unload_floor(floor_number: int):
 	"""Unload a floor scene and remove it from the scene tree"""
@@ -155,6 +155,7 @@ func set_active_floor(floor_number: int, initializing: bool = false):
 			old_floor_node.visible = false
 			old_floor_node.process_mode = Node.PROCESS_MODE_DISABLED
 			_set_floor_collisions(old_floor_node, false)
+			_set_floor_navigation(old_floor_node, false)
 			print("Setting old floor node collisions to false")
 		floors[old_floor].is_active = false
 	
@@ -168,6 +169,7 @@ func set_active_floor(floor_number: int, initializing: bool = false):
 		new_floor_node.visible = true
 		new_floor_node.process_mode = Node.PROCESS_MODE_INHERIT
 		_set_floor_collisions(new_floor_node, true)
+		_set_floor_navigation(new_floor_node, true)
 	floors[floor_number].is_active = true
 	
 	current_floor = floor_number
@@ -204,6 +206,17 @@ func _set_floor_collisions(floor_node: Node, enabled: bool) -> void:
 	# Handle different collision node types
 	for node in _get_all_descendants(floor_node):
 		_set_node_collision(node, enabled)
+		
+func _set_floor_navigation(floor_node: Node, enabled: bool) -> void:
+	for child in floor_node.get_children():
+		if child is TileMapLayer:
+			child.navigation_enabled = enabled
+		elif child is NavigationRegion2D:
+			child.enabled = enabled
+		
+		# Recursively check children
+		if child.get_child_count() > 0:
+			_set_floor_navigation(child, enabled)
 		
 func _set_node_collision(node: Node, enabled: bool) -> void:
 	# TileMap (Godot 4.x)

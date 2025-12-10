@@ -42,7 +42,8 @@ func _spawn_initial_npcs() -> void:
 		#var ghost_id = NPCSimulationManager.spawn_npc("ghost")
 		#print("Spawned: %s" % ghost_id)
 
-	NPCSimulationManager.spawn_npc("ghost", Vector2(500, 500))
+	NPCSimulationManager.spawn_npc("ghost", Vector2(200, 500))
+	NPCSimulationManager.spawn_npc("vampire", Vector2(500, 500))
 	print("Total NPCs: %d" % NPCSimulationManager.get_npc_count())
 
 func change_floor(new_floor: int, initializing = false):

@@ -1,7 +1,114 @@
-[gd_scene load_steps=2 format=3 uid="uid://7g0uir0epcls"]
+[gd_scene load_steps=17 format=3 uid="uid://7g0uir0epcls"]
 
-[ext_resource type="SpriteFrames" uid="uid://6aanlec145q3" path="res://assets/game/characters/sprites/ghost.tres" id="1_t4w3y"]
+[ext_resource type="Texture2D" uid="uid://c8025dcoj5mkh" path="res://assets/game/characters/sprites/girl_ghost_1/Idle.png" id="1_t4w3y"]
+[ext_resource type="Texture2D" uid="uid://bi4ve28vbrg5t" path="res://assets/game/characters/sprites/girl_ghost_1/Walk.png" id="2_rsshp"]
 
-[node name="Ghost" type="AnimatedSprite2D"]
-sprite_frames = ExtResource("1_t4w3y")
+[sub_resource type="AtlasTexture" id="AtlasTexture_rsshp"]
+atlas = ExtResource("1_t4w3y")
+region = Rect2(0, 0, 128, 128)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_40cgh"]
+atlas = ExtResource("1_t4w3y")
+region = Rect2(128, 0, 128, 128)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_pl7p2"]
+atlas = ExtResource("1_t4w3y")
+region = Rect2(256, 0, 128, 128)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_en5hl"]
+atlas = ExtResource("1_t4w3y")
+region = Rect2(384, 0, 128, 128)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_545ss"]
+atlas = ExtResource("1_t4w3y")
+region = Rect2(512, 0, 128, 128)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_n5o25"]
+atlas = ExtResource("1_t4w3y")
+region = Rect2(640, 0, 128, 128)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_ginuw"]
+atlas = ExtResource("2_rsshp")
+region = Rect2(0, 0, 128, 128)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_uxi50"]
+atlas = ExtResource("2_rsshp")
+region = Rect2(128, 0, 128, 128)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_6pc0l"]
+atlas = ExtResource("2_rsshp")
+region = Rect2(256, 0, 128, 128)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_fqtys"]
+atlas = ExtResource("2_rsshp")
+region = Rect2(384, 0, 128, 128)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_4e6kb"]
+atlas = ExtResource("2_rsshp")
+region = Rect2(512, 0, 128, 128)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_l4pph"]
+atlas = ExtResource("2_rsshp")
+region = Rect2(640, 0, 128, 128)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_1p76k"]
+atlas = ExtResource("2_rsshp")
+region = Rect2(768, 0, 128, 128)
+
+[sub_resource type="SpriteFrames" id="SpriteFrames_ginuw"]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_rsshp")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_40cgh")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_pl7p2")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_en5hl")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_545ss")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_n5o25")
+}],
+"loop": true,
+"name": &"idle",
+"speed": 5.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_ginuw")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_uxi50")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_6pc0l")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_fqtys")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_4e6kb")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_l4pph")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_1p76k")
+}],
+"loop": true,
+"name": &"walk",
+"speed": 6.0
+}]
+
+[node name="GirlGhost1" type="AnimatedSprite2D"]
+sprite_frames = SubResource("SpriteFrames_ginuw")
 animation = &"idle"
+frame = 2
+frame_progress = 0.44377515

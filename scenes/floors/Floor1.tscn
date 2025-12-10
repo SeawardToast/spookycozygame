@@ -19,6 +19,15 @@ zone_type = "Kitchen"
 y_sort_enabled = true
 polygon = PackedVector2Array(640, 22, 800, 27, 798, 94, 645, 85)
 
+[node name="CryptZone" type="Area2D" parent="Zones"]
+script = ExtResource("2_2d04r")
+zone_name = "Crypt"
+zone_type = "Crypt"
+id = 2
+
+[node name="CollisionPolygon2D" type="CollisionPolygon2D" parent="Zones/CryptZone"]
+polygon = PackedVector2Array(160, 87, 321, 82, 323, 150, 171, 152)
+
 [node name="Stairs" parent="." instance=ExtResource("2_sv8ea")]
 y_sort_enabled = true
 position = Vector2(233, 215)

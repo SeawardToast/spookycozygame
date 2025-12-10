@@ -22,7 +22,7 @@ class NavWaypoint:
 	
 func _init(npc: NPCSimulationManager.NPCSimulationState = null):
 	owner_npc = npc
-
+	
 ## Plan a route to the destination, handling floor changes automatically
 func set_destination(zone_name: String, target_floor: int, zone_manager: Node) -> bool:
 	clear_path()
@@ -43,7 +43,6 @@ func set_destination(zone_name: String, target_floor: int, zone_manager: Node) -
 	if zone_pos == Vector2.ZERO:
 		push_warning("Could not find position for zone: %s" % zone_name)
 		return false
-	
 	var final_waypoint = NavWaypoint.new(
 		zone_pos,
 		"zone",
