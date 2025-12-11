@@ -18,13 +18,13 @@ var falling := false
 var fall_progress := 0.0
 var fall_speed := 0.5 # seconds to fully fall
 
-func play_random_chop_sound():
-	var player = audio_players.pick_random()
+func play_random_chop_sound() -> void:
+	var player: Variant = audio_players.pick_random()
 	player.play()
 
-var rock_scene = preload("res://scenes/objects/rocks/rock_broken.tscn")
+var rock_scene: Resource = preload("res://scenes/objects/rocks/rock_broken.tscn")
 
-func _process(delta):
+func _process(delta: float) -> void:
 	if falling:
 		fall_progress += fall_speed * delta
 		fall_progress = clamp(fall_progress, 0.0, 1.0)
@@ -57,6 +57,6 @@ func on_max_damage_reached() -> void:
 	queue_free()
 	
 func add_rock_scene() -> void:
-	var rock_instance = rock_scene.instantiate() as Node2D
+	var rock_instance: Node2D = rock_scene.instantiate() as Node2D
 	rock_instance.global_position = global_position
 	get_parent().add_child(rock_instance)

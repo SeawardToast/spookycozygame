@@ -1,8 +1,8 @@
 extends Panel
 
-var empty_background = preload("res://assets/ui/item_slot_empty_background.png")
-var default_background = preload("res://assets/ui/item_slot_default_background.png")
-var inventory_item_scene = preload("res://scenes/ui/inventory_item.tscn")
+var empty_background: Resource = preload("res://assets/ui/item_slot_empty_background.png")
+var default_background: Resource = preload("res://assets/ui/item_slot_default_background.png")
+var inventory_item_scene: Resource = preload("res://scenes/ui/inventory_item.tscn")
 
 var item: Node2D = null
 var item_name: String = ""
@@ -30,7 +30,7 @@ func pick_from_slot() -> Node2D:
 	if item == null:
 		return null
 
-	var picked_item = item
+	var picked_item: Node2D = item
 	print("item picked from slotr", item)
 	if item.get_parent():
 		item.get_parent().remove_child(item)

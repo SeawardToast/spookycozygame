@@ -34,7 +34,7 @@ func _update_icon() -> void:
 		sprite.texture = null
 		return
 
-	var icon_path = "res://assets/ui/inventory_icons/%s.png" % item_name.to_lower().replace(" ", "_")
+	var icon_path: String = "res://assets/ui/inventory_icons/%s.png" % item_name.to_lower().replace(" ", "_")
 	if ResourceLoader.exists(icon_path):
 		sprite.texture = load(icon_path)
 	else:

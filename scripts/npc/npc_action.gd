@@ -9,14 +9,14 @@ var callback: Callable
 var duration: float = 0.0  # For future time-based actions
 var metadata: Dictionary = {}  # Additional data
 
-func _init(id: String = "", name: String = "", fn: Callable = Callable()):
+func _init(id: String = "", name: String = "", fn: Callable = Callable()) -> void:
 	action_id = id
 	display_name = name
 	callback = fn
 
 ## Execute the action and return structured result
 func execute() -> Dictionary:
-	var result = {
+	var result: Variant = {
 		"success": false, 
 		"reason": "",
 		"action_id": action_id,
@@ -27,7 +27,7 @@ func execute() -> Dictionary:
 		result.reason = "Invalid callback"
 		return result
 	
-	var callback_result = callback.call()
+	var callback_result: Variant = callback.call()
 	
 	# Handle different return types
 	if typeof(callback_result) == TYPE_DICTIONARY:

@@ -7,20 +7,6 @@
 
 extends Node
 
-# Floor data structure
-class FloorData:
-	var floor_number: int
-	var floor_node: Node2D  # The actual instantiated floor scene
-	var scene_path: String  # Path to the floor scene file
-	var zones: Array[int]  # Zone IDs on this floor (from ZoneManager)
-	var is_loaded: bool = false
-	var is_active: bool = false  # Currently visible/active floor
-	
-	func _init(num: int, path: String = ""):
-		floor_number = num
-		scene_path = path
-		zones = []
-
 # Store all floors
 var floors: Dictionary = {}  # floor_number -> FloorData
 var current_floor: int = 1
@@ -31,10 +17,10 @@ signal floor_changed(old_floor: int, new_floor: int)
 signal floor_loaded(floor_number: int)
 signal floor_unloaded(floor_number: int)
 
-func _ready():
+func _ready() -> void:
 	_setup_hotel_floors()
 
-func _setup_hotel_floors():
+func _setup_hotel_floors() -> void:
 	"""Define hotel structure with scene paths"""
 	# Register floors with their scene paths
 	register_floor(1, "res://scenes/floors/Floor1.tscn")
@@ -59,14 +45,14 @@ func _tag_children_recursively(node: Node, floor_number: int) -> void:
 	for child in node.get_children():
 		_tag_children_recursively(child, floor_number)
 		
-func register_floor(floor_number: int, scene_path: String = "", autoload: bool = true):
+func register_floor(floor_number: int, scene_path: String = "", autoload: bool = true) -> void:
 	"""Register a floor with its scene path"""
-	var floor_data = FloorData.new(floor_number, scene_path)
+	var floor_data: FloorData = FloorData.new(floor_number, scene_path)
 	floors[floor_number] = floor_data
 	print("FloorManager: Registered floor %d -> %s" % [floor_number, scene_path])
 	load_floor(floor_number)
 
-func set_main_container(container: Node2D):
+func set_main_container(container: Node2D) -> void:
 	"""Set the main scene container where floors will be added"""
 	main_scene_container = container
 	print("FloorManager: Main container set: %s" % container.name)
@@ -77,7 +63,7 @@ func load_floor(floor_number: int) -> Node2D:
 		push_error("FloorManager: Floor %d does not exist" % floor_number)
 		return null
 
-	var floor_data = floors[floor_number]
+	var floor_data: FloorData = floors[floor_number]
 
 	# Already loaded
 	if floor_data.is_loaded and floor_data.floor_node:
@@ -90,7 +76,7 @@ func load_floor(floor_number: int) -> Node2D:
 
 	# Load floor scene if specified
 	if floor_data.scene_path != "" and ResourceLoader.exists(floor_data.scene_path):
-		var floor_scene = load(floor_data.scene_path)
+		var floor_scene: Resource = load(floor_data.scene_path)
 		floor_data.floor_node = floor_scene.instantiate()
 		floor_data.floor_node.name = "Floor%d" % floor_number
 	else:
@@ -100,7 +86,7 @@ func load_floor(floor_number: int) -> Node2D:
 		print("FloorManager: Created Node2D fallback for floor %d" % floor_number)
 
 		# Optional: create a Zones container inside
-		var zones = Node2D.new()
+		var zones: Node2D = Node2D.new()
 		zones.name = "Zones"
 		floor_data.floor_node.add_child(zones)
 
@@ -122,12 +108,12 @@ func load_floor(floor_number: int) -> Node2D:
 
 	return floor_data.floor_node
 
-func unload_floor(floor_number: int):
+func unload_floor(floor_number: int) -> void:
 	"""Unload a floor scene and remove it from the scene tree"""
 	if floor_number not in floors:
 		return
 	
-	var floor_data = floors[floor_number]
+	var floor_data: FloorData = floors[floor_number]
 	if not floor_data.is_loaded:
 		return
 	
@@ -138,7 +124,7 @@ func unload_floor(floor_number: int):
 	emit_signal("floor_unloaded", floor_number)
 	print("FloorManager: Unloaded floor %d" % floor_number)
 
-func set_active_floor(floor_number: int, initializing: bool = false):
+func set_active_floor(floor_number: int, initializing: bool = false) -> void:
 	"""Set which floor is currently active (visible and processing)"""
 	if floor_number not in floors:
 		push_error("FloorManager: Floor %d does not exist" % floor_number)
@@ -147,11 +133,11 @@ func set_active_floor(floor_number: int, initializing: bool = false):
 	if current_floor == floor_number and initializing == false:
 		return
 	
-	var old_floor = current_floor
+	var old_floor: int = current_floor
 	
 	# Hide and disable old floor
 	if old_floor in floors and floors[old_floor].is_loaded:
-		var old_floor_node = floors[old_floor].floor_node
+		var old_floor_node: Node = floors[old_floor].floor_node
 		if old_floor_node:
 			old_floor_node.visible = false
 			old_floor_node.process_mode = Node.PROCESS_MODE_DISABLED
@@ -165,7 +151,7 @@ func set_active_floor(floor_number: int, initializing: bool = false):
 		load_floor(floor_number)
 	
 	# Show and enable new floor
-	var new_floor_node = floors[floor_number].floor_node
+	var new_floor_node: Node = floors[floor_number].floor_node
 	if new_floor_node:
 		new_floor_node.visible = true
 		new_floor_node.process_mode = Node.PROCESS_MODE_INHERIT
@@ -182,30 +168,30 @@ func _create_fallback_floor(floor_number: int) -> Node2D:
 	"""Create a basic fallback floor if scene doesn't exist"""
 	print("FloorManager: Creating fallback floor %d" % floor_number)
 	
-	var floor = Node2D.new()
+	var floor: Node2D = Node2D.new()
 	floor.name = "Floor%d_Fallback" % floor_number
 	
 	# Create zones container
-	var zones = Node2D.new()
+	var zones: Node2D = Node2D.new()
 	zones.name = "Zones"
 	floor.add_child(zones)
 	
 	# Create some basic zones
-	var zone_configs = [
+	var zone_configs: Variant = [
 		{"name": "Room_A", "pos": Vector2(200, 300), "size": Vector2(150, 100)},
 		{"name": "Room_B", "pos": Vector2(400, 300), "size": Vector2(150, 100)},
 		{"name": "Hallway", "pos": Vector2(300, 500), "size": Vector2(300, 80)}
 	]
 	
-	for config in zone_configs:
-		var zone = _create_zone_area(config.name, config.pos, config.size)
+	for config: Variant in zone_configs:
+		var zone: Area2D = _create_zone_area(config.name, config.pos, config.size)
 		zones.add_child(zone)
 	
 	return floor
 	
 func _set_floor_collisions(floor_node: Node, enabled: bool) -> void:
 	# Handle different collision node types
-	for node in _get_all_descendants(floor_node):
+	for node: Node in _get_all_descendants(floor_node):
 		_set_node_collision(node, enabled)
 		
 func _set_floor_navigation(floor_node: Node, enabled: bool) -> void:
@@ -274,19 +260,19 @@ func _set_collision_object_state(collision_object: CollisionObject2D, enabled: b
 			child.set_deferred("disabled", not enabled)
 			
 func _get_all_descendants(node: Node) -> Array:
-	var descendants = [node]
+	var descendants: Array[Node] = [node]
 	for child in node.get_children():
 		descendants.append_array(_get_all_descendants(child))
 	return descendants
 
 func _create_zone_area(zone_name: String, pos: Vector2, size: Vector2) -> Area2D:
 	"""Helper to create a basic zone Area2D"""
-	var zone = Area2D.new()
+	var zone: Area2D = Area2D.new()
 	zone.name = zone_name
 	zone.position = pos
 	
-	var collision = CollisionPolygon2D.new()
-	var half = size / 2
+	var collision: CollisionPolygon2D = CollisionPolygon2D.new()
+	var half: Vector2 = size / 2
 	collision.polygon = PackedVector2Array([
 		Vector2(-half.x, -half.y),
 		Vector2(half.x, -half.y),
@@ -296,7 +282,7 @@ func _create_zone_area(zone_name: String, pos: Vector2, size: Vector2) -> Area2D
 	zone.add_child(collision)
 	
 	# Add visual for debugging
-	var visual = Polygon2D.new()
+	var visual: Polygon2D = Polygon2D.new()
 	visual.polygon = collision.polygon
 	visual.color = Color(randf(), randf(), randf(), 0.3)
 	zone.add_child(visual)
@@ -332,8 +318,8 @@ func get_all_floors() -> Array:
 
 func get_loaded_floors() -> Array:
 	"""Get currently loaded floor numbers"""
-	var loaded = []
-	for floor_num in floors:
+	var loaded: Array[int] = []
+	for floor_num: int in floors:
 		if floors[floor_num].is_loaded:
 			loaded.append(floor_num)
 	return loaded

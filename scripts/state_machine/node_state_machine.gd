@@ -41,7 +41,7 @@ func transition_to(node_state_name : String) -> void:
 	if node_state_name == current_node_state.name.to_lower():
 		return
 	
-	var new_node_state = node_states.get(node_state_name.to_lower())
+	var new_node_state: Variant = node_states.get(node_state_name.to_lower())
 	
 	if !new_node_state:
 		return

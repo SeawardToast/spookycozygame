@@ -21,9 +21,9 @@ func _on_open() -> void:
 	var daily_summary: DailySummary = DailyReportManager.get_daily_summary()
 	task_completed_label.text = "Tasks Completed: " + str(daily_summary.total_tasks_completed)
 	task_failed_label.text = "Tasks Failed: " + str(daily_summary.total_tasks_failed)
-	var day_format_string = "Day %s,"
+	var day_format_string: String = "Day %s,"
 	day_label.text = day_format_string % daily_summary.date.day
-	var year_format_string = "Year %s"
+	var year_format_string: String = "Year %s"
 	year_label.text = year_format_string % daily_summary.date.year
 func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed("toggle_journal"):

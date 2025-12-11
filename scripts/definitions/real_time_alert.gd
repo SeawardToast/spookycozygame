@@ -10,7 +10,7 @@ var timestamp: float
 var location: String
 var requires_immediate_action: bool = false
 
-func _init(type: String, sev: String, g_id: String, g_name: String, msg: String, loc: String):
+func _init(type: String, sev: String, g_id: String, g_name: String, msg: String, loc: String) -> void:
 	alert_type = type
 	severity = sev
 	guest_id = g_id

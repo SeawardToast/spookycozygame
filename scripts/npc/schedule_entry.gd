@@ -7,7 +7,7 @@ var id: String  # Unique identifier (e.g., "morning_breakfast")
 var start_minute: int  # Start time in minutes from midnight (0-1439)
 var end_minute: int  # End time in minutes from midnight
 var zone_name: String  # Where to go
-var actions: Array[NPCAction] = []  # What to do when there
+var actions: Array[Variant] = []  # What to do when there
 var priority: int = 0  # For future conflict resolution
 var can_interrupt: bool = false  # Can player interrupt this?
 var completed_today: bool = false  # Tracks daily completion
@@ -17,7 +17,7 @@ func _init(
 	start: int = 0, 
 	end: int = 0, 
 	zone: String = ""
-):
+) -> void:
 	id = entry_id
 	start_minute = start
 	end_minute = end
@@ -38,7 +38,7 @@ func reset() -> void:
 	completed_today = false
 
 ## Add an action to this schedule entry
-func add_action(action: NPCAction) -> ScheduleEntry:
+func add_action(action: Variant) -> ScheduleEntry:
 	actions.append(action)
 	return self  # For chaining
 
@@ -48,9 +48,9 @@ static func create(id: String, start: int, end: int, zone: String) -> ScheduleEn
 
 ## Get human-readable time string
 func get_time_range() -> String:
-	var start_hour = start_minute / 60
-	var start_min = start_minute % 60
-	var end_hour = end_minute / 60
-	var end_min = end_minute % 60
+	var start_hour: int = start_minute / 60
+	var start_min: int = start_minute % 60
+	var end_hour: int = end_minute / 60
+	var end_min: int = end_minute % 60
 	return "%02d:%02d - %02d:%02d" % [start_hour, start_min, end_hour, end_min]
 	

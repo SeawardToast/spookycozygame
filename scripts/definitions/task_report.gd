@@ -12,7 +12,7 @@ var zone: String = ""
 var staff_involved: String = ""
 var additional_context: Dictionary = {}
 
-func _init(g_id: String, g_name: String, task: String, stat: String, loc: String):
+func _init(g_id: String, g_name: String, task: String, stat: String, loc: String) -> void:
 	guest_id = g_id
 	guest_name = g_name
 	task_type = task

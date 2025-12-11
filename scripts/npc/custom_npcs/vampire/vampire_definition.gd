@@ -11,10 +11,10 @@ var thirst: int = 100        # Hunger but for blood
 var elegance: int = 50       # Vampires judge themselves by grace & poise
 var tired: bool = false      # Vampires rest in coffins at daybreak
 
-func _init():
+func _init() -> void:
 	# Randomize name
-	var first_names = ["Vladimir", "Lilith", "Sanguis", "Noctis", "Valerie", "Dorian", "Elowen"]
-	var surnames = ["Drakov", "Nightshade", "von Crimson", "Blackthorn", "Hollowmoor"]
+	var first_names: Array[String] = ["Vladimir", "Lilith", "Sanguis", "Noctis", "Valerie", "Dorian", "Elowen"]
+	var surnames: Array[String] = ["Drakov", "Nightshade", "von Crimson", "Blackthorn", "Hollowmoor"]
 	npc_name = "%s %s" % [
 		first_names[randi() % first_names.size()],
 		surnames[randi() % surnames.size()]
@@ -33,25 +33,25 @@ func get_schedule() -> Array[ScheduleEntry]:
 	var schedule: Array[ScheduleEntry] = []
 	
 	# Late-afternoon rise from coffin
-	var rise = ScheduleEntry.create("rise", 1000, 1100, "Crypt")
+	var rise: ScheduleEntry = ScheduleEntry.create("rise", 1000, 1100, "Crypt")
 	rise.add_action(NPCAction.create("rise_from_coffin", "Rise from Coffin", rise_from_coffin))
 	schedule.append(rise)
 	
 	# Early evening hunt
-	var hunt = ScheduleEntry.create("evening_hunt", 1101, 1250, "Town")
+	var hunt: ScheduleEntry = ScheduleEntry.create("evening_hunt", 1101, 1250, "Town")
 	hunt.add_action(NPCAction.create("hunt", "Hunt for Blood", hunt_for_blood))
 	hunt.add_action(NPCAction.create("stalk", "Stalk Prey", stalk_prey))
 	hunt.priority = 6
 	schedule.append(hunt)
 	
 	# Midnight ballroom practice
-	var dance = ScheduleEntry.create("midnight_dance", 1251, 1380, "Grand Hall")
+	var dance: ScheduleEntry = ScheduleEntry.create("midnight_dance", 1251, 1380, "Grand Hall")
 	dance.add_action(NPCAction.create("practice_dance", "Practice Dark Waltz", practice_dark_waltz))
 	dance.can_interrupt = false
 	schedule.append(dance)
 	
 	# Pre-dawn retreat
-	var retreat = ScheduleEntry.create("retreat", 1381, 1439, "Crypt")
+	var retreat: ScheduleEntry = ScheduleEntry.create("retreat", 1381, 1439, "Crypt")
 	retreat.add_action(NPCAction.create("return_to_crypt", "Return to Coffin", return_to_crypt))
 	retreat.can_interrupt = true
 	schedule.append(retreat)
@@ -81,8 +81,8 @@ func hunt_for_blood() -> Array:
 	return [true, ""]
 
 func stalk_prey() -> Dictionary:
-	var skill = randi_range(1, 10)
-	var success = skill >= 4
+	var skill: int = randi_range(1, 10)
+	var success: bool = skill >= 4
 	
 	if success:
 		print("%s stalked prey with grace (Skill: %d/10)" % [npc_name, skill])

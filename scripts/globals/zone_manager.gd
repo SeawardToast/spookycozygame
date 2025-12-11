@@ -48,14 +48,14 @@ func register_zone(zone_data: Resource) -> int:
 	return zone_id
 
 
-func unregister_zone(zone_id: int):
+func unregister_zone(zone_id: int) -> void:
 	if zone_id not in zone_registry:
 		return
 
 	var zone_data: Resource = zone_registry[zone_id]["data"]
 	zones.erase(zone_data)
 
-	var area = zone_registry[zone_id]["area"]
+	var area: Area2D = zone_registry[zone_id]["area"]
 	if area and area.is_inside_tree():
 		area.queue_free()
 
@@ -63,9 +63,9 @@ func unregister_zone(zone_id: int):
 	print("ZoneManager: Unregistered zone %d" % zone_id)
 
 
-func clear_zones():
-	for id in zone_registry:
-		var area = zone_registry[id]["area"]
+func clear_zones() -> void:
+	for id: Area2D in zone_registry:
+		var area: Area2D = zone_registry[id]["area"]
 		if area and area.is_inside_tree():
 			area.queue_free()
 
@@ -82,9 +82,9 @@ func get_closest_zone_of_type_from_position(zone_type: String, from_position: Ve
 	var closest_zone_id := -1
 	var closest_distance := INF
 
-	for zone_id in zone_registry:
-		var meta = zone_registry[zone_id]
-		var zd: Resource = meta["data"]
+	for zone_id: int in zone_registry:
+		var meta: Dictionary = zone_registry[zone_id]
+		var zd: Object = meta["data"]
 
 		# Filter by type
 		if zd.type != zone_type:
@@ -170,15 +170,15 @@ func is_zone_loaded(zone_id: int) -> bool:
 	if zone_id not in zone_registry:
 		return false
 
-	var fl = zone_registry[zone_id]["floor"]
-	var floor_data = FloorManager.get_floor_data(fl)
+	var fl: int = zone_registry[zone_id]["floor"]
+	var floor_data: FloorData = FloorManager.get_floor_data(fl)
 
 	return floor_data and floor_data.is_loaded
 
 
 func get_all_zones_on_floor(floor_number: int) -> Array[int]:
 	var out := []
-	for zone_id in zone_registry:
+	for zone_id: int in zone_registry:
 		if zone_registry[zone_id]["floor"] == floor_number:
 			out.append(zone_id)
 	return out
@@ -186,8 +186,8 @@ func get_all_zones_on_floor(floor_number: int) -> Array[int]:
 
 func get_zones_by_type(zone_type: String) -> Array[int]:
 	var out := []
-	for zone_id in zone_registry:
-		var zd = zone_registry[zone_id]["data"]
+	for zone_id: int in zone_registry:
+		var zd: Resource = zone_registry[zone_id]["data"]
 		if zd.zone_type == zone_type:
 			out.append(zone_id)
 	return out

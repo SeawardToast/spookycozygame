@@ -19,7 +19,7 @@ func change_to(new_type: Type, new_context: Dictionary = {}) -> void:
 	if type == new_type:
 		return
 	
-	var old_type = type
+	var old_type: NPCState.Type = type
 	type = new_type
 	context = new_context
 	
@@ -32,7 +32,7 @@ func get_name() -> String:
 	return Type.keys()[type]
 
 func toString() -> String:
-	var ctx_str = ""
+	var ctx_str: String = ""
 	if context.size() > 0:
 		ctx_str = " (" + str(context) + ")"
 	return get_name() + ctx_str

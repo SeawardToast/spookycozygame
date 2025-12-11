@@ -17,8 +17,8 @@ func _on_body_entered(body: Node2D) -> void:
 	if not body.is_in_group("player"):
 		return
 	
-	var current_floor = FloorManager.get_current_floor()
-	var new_floor = current_floor
+	var current_floor: int = FloorManager.get_current_floor()
+	var new_floor: int = current_floor
 	
 	if direction == "up":
 		new_floor = current_floor + 1

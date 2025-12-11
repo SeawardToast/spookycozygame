@@ -18,17 +18,17 @@ var complaints: Array[String] = []
 var satisfaction_score: float = 0.0
 var areas_visited: Array[String] = []
 
-func _init(g_id: String, g_name: String):
+func _init(g_id: String, g_name: String) -> void:
 	guest_id = g_id
 	guest_name = g_name
 	check_in_time = Time.get_unix_time_from_system()
 
-func calculate_metrics():
+func calculate_metrics() -> void:
 	if total_tasks_attempted > 0:
 		task_success_rate = (float(total_tasks_completed) / float(total_tasks_attempted)) * 100.0
 	
 	if mood_history.size() > 0:
-		var mood_sum = 0.0
+		var mood_sum: float = 0.0
 		for mood in mood_history:
 			mood_sum += mood.intensity
 		average_mood = mood_sum / mood_history.size()

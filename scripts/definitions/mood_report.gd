@@ -11,7 +11,7 @@ var timestamp: float
 var location: String
 var zone: String = ""
 
-func _init(g_id: String, g_name: String, mood: String, intens: int, trig: String, loc: String):
+func _init(g_id: String, g_name: String, mood: String, intens: int, trig: String, loc: String) -> void:
 	guest_id = g_id
 	guest_name = g_name
 	mood_type = mood

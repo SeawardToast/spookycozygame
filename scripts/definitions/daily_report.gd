@@ -17,10 +17,10 @@ var alerts_generated: int = 0
 var task_breakdown: Dictionary = {}  # task_type: {completed: int, failed: int}
 var mood_breakdown: Dictionary = {}  # mood_type: count
 
-func _init(d: Dictionary):
+func _init(d: Dictionary) -> void:
 	date = d
 
-func calculate_metrics():
+func calculate_metrics() -> void:
 	if total_tasks_attempted > 0:
 		success_rate = (float(total_tasks_completed) / float(total_tasks_attempted)) * 100.0
 

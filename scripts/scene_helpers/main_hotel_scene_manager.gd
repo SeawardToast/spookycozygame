@@ -89,8 +89,8 @@ func _input(event: InputEvent) -> void:
 				print("Loaded floors: %s" % FloorManager.get_loaded_floors())
 			KEY_F2:
 				var npcs_on_floor: Array[String] = []
-				for npc_id: int in NPCSimulationManager.get_all_npc_states():
-					var state: NPCSimulationState = NPCSimulationManager.get_npc_state(npc_id)
+				for npc_id: Variant in NPCSimulationManager.get_all_npc_states():
+					var state: NPCSimulationManager.NPCSimulationState = NPCSimulationManager.get_npc_state(npc_id)
 					if state.current_floor == current_player_floor:
 						npcs_on_floor.append(state.npc_name)
 				print("\n=== NPCs on Floor %d ===" % current_player_floor)

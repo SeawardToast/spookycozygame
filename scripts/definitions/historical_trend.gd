@@ -11,16 +11,16 @@ var improvement_percentage: float = 0.0
 var declining_areas: Array[String] = []
 var improving_areas: Array[String] = []
 
-func _init(start: String, end: String):
+func _init(start: String, end: String) -> void:
 	start_date = start
 	end_date = end
 
-func calculate_trends():
+func calculate_trends() -> void:
 	if daily_summaries.size() == 0:
 		return
 	
-	var success_sum = 0.0
-	var mood_sum = 0.0
+	var success_sum: float = 0.0
+	var mood_sum: float = 0.0
 	
 	for summary in daily_summaries:
 		success_sum += summary.success_rate
@@ -31,13 +31,13 @@ func calculate_trends():
 	
 	# Calculate improvement from first to last period
 	if daily_summaries.size() > 1:
-		var first = daily_summaries[0].success_rate
-		var last = daily_summaries[-1].success_rate
+		var first: float = daily_summaries[0].success_rate
+		var last: float = daily_summaries[-1].success_rate
 		if first > 0:
 			improvement_percentage = ((last - first) / first) * 100.0
 
 func to_dict() -> Dictionary:
-	var summaries_dict = []
+	var summaries_dict: Variant = []
 	for summary in daily_summaries:
 		summaries_dict.append(summary.to_dict())
 	

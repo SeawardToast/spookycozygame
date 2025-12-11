@@ -5,7 +5,7 @@ extends NodeState
 @export var idle_state_time_interval: float = 4.0
 @onready var idle_state_timer: Timer = Timer.new()
 
-var idle_state_timeout = false
+var idle_state_timeout: bool = false
 
 func _ready() -> void:
 	idle_state_timer.wait_time = idle_state_time_interval

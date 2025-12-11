@@ -33,7 +33,7 @@ func _process(delta: float) -> void:
 	recalculate_time()
 
 func set_intial_time() -> void:
-	var initial_total_minutes = initial_day * MINUTES_PER_DAY + (initial_hour * MINUTES_PER_HOUR) + initial_minute
+	var initial_total_minutes: int = initial_day * MINUTES_PER_DAY + (initial_hour * MINUTES_PER_HOUR) + initial_minute
 	
 	time = initial_total_minutes * GAME_MINUTE_DURATION
 
