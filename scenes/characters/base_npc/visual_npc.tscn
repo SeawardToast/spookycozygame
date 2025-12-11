@@ -19,11 +19,12 @@ animation = &"idle"
 
 [node name="NavigationAgent2D" type="NavigationAgent2D" parent="."]
 path_desired_distance = 4.0
-target_desired_distance = 0.1
+target_desired_distance = 5.07
 path_max_distance = 10.0
 navigation_layers = 4
 avoidance_enabled = true
-radius = 15.0
+radius = 5.0
+debug_enabled = true
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="."]
 shape = SubResource("CircleShape2D_cllpf")
@@ -35,9 +36,3 @@ offset_right = 43.0
 offset_bottom = -27.0
 theme_override_font_sizes/font_size = 13
 text = "NPC Name"
-
-[node name="DebugVisuals" type="Node2D" parent="."]
-
-[node name="PathLine" type="Line2D" parent="DebugVisuals"]
-
-[node name="TargetMarker" type="Sprite2D" parent="DebugVisuals"]

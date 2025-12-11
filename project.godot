@@ -36,6 +36,12 @@ NPCTypeRegistry="*res://scripts/globals/npc_type_registry.gd"
 FloorManager="*res://scripts/globals/floor_manager.gd"
 DailyReportManager="*res://scripts/globals/guest_report_manager.gd"
 
+[debug]
+
+gdscript/warnings/unassigned_variable=2
+gdscript/warnings/unreachable_code=2
+gdscript/warnings/untyped_declaration=2
+
 [display]
 
 window/size/viewport_width=853

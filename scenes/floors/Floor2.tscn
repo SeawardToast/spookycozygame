@@ -1,8 +1,9 @@
-[gd_scene load_steps=5 format=4 uid="uid://cbawax1u80bf"]
+[gd_scene load_steps=6 format=4 uid="uid://cbawax1u80bf"]
 
 [ext_resource type="Script" uid="uid://b6s08yav4lhwr" path="res://scripts/scene_helpers/zone_auto_register.gd" id="1_g66gy"]
 [ext_resource type="TileSet" uid="uid://dcaqtdvfufe8g" path="res://tilesets/game_tile_set.tres" id="2_41s35"]
 [ext_resource type="Script" uid="uid://e6on2na0ba4m" path="res://scenes/test/debug/grass.gd" id="3_5ki62"]
+[ext_resource type="Script" uid="uid://cwp70nkiq2ecd" path="res://scenes/floors/objects.gd" id="4_5ki62"]
 [ext_resource type="PackedScene" uid="uid://d3wa7u06ykxxl" path="res://scenes/objects/movement/stairs.tscn" id="4_41s35"]
 
 [node name="Floor1" type="Node2D"]
@@ -46,13 +47,14 @@ y_sort_enabled = true
 tile_set = ExtResource("2_41s35")
 
 [node name="Undergrowth" type="TileMapLayer" parent="GameTileMap"]
-tile_map_data = PackedByteArray("AAAWABIABQAAAAMAAAAWABEABQAAAAEAAAAWABAABQAAAAAAAAAWAA8ABQAAAAAAAAAWAA4ABQAAAAAAAAAWAA0ABQAAAAEAAAAWAAwABQAAAAAAAAA=")
 tile_set = ExtResource("2_41s35")
 
 [node name="Objects" type="TileMapLayer" parent="GameTileMap"]
 y_sort_enabled = true
+tile_map_data = PackedByteArray("AAAWAAwABQAAAAAAAAAWAA0ABQAAAAEAAAAWAA4ABQAAAAAAAAAWAA8ABQAAAAAAAAAWABAABQAAAAAAAAAWABEABQAAAAEAAAAWABIABQAAAAAAAAAWABMABQABAAIAAAAXABMABQACAAIAAAAYABMABQACAAIAAAAZABMABQACAAIAAAAaABMABQACAAIAAAAbABMABQACAAIAAAAcABMABQACAAIAAAAdABMABQACAAIAAAAeABMABQACAAIAAAAfABMABQADAAAAAAAfABQABQABAAIAAAAgABQABQACAAIAAAAhABQABQACAAIAAAAiABQABQACAAIAAAAjABQABQACAAIAAAAkABQABQACAAIAAAAlABQABQADAAIAAAAlABMABQAAAAEAAAAlABIABQAAAAEAAAAlABEABQAAAAEAAAAlABAABQADAAAAAAAlAA0ABQADAAAAAAAlAA8ABQADAAAAAAAlAA4ABQADAAAAAAAlAAwABQADAAEAAAAkAAwABQABAAAAAAAkAA0ABQABAAAAAAAkAA4ABQABAAAAAAAkAA8ABQABAAEAAAAkABAABQABAAIAAAA=")
 tile_set = ExtResource("2_41s35")
 navigation_enabled = false
+script = ExtResource("4_5ki62")
 
 [node name="Stairs" parent="." instance=ExtResource("4_41s35")]
 position = Vector2(334, 224)

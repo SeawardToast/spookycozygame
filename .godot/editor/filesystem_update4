@@ -8,10 +8,6 @@ res://assets/game/characters/sprites/vampires/vampire_1/vampire_1.tres
 res://scenes/objects/rocks/rock_shake.gdshader
 res://scenes/characters/guide/replace_color.gdshader
 res://dialogue/dialogue_balloon_theme.tres
-res://scripts/globals/npc_simulation_manager.gd
-res://scripts/npc/npc_navigation.gd
-res://scenes/characters/base_npc/visual_npc.tscn
-res://scenes/characters/base_npc/visual_npc.gd
 res://scripts/scene_helpers/main_hotel_scene_manager.gd
-res://scenes/floors/Floor1.tscn
-res://scripts/globals/floor_manager.gd
+res://scripts/globals/npc_simulation_manager.gd
+res://scripts/npc/npc_simulation_state_definition.gd

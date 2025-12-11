@@ -113,6 +113,7 @@ func load_floor(floor_number: int) -> Node2D:
 	floor_data.floor_node.visible = false
 	floor_data.floor_node.process_mode = Node.PROCESS_MODE_DISABLED
 	_set_floor_collisions(floor_data.floor_node, false)
+	_set_floor_navigation(floor_data.floor_node, false)
 	floor_data.is_loaded = true
 	
 	# disable collisions
@@ -210,13 +211,12 @@ func _set_floor_collisions(floor_node: Node, enabled: bool) -> void:
 func _set_floor_navigation(floor_node: Node, enabled: bool) -> void:
 	for child in floor_node.get_children():
 		if child is TileMapLayer:
-			child.navigation_enabled = enabled
-		elif child is NavigationRegion2D:
-			child.enabled = enabled
+			child.navigation_enabled = enabled 
 		
 		# Recursively check children
 		if child.get_child_count() > 0:
 			_set_floor_navigation(child, enabled)
+
 		
 func _set_node_collision(node: Node, enabled: bool) -> void:
 	# TileMap (Godot 4.x)
