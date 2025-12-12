@@ -108,6 +108,7 @@ func _sync_to_simulation_state() -> void:
 	if simulation_state.state.type == NPCState.Type.NAVIGATING:
 		if navigation_agent_2d and use_navigation:
 			navigation_agent_2d.target_position = simulation_state.target_position
+			navigation_agent_2d.set_navigation_layer_value(simulation_state.current_floor, true)
 
 
 # =============================================================================

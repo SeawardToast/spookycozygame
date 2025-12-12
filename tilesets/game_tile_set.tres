@@ -1,4 +1,4 @@
-[gd_resource type="TileSet" load_steps=37 format=3 uid="uid://dcaqtdvfufe8g"]
+[gd_resource type="TileSet" load_steps=38 format=3 uid="uid://dcaqtdvfufe8g"]
 
 [ext_resource type="Texture2D" uid="uid://chnvtwwtkgskb" path="res://assets/game/tilesets/Water.png" id="1_xa2g7"]
 [ext_resource type="Texture2D" uid="uid://c6p4eggyakn24" path="res://assets/game/tilesets/Grass.png" id="2_jutaf"]
@@ -947,6 +947,12 @@ polygons = Array[PackedInt32Array]([PackedInt32Array(0, 1, 2, 3)])
 outlines = Array[PackedVector2Array]([PackedVector2Array(-8, -8, 8, -8, 8, 8, -8, 8)])
 agent_radius = 0.0
 
+[sub_resource type="NavigationPolygon" id="NavigationPolygon_1qupx"]
+vertices = PackedVector2Array(8, 8, -8, 8, -8, -8, 8, -8)
+polygons = Array[PackedInt32Array]([PackedInt32Array(0, 1, 2, 3)])
+outlines = Array[PackedVector2Array]([PackedVector2Array(-8, -8, 8, -8, 8, 8, -8, 8)])
+agent_radius = 0.0
+
 [sub_resource type="NavigationPolygon" id="NavigationPolygon_dvba5"]
 vertices = PackedVector2Array(8, 8, -8, 8, -8, -8, 8, -8)
 polygons = Array[PackedInt32Array]([PackedInt32Array(0, 1, 2, 3)])
@@ -1169,7 +1175,7 @@ texture = ExtResource("10_jutaf")
 2:14/0 = 0
 2:14/0/navigation_layer_0/polygon = SubResource("NavigationPolygon_dvba5")
 1:14/0 = 0
-1:14/0/navigation_layer_0/polygon = SubResource("NavigationPolygon_ayv3o")
+1:14/0/navigation_layer_0/polygon = SubResource("NavigationPolygon_1qupx")
 0:14/0 = 0
 0:14/0/navigation_layer_0/polygon = SubResource("NavigationPolygon_nb823")
 3:14/0 = 0
@@ -1239,10 +1245,11 @@ texture = ExtResource("10_jutaf")
 12:15/0 = 0
 13:15/0 = 0
 13:13/0 = 0
-13:13/0/navigation_layer_0/polygon = SubResource("NavigationPolygon_meq1c")
+13:13/0/navigation_layer_0/polygon = SubResource("NavigationPolygon_ayv3o")
 4:3/0 = 0
 
 [resource]
+resource_local_to_scene = true
 physics_layer_0/collision_layer = 1
 terrain_set_0/mode = 0
 terrain_set_0/terrain_0/name = "Grass Terrain"

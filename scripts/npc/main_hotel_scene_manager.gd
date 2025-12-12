@@ -32,6 +32,7 @@ func _ready() -> void:
 	
 	# Spawn some initial guests
 	call_deferred("_spawn_initial_npcs")
+	
 
 func _spawn_initial_npcs() -> void:
 	print("=== Spawning NPCs ===")
