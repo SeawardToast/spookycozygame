@@ -80,7 +80,7 @@ func setup_floor_navigation(floor_node: Node, floor_number: int) -> void:
 		tilemap.tile_set.set_navigation_layer_layer_value(0, floor_number, true)
 
 	floor_navigation_ready.emit()
-
+	
 func map_tilemap_navigation_regions(tilemap: TileMapLayer, floor_number: int) -> void:
 	var nav_map: RID = main_scene_container.get_world_2d().navigation_map
 	var all_regions: Array[RID] = NavigationServer2D.map_get_regions(nav_map)
@@ -135,7 +135,7 @@ func _find_all_tilemaps(node: Node, result: Array[TileMapLayer]) -> void:
 	for child in node.get_children():
 		_find_all_tilemaps(child, result)
 
-# Bonus: Utility functions for disabling/enabling navigation
+# Bonus: Utility functions for disabling/enabling navigation, specifically when objects or obstacles are placed on top
 func disable_navigation_at_tile(floor_number: int, tile_coords: Vector2i) -> void:
 	if not floor_nav_regions.has(floor_number):
 		return
@@ -196,9 +196,6 @@ func load_floor(floor_number: int) -> Node2D:
 	floor_data.floor_node.visible = false
 	floor_data.floor_node.process_mode = Node.PROCESS_MODE_DISABLED
 	_set_floor_collisions(floor_data.floor_node, false)
-	# setup floor nav layers but disable the nav regions initially
-	setup_floor_navigation(floor_data.floor_node, floor_number)
-	_set_floor_navigation(floor_data.floor_node, true)
 	floor_data.is_loaded = true
 	
 	# disable collisions
@@ -241,7 +238,6 @@ func set_active_floor(floor_number: int, initializing: bool = false) -> void:
 			old_floor_node.visible = false
 			old_floor_node.process_mode = Node.PROCESS_MODE_DISABLED
 			_set_floor_collisions(old_floor_node, false)
-			_set_floor_navigation(old_floor_node, false)
 			print("Setting old floor node collisions and navigation to false")
 		floors[old_floor].is_active = false
 	
@@ -255,7 +251,9 @@ func set_active_floor(floor_number: int, initializing: bool = false) -> void:
 		new_floor_node.visible = true
 		new_floor_node.process_mode = Node.PROCESS_MODE_INHERIT
 		_set_floor_collisions(new_floor_node, true)
-		_set_floor_navigation(new_floor_node, true)
+		# Setup navigation if not already mapped for this floor
+		setup_floor_navigation(new_floor_node, floor_number)
+
 	floors[floor_number].is_active = true
 	
 	current_floor = floor_number
@@ -316,16 +314,6 @@ func _set_tilemap_collision(tilemap: TileMapLayer, enabled: bool) -> void:
 		# Disable all collision layers
 		tilemap.collision_enabled = false
 		print("tilemap collision layer disabled")
-
-func _set_floor_navigation(floor_node: Node, enabled: bool) -> void:
-	for child in floor_node.get_children():
-		if child is TileMapLayer:
-			child.navigation_enabled = enabled 
-		
-		# Recursively check children
-		if child.get_child_count() > 0:
-			_set_floor_navigation(child, enabled)
-
 
 func _set_collision_object_state(collision_object: CollisionObject2D, enabled: bool) -> void:
 	if enabled:

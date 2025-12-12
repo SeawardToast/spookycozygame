@@ -155,15 +155,6 @@ func _on_npc_arrived_at_zone(id: String, zone_name: String, position: Vector2) -
 	print("Visual %s: Arrived at %s" % [simulation_state.npc_name, zone_name])
 	velocity = Vector2.ZERO
 
-
-func _on_npc_floor_changedd(id: String, new_floor: int) -> void:
-	if id != npc_id:
-		return
-	
-	if navigation_agent_2d:
-		navigation_agent_2d.navigation_layers = 1 << (simulation_state.current_floor - 1)
-
-
 func _on_npc_waypoint_reached(id: String, waypoint_type: String, position: Vector2) -> void:
 	if id != npc_id:
 		return
