@@ -1,4 +1,4 @@
-[gd_scene load_steps=9 format=4 uid="uid://dsg6awvuoluqm"]
+[gd_scene load_steps=7 format=4 uid="uid://dsg6awvuoluqm"]
 
 [ext_resource type="TileSet" uid="uid://dcaqtdvfufe8g" path="res://tilesets/game_tile_set.tres" id="2_s3vu1"]
 [ext_resource type="PackedScene" uid="uid://6fa2m4vt6287" path="res://scenes/characters/player/player.tscn" id="3_41ysk"]
@@ -6,8 +6,6 @@
 [ext_resource type="TileSet" uid="uid://bk0iolupu4pg" path="res://tilesets/large_house_tile_set.tres" id="4_s7bjn"]
 [ext_resource type="PackedScene" uid="uid://b8rmgeoryatiu" path="res://scenes/houses/door.tscn" id="5_c31ig"]
 [ext_resource type="PackedScene" uid="uid://8qpho0ri8727" path="res://scenes/ui/day_and_night_panel.tscn" id="5_x2co1"]
-[ext_resource type="PackedScene" uid="uid://bax4g3mp3xmv7" path="res://scenes/objects/tools/zone_creator.tscn" id="6_s3vu1"]
-[ext_resource type="Script" uid="uid://cjcidgf73xbg8" path="res://scripts/ZoneData.gd" id="7_41ysk"]
 
 [node name="TestSceneNPCDebug" type="Node2D"]
 y_sort_enabled = true
@@ -50,13 +48,6 @@ offset_left = 670.0
 offset_top = 516.0
 offset_right = 670.0
 offset_bottom = 516.0
-
-[node name="ZoneCreator" parent="." node_paths=PackedStringArray("wall_tilemap", "floor_tilemap") instance=ExtResource("6_s3vu1")]
-zone_data_script = ExtResource("7_41ysk")
-wall_tilemap = NodePath("../GameTileMap/Walls")
-floor_tilemap = NodePath("../GameTileMap/Floor")
-
-[node name="Polygon2D" type="Polygon2D" parent="ZoneCreator"]
 
 [node name="Doors" type="Node2D" parent="."]
 

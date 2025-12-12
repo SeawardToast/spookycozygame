@@ -217,6 +217,8 @@ func _handle_waypoint_arrival(npc: NPCSimulationState) -> void:
 	if waypoint.type in ["stairs_up", "stairs_down"]:
 		var target_floor: int = waypoint.metadata.get("target_floor", npc.current_floor)
 		npc.current_floor = target_floor
+		if npc.npc_instance != null and npc.npc_instance.navigation_agent_2d != null:
+			npc.npc_instance.navigation_agent_2d.set_navigation_layer_value(target_floor, true)
 		print("%s changed to floor %d" % [npc.npc_name, npc.current_floor])
 	
 	var next_waypoint: bool = npc.navigation.advance_waypoint()

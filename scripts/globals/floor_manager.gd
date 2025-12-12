@@ -11,11 +11,13 @@ extends Node
 var floors: Dictionary = {}  # floor_number -> FloorData
 var current_floor: int = 1
 var main_scene_container: Node2D = null  # Reference to where floors are added
-
+var floor_nav_regions: Dictionary = {}  # floor_number: { tile_coords: RID }
 # Signals
 signal floor_changed(old_floor: int, new_floor: int)
 signal floor_loaded(floor_number: int)
 signal floor_unloaded(floor_number: int)
+signal floor_navigation_ready(floor_number: int, floor_node: Node)
+signal all_floors_ready()
 
 func _ready() -> void:
 	_setup_hotel_floors()
@@ -56,6 +58,96 @@ func set_main_container(container: Node2D) -> void:
 	"""Set the main scene container where floors will be added"""
 	main_scene_container = container
 	print("FloorManager: Main container set: %s" % container.name)
+
+	
+func setup_floor_navigation(floor_node: Node, floor_number: int) -> void:
+	# Wait for navigation to initialize
+	await get_tree().process_frame
+	await get_tree().process_frame
+	await get_tree().physics_frame
+	
+	# Find all TileMapLayers in the floor
+	var tilemaps: Array[TileMapLayer] = []
+	_find_all_tilemaps(floor_node, tilemaps)
+	
+	# Initialize navigation region mapping for this floor
+	floor_nav_regions[floor_number] = {}
+	
+	for tilemap in tilemaps:
+		map_tilemap_navigation_regions(tilemap, floor_number)
+	floor_navigation_ready.emit()
+
+func map_tilemap_navigation_regions(tilemap: TileMapLayer, floor_number: int) -> void:
+	var nav_map: RID = main_scene_container.get_world_2d().navigation_map
+	var all_regions: Array[RID] = NavigationServer2D.map_get_regions(nav_map)
+	var used_cells: Array[Vector2i] = tilemap.get_used_cells()
+	
+	print("Mapping navigation for tilemap: %s on floor %d" % [tilemap.name, floor_number])
+	print("Used cells: %d, Total nav regions: %d" % [used_cells.size(), all_regions.size()])
+	
+	var tile_size: float = tilemap.tile_set.tile_size.x
+	var max_distance: float = tile_size * 0.6
+	
+	for cell_coords: Vector2i in used_cells:
+		var tile_data: TileData = tilemap.get_cell_tile_data(cell_coords)
+		
+		# Skip tiles without navigation polygons
+		if not tile_data or not tile_data.get_navigation_polygon(0):
+			continue
+		
+		# Get world position of this tile
+		var cell_world_pos: Vector2 = tilemap.map_to_local(cell_coords)
+		cell_world_pos = tilemap.to_global(cell_world_pos)
+		
+		# Find matching navigation region
+		var matching_rid: RID = find_nav_region_at_position(all_regions, cell_world_pos, max_distance)
+		
+		if matching_rid != RID():
+			# Set the navigation layer to the floor number
+			NavigationServer2D.region_set_navigation_layers(matching_rid, floor_number)
+			# Store the mapping
+			floor_nav_regions[floor_number][cell_coords] = matching_rid
+	
+	print("Mapped %d navigation tiles for floor %d" % [floor_nav_regions[floor_number].size(), floor_number])
+
+func find_nav_region_at_position(regions: Array[RID], target_pos: Vector2, max_distance: float) -> RID:
+	var closest_rid: RID = RID()
+	var closest_distance: float = INF
+	
+	for rid: RID in regions:
+		var region_transform: Transform2D = NavigationServer2D.region_get_transform(rid)
+		var region_pos: Vector2 = region_transform.origin
+		var distance: float = region_pos.distance_to(target_pos)
+		
+		if distance < max_distance and distance < closest_distance:
+			closest_distance = distance
+			closest_rid = rid
+	
+	return closest_rid
+
+func _find_all_tilemaps(node: Node, result: Array[TileMapLayer]) -> void:
+	if node is TileMapLayer:
+		result.append(node)
+	for child in node.get_children():
+		_find_all_tilemaps(child, result)
+
+# Bonus: Utility functions for disabling/enabling navigation
+func disable_navigation_at_tile(floor_number: int, tile_coords: Vector2i) -> void:
+	if not floor_nav_regions.has(floor_number):
+		return
+	
+	if floor_nav_regions[floor_number].has(tile_coords):
+		var rid: RID = floor_nav_regions[floor_number][tile_coords]
+		NavigationServer2D.region_set_navigation_layers(rid, 0)
+
+func enable_navigation_at_tile(floor_number: int, tile_coords: Vector2i) -> void:
+	if not floor_nav_regions.has(floor_number):
+		return
+	
+	if floor_nav_regions[floor_number].has(tile_coords):
+		var rid: RID = floor_nav_regions[floor_number][tile_coords]
+		NavigationServer2D.region_set_navigation_layers(rid, floor_number)
+
 
 func load_floor(floor_number: int) -> Node2D:
 	#"""Load a floor scene and add it to the main scene tree"""
@@ -99,7 +191,8 @@ func load_floor(floor_number: int) -> Node2D:
 	floor_data.floor_node.visible = false
 	floor_data.floor_node.process_mode = Node.PROCESS_MODE_DISABLED
 	_set_floor_collisions(floor_data.floor_node, false)
-	_set_floor_navigation(floor_data.floor_node, false)
+	#_set_floor_navigation(floor_data.floor_node, false)
+	setup_floor_navigation(floor_data.floor_node, floor_number)
 	floor_data.is_loaded = true
 	
 	# disable collisions
@@ -142,7 +235,6 @@ func set_active_floor(floor_number: int, initializing: bool = false) -> void:
 			old_floor_node.visible = false
 			old_floor_node.process_mode = Node.PROCESS_MODE_DISABLED
 			_set_floor_collisions(old_floor_node, false)
-			_set_floor_navigation(old_floor_node, false)
 			print("Setting old floor node collisions to false")
 		floors[old_floor].is_active = false
 	
@@ -156,7 +248,6 @@ func set_active_floor(floor_number: int, initializing: bool = false) -> void:
 		new_floor_node.visible = true
 		new_floor_node.process_mode = Node.PROCESS_MODE_INHERIT
 		_set_floor_collisions(new_floor_node, true)
-		_set_floor_navigation(new_floor_node, true)
 	floors[floor_number].is_active = true
 	
 	current_floor = floor_number
@@ -194,16 +285,6 @@ func _set_floor_collisions(floor_node: Node, enabled: bool) -> void:
 	for node: Node in _get_all_descendants(floor_node):
 		_set_node_collision(node, enabled)
 		
-func _set_floor_navigation(floor_node: Node, enabled: bool) -> void:
-	for child in floor_node.get_children():
-		if child is TileMapLayer:
-			child.navigation_enabled = enabled 
-		
-		# Recursively check children
-		if child.get_child_count() > 0:
-			_set_floor_navigation(child, enabled)
-
-		
 func _set_node_collision(node: Node, enabled: bool) -> void:
 	# TileMap (Godot 4.x)
 	if node is TileMapLayer:
@@ -223,22 +304,11 @@ func _set_tilemap_collision(tilemap: TileMapLayer, enabled: bool) -> void:
 	# In Godot 4, TileMaps have collision layers
 	if enabled:
 		tilemap.collision_enabled = true
-		# Store original collision mask/layer if not stored
-		#if not tilemap.has_meta("original_collision_layer"):
-			#tilemap.set_meta("original_collision_layer", tilemap.collision_layer)
-			#tilemap.set_meta("original_collision_mask", tilemap.collision_mask)
-		##
-		### Restore original values
-		#tilemap.collision_layer = tilemap.get_meta("original_collision_layer")
-		#tilemap.collision_mask = tilemap.get_meta("original_collision_mask")
 	else:
 		# Disable all collision layers
 		tilemap.collision_enabled = false
 		print("tilemap collision layer disabled")
-		#tilemap.collision_layer = 0
-		#tilemap.collision_mask = 0
 
-		
 func _set_collision_object_state(collision_object: CollisionObject2D, enabled: bool) -> void:
 	if enabled:
 		# Restore original collision settings

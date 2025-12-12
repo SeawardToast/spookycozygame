@@ -1,6 +1,7 @@
+Node
+Node2D
 Area2D
 CollisionPolygon2D
-Node2D
 AnimatedSprite2D
 Label
 HBoxContainer

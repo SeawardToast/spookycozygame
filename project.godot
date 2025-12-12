@@ -72,6 +72,7 @@ folder_colors={
 navigation_polygon_source_geometry_group=""
 player=""
 door=""
+walkable=""
 
 [input]
 

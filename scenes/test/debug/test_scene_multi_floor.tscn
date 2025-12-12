@@ -1,6 +1,6 @@
 [gd_scene load_steps=4 format=3 uid="uid://ck337w41wxm8p"]
 
-[ext_resource type="Script" uid="uid://dgm5knshx78wa" path="res://scripts/scene_helpers/main_hotel_scene_manager.gd" id="1_0ypgj"]
+[ext_resource type="Script" uid="uid://dgm5knshx78wa" path="res://scripts/npc/main_hotel_scene_manager.gd" id="1_0ypgj"]
 [ext_resource type="PackedScene" uid="uid://6fa2m4vt6287" path="res://scenes/characters/player/player.tscn" id="5_2i4pr"]
 [ext_resource type="PackedScene" uid="uid://8qpho0ri8727" path="res://scenes/ui/day_and_night_panel.tscn" id="6_jus00"]
 

@@ -47,6 +47,7 @@ func _ready() -> void:
 	if navigation_agent_2d and use_navigation:
 		navigation_agent_2d.target_desired_distance = 1
 		navigation_agent_2d.velocity_computed.connect(_on_navigation_velocity_computed)
+		navigation_agent_2d.set_navigation_layer_value(simulation_state.current_floor, true)
 	
 	_connect_signals()
 	_sync_to_simulation_state()
