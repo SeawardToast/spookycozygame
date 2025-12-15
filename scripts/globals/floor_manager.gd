@@ -74,8 +74,6 @@ func setup_floor_navigation(floor_node: Node, floor_number: int) -> void:
 	floor_nav_regions[floor_number] = {}
 	
 	for tilemap in tilemaps:
-		# this affects behavior, unsure if this is a good or bad thing though
-		#tilemap.tile_set.set_navigation_layer_layers(0, floor_number)
 		map_tilemap_navigation_regions(tilemap, floor_number)
 		tilemap.tile_set.set_navigation_layer_layer_value(0, floor_number, true)
 
@@ -135,7 +133,6 @@ func _find_all_tilemaps(node: Node, result: Array[TileMapLayer]) -> void:
 	for child in node.get_children():
 		_find_all_tilemaps(child, result)
 
-# Bonus: Utility functions for disabling/enabling navigation, specifically when objects or obstacles are placed on top
 func disable_navigation_at_tile(floor_number: int, tile_coords: Vector2i) -> void:
 	if not floor_nav_regions.has(floor_number):
 		return
@@ -144,6 +141,10 @@ func disable_navigation_at_tile(floor_number: int, tile_coords: Vector2i) -> voi
 		var rid: RID = floor_nav_regions[floor_number][tile_coords]
 		NavigationServer2D.region_set_navigation_layers(rid, 0)
 		NavigationServer2D.region_set_enabled(rid, false)
+		
+		# Track this tile as disabled in the floor data
+		if tile_coords not in floors[floor_number].disabled_nav_tiles:
+			floors[floor_number].disabled_nav_tiles.append(tile_coords)
 
 func enable_navigation_at_tile(floor_number: int, tile_coords: Vector2i) -> void:
 	if not floor_nav_regions.has(floor_number):
@@ -153,6 +154,51 @@ func enable_navigation_at_tile(floor_number: int, tile_coords: Vector2i) -> void
 		var rid: RID = floor_nav_regions[floor_number][tile_coords]
 		NavigationServer2D.region_set_navigation_layers(rid, floor_number)
 		NavigationServer2D.region_set_enabled(rid, true)
+		
+		# Remove this tile from the disabled list
+		if floors[floor_number].disabled_nav_tiles:
+			var disabled_tiles: Array = floors[floor_number].disabled_nav_tiles
+			var index: int = disabled_tiles.find(tile_coords)
+			if index != -1:
+				disabled_tiles.remove_at(index)
+
+func _disable_floor_navigation(floor_number: int) -> void:
+	"""Disable all navigation regions for a specific floor"""
+	if not floor_nav_regions.has(floor_number):
+		return
+	
+	print("Disabling navigation for floor %d" % floor_number)
+	for tile_coords: Vector2i in floor_nav_regions[floor_number]:
+		var rid: RID = floor_nav_regions[floor_number][tile_coords]
+		NavigationServer2D.region_set_enabled(rid, false)
+		# Optionally also set layers to 0 for extra safety
+		#NavigationServer2D.region_set_navigation_layers(rid, 0)
+	
+	print("Disabled %d navigation regions for floor %d" % [floor_nav_regions[floor_number].size(), floor_number])
+
+func _enable_floor_navigation(floor_number: int) -> void:
+	"""Enable all navigation regions for a specific floor"""
+	if not floor_nav_regions.has(floor_number):
+		return
+	
+	print("Enabling navigation for floor %d" % floor_number)
+	
+	# Get the list of tiles that should remain disabled
+	var disabled_tiles: Array = []
+	disabled_tiles = floors[floor_number].disabled_nav_tiles
+	
+	for tile_coords: Vector2i in floor_nav_regions[floor_number]:
+		var rid: RID = floor_nav_regions[floor_number][tile_coords]
+		
+		# Check if this tile should remain disabled
+		if tile_coords in disabled_tiles:
+			NavigationServer2D.region_set_enabled(rid, false)
+			NavigationServer2D.region_set_navigation_layers(rid, 0)
+		else:
+			NavigationServer2D.region_set_enabled(rid, true)
+			NavigationServer2D.region_set_navigation_layers(rid, floor_number)
+	
+	print("Enabled %d navigation regions for floor %d (%d tiles remain disabled)" % [floor_nav_regions[floor_number].size(), floor_number, disabled_tiles.size()])
 
 func load_floor(floor_number: int) -> Node2D:
 	#"""Load a floor scene and add it to the main scene tree"""
@@ -238,6 +284,7 @@ func set_active_floor(floor_number: int, initializing: bool = false) -> void:
 			old_floor_node.visible = false
 			old_floor_node.process_mode = Node.PROCESS_MODE_DISABLED
 			_set_floor_collisions(old_floor_node, false)
+			_disable_floor_navigation(old_floor)
 			print("Setting old floor node collisions and navigation to false")
 		floors[old_floor].is_active = false
 	
@@ -252,7 +299,9 @@ func set_active_floor(floor_number: int, initializing: bool = false) -> void:
 		new_floor_node.process_mode = Node.PROCESS_MODE_INHERIT
 		_set_floor_collisions(new_floor_node, true)
 		# Setup navigation if not already mapped for this floor
-		setup_floor_navigation(new_floor_node, floor_number)
+		if not floor_nav_regions.has(floor_number):
+			setup_floor_navigation(new_floor_node, floor_number)
+		_enable_floor_navigation(floor_number)
 
 	floors[floor_number].is_active = true
 	
@@ -260,7 +309,7 @@ func set_active_floor(floor_number: int, initializing: bool = false) -> void:
 	
 	emit_signal("floor_changed", old_floor, floor_number)
 	print("FloorManager: Active floor changed: %d -> %d" % [old_floor, floor_number])
-
+	
 func _create_fallback_floor(floor_number: int) -> Node2D:
 	"""Create a basic fallback floor if scene doesn't exist"""
 	print("FloorManager: Creating fallback floor %d" % floor_number)
