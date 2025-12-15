@@ -1,0 +1,376 @@
+# =============================================
+# HOW THE NPC VISUALIZATION SYSTEM WORKS
+# =============================================
+
+"""
+IMPORTANT CONCEPT:
+The NPCSimulationManager does NOT visualize NPCs automatically!
+It only simulates their logic (position, schedule, actions).
+
+YOU are responsible for spawning VisualNPC instances when/where needed.
+VisualNPC scenes are NOT just for testing - they're your production visual layer.
+
+ARCHITECTURE:
+┌─────────────────────────────────────────────────────────┐
+│ NPCSimulationManager (Global Singleton)                 │
+│ - Simulates ALL NPCs always                             │
+│ - Tracks positions, schedules, states                   │
+│ - No visuals, no sprites, pure logic                    │
+│ - Runs even when NPCs are off-screen                    │
+└─────────────────────────────────────────────────────────┘
+                         │
+                         │ You query states
+                         ▼
+┌─────────────────────────────────────────────────────────┐
+│ Your Game Scene / Room Manager                          │
+│ - Decides which NPCs need visuals                       │
+│ - Spawns VisualNPC instances as needed                  │
+│ - Despawns them when not needed (performance)           │
+└─────────────────────────────────────────────────────────┘
+                         │
+                         │ Spawns/Despawns
+                         ▼
+┌─────────────────────────────────────────────────────────┐
+│ VisualNPC (Scene Instance)                              │
+│ - Syncs with simulation state                           │
+│ - Renders sprite, plays animations                      │
+│ - Handles pathfinding visualization                     │
+│ - Can be destroyed without affecting simulation         │
+└─────────────────────────────────────────────────────────┘
+"""
+
+# =============================================
+# APPROACH 1: SIMPLE - ALWAYS VISIBLE
+# =============================================
+# All NPCs always have visuals
+# Good for: Small games with <20 NPCs
+
+"""
+HotelScene.gd:
+"""
+extends Node2D
+
+var spawned_visuals: Dictionary = {} # npc_id -> VisualNPC node
+
+func _ready():
+	# Connect to spawn events
+	NPCSimulationManager.npc_spawned.connect(_on_npc_spawned)
+	NPCSimulationManager.npc_despawned.connect(_on_npc_despawned)
+	
+	# Spawn visuals for any existing NPCs
+	for npc_id in NPCSimulationManager.get_all_npc_states():
+		_spawn_visual(npc_id)
+
+func _on_npc_spawned(npc_id: String, npc_type: String, position: Vector2):
+	# A new NPC was created in simulation, create visual for it
+	_spawn_visual(npc_id)
+
+func _on_npc_despawned(npc_id: String):
+	# NPC was removed from simulation, destroy visual
+	_despawn_visual(npc_id)
+
+func _spawn_visual(npc_id: String):
+	if npc_id in spawned_visuals:
+		return # Already spawned
+	
+	var state = NPCSimulationManager.get_npc_state(npc_id)
+	if not state:
+		return
+	
+	# Load and instantiate visual scene
+	var visual_scene = load("res://scenes/VisualNPC.tscn")
+	var visual = visual_scene.instantiate()
+	visual.npc_id = npc_id
+	visual.global_position = state.current_position
+	
+	add_child(visual)
+	spawned_visuals[npc_id] = visual
+	
+	print("Spawned visual for: %s (%s)" % [state.npc_name, state.npc_type])
+
+func _despawn_visual(npc_id: String):
+	if npc_id not in spawned_visuals:
+		return
+	
+	spawned_visuals[npc_id].queue_free()
+	spawned_visuals.erase(npc_id)
+
+# =============================================
+# APPROACH 2: OPTIMIZED - DISTANCE-BASED
+# =============================================
+# Only render NPCs near the player/camera
+# Good for: Medium games with 20-100 NPCs
+
+"""
+HotelScene.gd:
+"""
+extends Node2D
+
+@export var render_distance: float = 500.0 # How far from camera to render
+@export var check_interval: float = 0.5 # How often to check (seconds)
+
+var spawned_visuals: Dictionary = {}
+var check_timer: float = 0.0
+
+func _ready():
+	NPCSimulationManager.npc_spawned.connect(_on_npc_spawned)
+	NPCSimulationManager.npc_despawned.connect(_on_npc_despawned)
+
+func _process(delta: float):
+	check_timer += delta
+	if check_timer >= check_interval:
+		check_timer = 0.0
+		_update_visible_npcs()
+
+func _update_visible_npcs():
+	var camera_pos = _get_camera_position()
+	
+	# Check all simulated NPCs
+	for npc_id in NPCSimulationManager.get_all_npc_states():
+		var state = NPCSimulationManager.get_npc_state(npc_id)
+		var distance = camera_pos.distance_to(state.current_position)
+		
+		# Should this NPC be visible?
+		var should_render = distance < render_distance
+		var is_rendered = npc_id in spawned_visuals
+		
+		if should_render and not is_rendered:
+			# Spawn visual
+			_spawn_visual(npc_id)
+		elif not should_render and is_rendered:
+			# Despawn visual
+			_despawn_visual(npc_id)
+		elif should_render and is_rendered:
+			# Update LOD based on distance
+			spawned_visuals[npc_id].set_visibility_range(camera_pos, render_distance)
+
+func _get_camera_position() -> Vector2:
+	var camera = get_viewport().get_camera_2d()
+	if camera:
+		return camera.global_position
+	return Vector2.ZERO
+
+func _on_npc_spawned(npc_id: String, npc_type: String, position: Vector2):
+	# Don't auto-spawn visual, let _update_visible_npcs handle it
+	pass
+
+func _on_npc_despawned(npc_id: String):
+	_despawn_visual(npc_id)
+
+func _spawn_visual(npc_id: String):
+	if npc_id in spawned_visuals:
+		return
+	
+	var state = NPCSimulationManager.get_npc_state(npc_id)
+	if not state:
+		return
+	
+	var visual_scene = load("res://scenes/VisualNPC.tscn")
+	var visual = visual_scene.instantiate()
+	visual.npc_id = npc_id
+	visual.global_position = state.current_position
+	
+	add_child(visual)
+	spawned_visuals[npc_id] = visual
+
+func _despawn_visual(npc_id: String):
+	if npc_id not in spawned_visuals:
+		return
+	
+	spawned_visuals[npc_id].queue_free()
+	spawned_visuals.erase(npc_id)
+
+# =============================================
+# APPROACH 3: ROOM-BASED
+# =============================================
+# Only render NPCs in the current room/area
+# Good for: Hotels with separate rooms, floors, areas
+
+"""
+Room.gd (attached to each room scene):
+"""
+extends Node2D
+
+@export var room_name: String = "Room1"
+
+var spawned_visuals: Dictionary = {}
+var is_active_room: bool = false
+
+func _ready():
+	NPCSimulationManager.npc_arrived_at_zone.connect(_on_npc_arrived)
+
+func activate_room():
+	"""Called when player enters this room"""
+	is_active_room = true
+	_spawn_npcs_in_room()
+
+func deactivate_room():
+	"""Called when player leaves this room"""
+	is_active_room = false
+	_despawn_all_visuals()
+
+func _spawn_npcs_in_room():
+	# Check which NPCs are in this room's zones
+	for npc_id in NPCSimulationManager.get_all_npc_states():
+		var state = NPCSimulationManager.get_npc_state(npc_id)
+		
+		# Check if NPC is in any zone belonging to this room
+		if _is_npc_in_room(state):
+			_spawn_visual(npc_id)
+
+func _is_npc_in_room(state) -> bool:
+	# Check if NPC's target zone or position is in this room
+	# This depends on your zone/room setup
+	# Example: check if target zone name matches room zones
+	var room_zones = ["Kitchen", "Bedroom", "Bathroom"] # Your room's zones
+	return state.current_target_zone_name in room_zones
+
+func _on_npc_arrived(npc_id: String, zone_name: String, position: Vector2):
+	if not is_active_room:
+		return
+	
+	# Check if NPC arrived in this room
+	var state = NPCSimulationManager.get_npc_state(npc_id)
+	if _is_npc_in_room(state):
+		_spawn_visual(npc_id)
+
+func _spawn_visual(npc_id: String):
+	if npc_id in spawned_visuals:
+		return
+	
+	var state = NPCSimulationManager.get_npc_state(npc_id)
+	if not state:
+		return
+	
+	var visual_scene = load("res://scenes/VisualNPC.tscn")
+	var visual = visual_scene.instantiate()
+	visual.npc_id = npc_id
+	visual.global_position = state.current_position
+	
+	add_child(visual)
+	spawned_visuals[npc_id] = visual
+
+func _despawn_all_visuals():
+	for visual in spawned_visuals.values():
+		visual.queue_free()
+	spawned_visuals.clear()
+
+"""
+Then in your main scene manager:
+"""
+var current_room: Node2D = null
+
+func change_room(new_room: Node2D):
+	if current_room:
+		current_room.deactivate_room()
+	current_room = new_room
+	current_room.activate_room()
+
+# =============================================
+# APPROACH 4: HYBRID - MULTI-LEVEL RENDERING
+# =============================================
+# Combine distance and room-based approaches
+# Good for: Large hotels with multiple floors
+
+"""
+HotelManager.gd:
+"""
+extends Node
+
+@export var near_render_distance: float = 300.0
+@export var far_render_distance: float = 600.0
+
+var current_floor: int = 1
+var spawned_visuals: Dictionary = {}
+
+func _process(delta: float):
+	_update_npc_rendering()
+
+func _update_npc_rendering():
+	var player_pos = _get_player_position()
+	
+	for npc_id in NPCSimulationManager.get_all_npc_states():
+		var state = NPCSimulationManager.get_npc_state(npc_id)
+		
+		# Check floor first (fast culling)
+		var npc_floor = _get_floor_from_position(state.current_position)
+		if npc_floor != current_floor:
+			# Different floor - don't render
+			if npc_id in spawned_visuals:
+				_despawn_visual(npc_id)
+			continue
+		
+		# Same floor - check distance
+		var distance = player_pos.distance_to(state.current_position)
+		var is_rendered = npc_id in spawned_visuals
+		
+		if distance < far_render_distance and not is_rendered:
+			_spawn_visual(npc_id)
+		elif distance >= far_render_distance and is_rendered:
+			_despawn_visual(npc_id)
+		elif is_rendered:
+			# Update quality based on distance
+			var visual = spawned_visuals[npc_id]
+			if distance < near_render_distance:
+				visual.use_navigation = true # Full quality
+			else:
+				visual.use_navigation = false # Simple lerp
+
+func _get_floor_from_position(pos: Vector2) -> int:
+	# Your logic to determine floor from position
+	return 1
+
+func _get_player_position() -> Vector2:
+	# Your player position logic
+	return Vector2.ZERO
+
+func _spawn_visual(npc_id: String):
+	# Same as previous examples
+	pass
+
+func _despawn_visual(npc_id: String):
+	# Same as previous examples
+	pass
+
+# =============================================
+# SUMMARY: WHICH APPROACH TO USE?
+# =============================================
+
+"""
+┌─────────────────────────────────────────────────────────┐
+│ GAME SCALE          │ RECOMMENDED APPROACH              │
+├─────────────────────────────────────────────────────────┤
+│ 1-20 NPCs           │ Approach 1: Always Visible        │
+│ 20-100 NPCs         │ Approach 2: Distance-Based        │
+│ 100+ NPCs           │ Approach 2 or 3                   │
+│ Multiple Rooms      │ Approach 3: Room-Based            │
+│ Large Open World    │ Approach 2: Distance-Based        │
+│ Multi-Floor Hotel   │ Approach 4: Hybrid                │
+└─────────────────────────────────────────────────────────┘
+
+KEY POINTS:
+✓ NPCSimulationManager NEVER spawns visuals automatically
+✓ YOU decide when/where to spawn VisualNPC instances
+✓ VisualNPC is your production visual layer (not just testing)
+✓ Simulation runs independently of visuals (always)
+✓ You can have 100 simulated NPCs with only 10 visible
+✓ Performance scales with visible NPCs, not total NPCs
+"""
+
+# =============================================
+# DEBUGGING: SEE ALL SIMULATED NPCS
+# =============================================
+# Add this to your debug UI to see what's being simulated
+
+func _draw_debug_info():
+	var all_npcs = NPCSimulationManager.get_all_npc_states()
+	print("=== SIMULATION STATUS ===")
+	print("Total NPCs: %d" % all_npcs.size())
+	print("Visible NPCs: %d" % spawned_visuals.size())
+	print("Invisible NPCs: %d" % (all_npcs.size() - spawned_visuals.size()))
+	
+	# Draw dots for all simulated NPCs (even invisible ones)
+	for npc_id in all_npcs:
+		var state = NPCSimulationManager.get_npc_state(npc_id)
+		var color = Color.RED if npc_id in spawned_visuals else Color.GRAY
+		draw_circle(state.current_position, 5.0, color)

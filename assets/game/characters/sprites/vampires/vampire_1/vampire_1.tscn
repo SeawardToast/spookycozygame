@@ -1,0 +1,8 @@
+[gd_scene load_steps=2 format=3 uid="uid://cgwfsye8uitjl"]
+
+[ext_resource type="SpriteFrames" uid="uid://bmcir4d1timtn" path="res://assets/game/characters/sprites/vampires/vampire_1/vampire_1.tres" id="1_unlhb"]
+
+[node name="Vampire1" type="AnimatedSprite2D"]
+sprite_frames = ExtResource("1_unlhb")
+animation = &"walk"
+frame_progress = 0.03057496

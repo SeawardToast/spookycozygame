@@ -28,7 +28,7 @@ func load_level(level: String) -> void:
 	var level_root: Node = get_node(main_scene_level_root_path)
 	
 	if level_root != null:
-		var nodes = level_root.get_children()
+		var nodes: Array[Node] = level_root.get_children()
 		
 		if nodes != null:
 			for node: Node in nodes:

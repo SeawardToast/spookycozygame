@@ -13,7 +13,7 @@ func _ready() -> void:
 
 
 func save_node_data() -> void:
-	var nodes = get_tree().get_nodes_in_group("save_data_component")
+	var nodes: Array[Node] = get_tree().get_nodes_in_group("save_data_component")
 	
 	game_data_resource = SaveGameDataResource.new()
 	
@@ -21,7 +21,7 @@ func save_node_data() -> void:
 		for node: SaveDataComponent in nodes:
 			if node is SaveDataComponent:
 				var save_data_resource: NodeDataResource = node._save_data()
-				var save_final_resource = save_data_resource.duplicate()
+				var save_final_resource: Resource = save_data_resource.duplicate()
 				game_data_resource.save_data_nodes.append(save_final_resource)
 
 
