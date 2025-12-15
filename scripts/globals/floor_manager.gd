@@ -72,13 +72,13 @@ func setup_floor_navigation(floor_node: Node, floor_number: int) -> void:
 	
 	# Initialize navigation region mapping for this floor
 	floor_nav_regions[floor_number] = {}
-	
 	for tilemap in tilemaps:
 		map_tilemap_navigation_regions(tilemap, floor_number)
 		tilemap.tile_set.set_navigation_layer_layer_value(0, floor_number, true)
-
+ 		
 	floor_navigation_ready.emit()
 	
+
 func map_tilemap_navigation_regions(tilemap: TileMapLayer, floor_number: int) -> void:
 	var nav_map: RID = main_scene_container.get_world_2d().navigation_map
 	var all_regions: Array[RID] = NavigationServer2D.map_get_regions(nav_map)
@@ -126,6 +126,7 @@ func find_nav_region_at_position(regions: Array[RID], target_pos: Vector2, max_d
 			closest_rid = rid
 	
 	return closest_rid
+	
 
 func _find_all_tilemaps(node: Node, result: Array[TileMapLayer]) -> void:
 	if node is TileMapLayer:

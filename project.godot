@@ -73,6 +73,7 @@ navigation_polygon_source_geometry_group=""
 player=""
 door=""
 walkable=""
+navigation_obstacles=""
 
 [input]
 
