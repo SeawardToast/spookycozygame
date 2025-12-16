@@ -144,6 +144,8 @@ func _on_npc_started_traveling(id: String, from_pos: Vector2, to_pos: Vector2, d
 	
 	if navigation_agent_2d and use_navigation:
 		navigation_agent_2d.target_position = to_pos
+		# Force the navigation agent to recalculate path
+		await get_tree().process_frame
 	
 	_play_animation("walk")
 

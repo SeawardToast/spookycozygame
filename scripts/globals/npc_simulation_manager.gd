@@ -23,9 +23,12 @@ class NPCSimulationState:
 	var current_position: Vector2
 	var target_position: Vector2
 	var speed: float
+	var last_waypoint_position: Vector2 = Vector2.ZERO  # Track last waypoint we moved to
+	var is_moving_to_waypoint: bool = false  # Flag to track if we're actively moving
 	
 	var state: NPCState
 	var navigation: NPCNavigation
+	var navigation_cooldown: float = 0.0
 	
 	var schedule: Array[ScheduleEntry] = []
 	var active_entry: ScheduleEntry = null
@@ -176,6 +179,10 @@ func _process(delta: float) -> void:
 
 
 func _update_npc(npc: NPCSimulationState, delta: float) -> void:
+	# decrease by seconds (delta)
+	if npc.navigation_cooldown > 0:
+		npc.navigation_cooldown -= delta
+		
 	match npc.state.type:
 		NPCState.Type.NAVIGATING:
 			_update_navigation(npc, delta)
@@ -187,14 +194,13 @@ func _update_npc(npc: NPCSimulationState, delta: float) -> void:
 func _update_navigation(npc: NPCSimulationState, delta: float) -> void:
 	if npc.npc_instance != null and npc.npc_instance.navigation_agent_2d != null:
 		npc.current_position = npc.npc_instance.global_position
-		
-		# Check navigation
-		if npc.npc_instance.navigation_agent_2d.is_navigation_finished():
+		var distance_to_target: float = npc.current_position.distance_to(npc.target_position)
+		if npc.npc_instance.navigation_agent_2d.is_navigation_finished() and distance_to_target <= 8.0 and npc.is_moving_to_waypoint:
 			_handle_waypoint_arrival(npc)
 		return
 	
 	var distance: float = npc.current_position.distance_to(npc.target_position)
-	if distance <= 4.0:
+	if distance <= 4.0 and npc.is_moving_to_waypoint:
 		_handle_waypoint_arrival(npc)
 		return
 	
@@ -213,7 +219,7 @@ func _handle_waypoint_arrival(npc: NPCSimulationState) -> void:
 		return
 	
 	emit_signal("npc_waypoint_reached", npc.npc_id, waypoint.type, npc.current_position)
-	
+	npc.is_moving_to_waypoint = false
 	if waypoint.type in ["stairs_up", "stairs_down"]:
 		var target_floor: int = waypoint.metadata.get("target_floor", npc.current_floor)
 		npc.current_floor = target_floor
@@ -241,7 +247,8 @@ func _start_travel_to_waypoint(npc: NPCSimulationState, waypoint: NPCNavigation.
 	npc.travel_duration = (distance / npc.speed) + 10.0 if npc.speed > 0 else 0.1
 	npc.travel_start_time = Time.get_ticks_msec() / 1000.0
 	npc.target_position = waypoint.position
-	
+	npc.last_waypoint_position = waypoint.position
+	npc.is_moving_to_waypoint = true
 	var destination: String = waypoint.metadata.get("zone_name", waypoint.type)
 	emit_signal("npc_started_traveling", npc.npc_id, npc.current_position, waypoint.position, destination)
 
@@ -294,6 +301,7 @@ func _check_schedule(npc: NPCSimulationState, current_minute: int) -> void:
 func _activate_schedule_entry(npc: NPCSimulationState, entry: ScheduleEntry) -> void:
 	npc.active_entry = entry
 	npc.current_action_index = 0
+	npc.is_moving_to_waypoint = false
 	
 	print("%s activating schedule: %s" % [npc.npc_name, entry.to_string()])
 	
