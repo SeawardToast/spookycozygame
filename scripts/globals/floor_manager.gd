@@ -12,6 +12,8 @@ var floors: Dictionary = {}  # floor_number -> FloorData
 var current_floor: int = 1
 var main_scene_container: Node2D = null  # Reference to where floors are added
 var floor_nav_regions: Dictionary = {}  # floor_number: { tile_coords: RID }
+var floors_nav_ready: Dictionary = {}  # floor_number -> bool (tracks which floors have navigation ready)
+var all_floors_initialized: bool = false
 
 # Signals
 signal floor_changed(old_floor: int, new_floor: int)
@@ -59,6 +61,12 @@ func set_main_container(container: Node2D) -> void:
 	"""Set the main scene container where floors will be added"""
 	main_scene_container = container
 	print("FloorManager: Main container set: %s" % container.name)
+	
+	# Preload all floors and their navigation
+	await _preload_all_floors()
+	all_floors_initialized = true
+	all_floors_ready.emit()
+	print("FloorManager: All floors preloaded and navigation ready!")
 
 	
 func setup_floor_navigation(floor_node: Node, floor_number: int) -> void:
@@ -66,6 +74,8 @@ func setup_floor_navigation(floor_node: Node, floor_number: int) -> void:
 	await get_tree().process_frame
 	await get_tree().process_frame
 	await get_tree().physics_frame
+	
+	print("Setting up navigation for floor %d..." % floor_number)
 	
 	# Find all TileMapLayers in the floor
 	var tilemaps: Array[TileMapLayer] = []
@@ -79,8 +89,11 @@ func setup_floor_navigation(floor_node: Node, floor_number: int) -> void:
 	
 	# Process obstacle tilemaps to disable navigation under them
 	_process_obstacle_tilemaps(floor_node, floor_number)
- 		
+	
+	# Mark this floor's navigation as ready
+	floors_nav_ready[floor_number] = true
 	floor_navigation_ready.emit(floor_number, floor_node)
+	print("Navigation ready for floor %d" % floor_number)
 	
 
 func map_tilemap_navigation_regions(tilemap: TileMapLayer, floor_number: int) -> void:
@@ -113,8 +126,10 @@ func map_tilemap_navigation_regions(tilemap: TileMapLayer, floor_number: int) ->
 			NavigationServer2D.region_set_navigation_layers(matching_rid, floor_number)
 			# Store the mapping
 			floor_nav_regions[floor_number][cell_coords] = matching_rid
+			# IMPORTANT: Disable by default - will be enabled when floor becomes active
+			NavigationServer2D.region_set_enabled(matching_rid, false)
 	
-	print("Mapped %d navigation tiles for floor %d" % [floor_nav_regions[floor_number].size(), floor_number])
+	print("Mapped %d navigation tiles for floor %d (all disabled by default)" % [floor_nav_regions[floor_number].size(), floor_number])
 
 func find_nav_region_at_position(regions: Array[RID], target_pos: Vector2, max_distance: float) -> RID:
 	var closest_rid: RID = RID()
@@ -413,10 +428,10 @@ func set_active_floor(floor_number: int, initializing: bool = false) -> void:
 			old_floor_node.process_mode = Node.PROCESS_MODE_DISABLED
 			_set_floor_collisions(old_floor_node, false)
 			_disable_floor_navigation(old_floor)
-			print("Setting old floor node collisions and navigation to false")
+			print("Disabled old floor %d (collisions and navigation off)" % old_floor)
 		floors[old_floor].is_active = false
 	
-	# Load new floor if not loaded
+	# Load new floor if not loaded (shouldn't happen with preloading, but safety check)
 	if not floors[floor_number].is_loaded:
 		load_floor(floor_number)
 	
@@ -426,13 +441,16 @@ func set_active_floor(floor_number: int, initializing: bool = false) -> void:
 		new_floor_node.visible = true
 		new_floor_node.process_mode = Node.PROCESS_MODE_INHERIT
 		_set_floor_collisions(new_floor_node, true)
-		# Setup navigation if not already mapped for this floor
+		
+		# Setup navigation if not already mapped (shouldn't happen with preloading)
 		if not floor_nav_regions.has(floor_number):
-			setup_floor_navigation(new_floor_node, floor_number)
+			await setup_floor_navigation(new_floor_node, floor_number)
+		
+		# Enable navigation for this floor
 		_enable_floor_navigation(floor_number)
+		print("Enabled new floor %d (collisions and navigation on)" % floor_number)
 
 	floors[floor_number].is_active = true
-	
 	current_floor = floor_number
 	
 	emit_signal("floor_changed", old_floor, floor_number)
@@ -615,3 +633,65 @@ func enable_navigation_at_world_pos(floor_number: int, world_pos: Vector2) -> vo
 	var nav_tile_coords: Vector2i = _world_pos_to_nav_tile_direct(world_pos, floor_number)
 	if nav_tile_coords != Vector2i(-99999, -99999):
 		enable_navigation_at_tile(floor_number, nav_tile_coords)
+
+# =============================================
+# PRELOADING & INITIALIZATION
+# =============================================
+
+func _preload_all_floors() -> void:
+	"""
+	Load all registered floors and set up their navigation regions.
+	This ensures NPCs can path to any floor immediately.
+	"""
+	print("FloorManager: Preloading all floors...")
+	
+	var floor_numbers: Array = floors.keys()
+	
+	# Load all floors first
+	for floor_number: int in floor_numbers:
+		if not floors[floor_number].is_loaded:
+			load_floor(floor_number)
+			await get_tree().process_frame
+	
+	# Set up navigation for all floors (they'll be disabled by default in map_tilemap_navigation_regions)
+	for floor_number: int in floor_numbers:
+		var floor_node: Node2D = get_floor_node(floor_number)
+		if floor_node and not floors_nav_ready.get(floor_number, false):
+			await setup_floor_navigation(floor_node, floor_number)
+	
+	# Now enable only the current floor's navigation
+	_enable_floor_navigation(current_floor)
+	
+	print("FloorManager: All %d floors preloaded and navigation initialized" % floor_numbers.size())
+	print("FloorManager: Only floor %d navigation is active" % current_floor)
+
+func is_floor_navigation_ready(floor_number: int) -> bool:
+	"""Check if a specific floor's navigation is ready for pathfinding"""
+	return floors_nav_ready.get(floor_number, false)
+
+func are_all_floors_ready() -> bool:
+	"""Check if all floors are loaded and navigation is set up"""
+	return all_floors_initialized
+
+func wait_for_all_floors_ready() -> void:
+	"""
+	Await this function to ensure all floors are ready before starting NPC movement.
+	Usage: await FloorManager.wait_for_all_floors_ready()
+	"""
+	if all_floors_initialized:
+		return
+	await all_floors_ready
+
+func wait_for_floor_ready(floor_number: int) -> void:
+	"""
+	Await this function to ensure a specific floor is ready.
+	Usage: await FloorManager.wait_for_floor_ready(2)
+	"""
+	if is_floor_navigation_ready(floor_number):
+		return
+	
+	# Wait for the specific floor's navigation to be ready
+	while not is_floor_navigation_ready(floor_number):
+		await floor_navigation_ready
+		if is_floor_navigation_ready(floor_number):
+			break
