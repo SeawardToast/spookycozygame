@@ -12,6 +12,7 @@ var floors: Dictionary = {}  # floor_number -> FloorData
 var current_floor: int = 1
 var main_scene_container: Node2D = null  # Reference to where floors are added
 var floor_nav_regions: Dictionary = {}  # floor_number: { tile_coords: RID }
+
 # Signals
 signal floor_changed(old_floor: int, new_floor: int)
 signal floor_loaded(floor_number: int)
@@ -75,8 +76,11 @@ func setup_floor_navigation(floor_node: Node, floor_number: int) -> void:
 	for tilemap in tilemaps:
 		map_tilemap_navigation_regions(tilemap, floor_number)
 		tilemap.tile_set.set_navigation_layer_layer_value(0, floor_number, true)
+	
+	# Process obstacle tilemaps to disable navigation under them
+	_process_obstacle_tilemaps(floor_node, floor_number)
  		
-	floor_navigation_ready.emit()
+	floor_navigation_ready.emit(floor_number, floor_node)
 	
 
 func map_tilemap_navigation_regions(tilemap: TileMapLayer, floor_number: int) -> void:
@@ -134,6 +138,132 @@ func _find_all_tilemaps(node: Node, result: Array[TileMapLayer]) -> void:
 	for child in node.get_children():
 		_find_all_tilemaps(child, result)
 
+func _process_obstacle_tilemaps(floor_node: Node, floor_number: int) -> void:
+	"""
+	Find all TileMapLayers in the 'navigation_obstacles' group and disable
+	navigation underneath their tiles.
+	"""
+	var obstacle_tilemaps: Array[Node] = []
+	_find_nodes_in_group(floor_node, "navigation_obstacles", obstacle_tilemaps)
+	
+	print("=== OBSTACLE PROCESSING DEBUG ===")
+	print("Floor %d node: %s" % [floor_number, floor_node.name if floor_node else "NULL"])
+	print("Obstacle tilemaps found: %d" % obstacle_tilemaps.size())
+	
+	if obstacle_tilemaps.is_empty():
+		print("FloorManager: No obstacle tilemaps found in 'navigation_obstacles' group on floor %d" % floor_number)
+		print("Make sure your obstacle TileMapLayers are added to the 'navigation_obstacles' group!")
+		return
+	
+	print("FloorManager: Processing %d obstacle tilemaps on floor %d" % [obstacle_tilemaps.size(), floor_number])
+	
+	for obstacle_tilemap in obstacle_tilemaps:
+		if obstacle_tilemap is TileMapLayer:
+			print("  Processing obstacle layer: %s" % obstacle_tilemap.name)
+			_disable_navigation_under_obstacles(obstacle_tilemap, floor_number)
+		else:
+			print("  WARNING: Node '%s' in navigation_obstacles group is not a TileMapLayer!" % obstacle_tilemap.name)
+
+func _find_nodes_in_group(node: Node, group_name: String, result: Array[Node]) -> void:
+	"""Recursively find all nodes in a specific group"""
+	if node.is_in_group(group_name):
+		result.append(node)
+	for child in node.get_children():
+		_find_nodes_in_group(child, group_name, result)
+
+func _disable_navigation_under_obstacles(obstacle_tilemap: TileMapLayer, floor_number: int) -> void:
+	"""
+	Disables navigation for all tiles in the navigation tilemap that are covered
+	by tiles in the obstacle tilemap.
+	"""
+	var used_cells: Array[Vector2i] = obstacle_tilemap.get_used_cells()
+	
+	print("  === Obstacle layer '%s' ===" % obstacle_tilemap.name)
+	print("    Obstacle tiles: %d" % used_cells.size())
+	print("    Obstacle global pos: %s" % obstacle_tilemap.global_position)
+	
+	if used_cells.is_empty():
+		print("    WARNING: No tiles found in this obstacle layer!")
+		return
+	
+	# Check if we have navigation regions mapped
+	if not floor_nav_regions.has(floor_number) or floor_nav_regions[floor_number].is_empty():
+		print("    ERROR: No navigation regions mapped for floor %d yet!" % floor_number)
+		print("    Navigation must be set up before processing obstacles!")
+		return
+	
+	print("    Available nav regions: %d" % floor_nav_regions[floor_number].size())
+	
+	var successful_disables: int = 0
+	var failed_disables: int = 0
+	
+	for cell_coords: Vector2i in used_cells:
+		# Get the world position of this obstacle cell
+		var obstacle_local_pos: Vector2 = obstacle_tilemap.map_to_local(cell_coords)
+		var obstacle_world_pos: Vector2 = obstacle_tilemap.to_global(obstacle_local_pos)
+		
+		# Find the navigation tile coordinate at this world position
+		var nav_tile_coords: Vector2i = _world_pos_to_nav_tile_direct(obstacle_world_pos, floor_number)
+		
+		# Check if this nav tile exists in our regions
+		if floor_nav_regions[floor_number].has(nav_tile_coords):
+			disable_navigation_at_tile(floor_number, nav_tile_coords)
+			successful_disables += 1
+		else:
+			failed_disables += 1
+			if failed_disables <= 3:  # Only print first few failures
+				print("    No nav tile at coords %s (world: %s)" % [nav_tile_coords, obstacle_world_pos])
+	
+	print("    Successfully disabled: %d" % successful_disables)
+	if failed_disables > 0:
+		print("    Failed to find nav tiles: %d" % failed_disables)
+	print("  ===========================")
+
+func _world_pos_to_nav_tile_direct(world_pos: Vector2, floor_number: int) -> Vector2i:
+	"""
+	Convert a world position to navigation tile coordinate by directly checking
+	against mapped navigation regions.
+	"""
+	if not floor_nav_regions.has(floor_number):
+		return Vector2i(-99999, -99999)
+	
+	# Find the closest navigation tile to this world position
+	var closest_tile: Vector2i = Vector2i(-99999, -99999)
+	var closest_distance: float = INF
+	var search_radius: float = 32.0  # Adjust based on your tile size
+	
+	for nav_tile_coords: Vector2i in floor_nav_regions[floor_number].keys():
+		var rid: RID = floor_nav_regions[floor_number][nav_tile_coords]
+		var region_transform: Transform2D = NavigationServer2D.region_get_transform(rid)
+		var region_pos: Vector2 = region_transform.origin
+		
+		var distance: float = region_pos.distance_to(world_pos)
+		if distance < search_radius and distance < closest_distance:
+			closest_distance = distance
+			closest_tile = nav_tile_coords
+	
+	return closest_tile
+
+func _find_navigation_tilemaps(node: Node, result: Array[TileMapLayer]) -> void:
+	"""Find TileMapLayers that have navigation polygons"""
+	if node is TileMapLayer:
+		var tilemap: TileMapLayer = node
+		# Check if this tilemap has any tiles with navigation data
+		if _tilemap_has_navigation(tilemap):
+			result.append(tilemap)
+	
+	for child in node.get_children():
+		_find_navigation_tilemaps(child, result)
+
+func _tilemap_has_navigation(tilemap: TileMapLayer) -> bool:
+	"""Check if a tilemap has any navigation polygons"""
+	var used_cells: Array[Vector2i] = tilemap.get_used_cells()
+	for cell_coords: Vector2i in used_cells:
+		var tile_data: TileData = tilemap.get_cell_tile_data(cell_coords)
+		if tile_data and tile_data.get_navigation_polygon(0):
+			return true
+	return false
+
 func disable_navigation_at_tile(floor_number: int, tile_coords: Vector2i) -> void:
 	if not floor_nav_regions.has(floor_number):
 		return
@@ -172,8 +302,6 @@ func _disable_floor_navigation(floor_number: int) -> void:
 	for tile_coords: Vector2i in floor_nav_regions[floor_number]:
 		var rid: RID = floor_nav_regions[floor_number][tile_coords]
 		NavigationServer2D.region_set_enabled(rid, false)
-		# Optionally also set layers to 0 for extra safety
-		#NavigationServer2D.region_set_navigation_layers(rid, 0)
 	
 	print("Disabled %d navigation regions for floor %d" % [floor_nav_regions[floor_number].size(), floor_number])
 
@@ -239,13 +367,12 @@ func load_floor(floor_number: int) -> Node2D:
 
 	_setup_floor_metadata(floor_data.floor_node, floor_number)
 
-	# Hide by default12
+	# Hide by default
 	floor_data.floor_node.visible = false
 	floor_data.floor_node.process_mode = Node.PROCESS_MODE_DISABLED
 	_set_floor_collisions(floor_data.floor_node, false)
 	floor_data.is_loaded = true
 	
-	# disable collisions
 	emit_signal("floor_loaded", floor_number)
 	print("FloorManager: Loaded floor %d" % floor_number)
 
@@ -455,3 +582,36 @@ func get_zones_on_floor(floor_number: int) -> Array[int]:
 	if floor_number in floors:
 		return floors[floor_number].zones
 	return []
+
+# =============================================
+# RUNTIME OBSTACLE MANAGEMENT
+# =============================================
+# Use these functions to dynamically enable/disable navigation at runtime
+
+func refresh_floor_obstacles(floor_number: int) -> void:
+	"""
+	Reprocess all obstacle tilemaps on a floor.
+	Useful if obstacles have been added/removed at runtime.
+	"""
+	var floor_node: Node2D = get_floor_node(floor_number)
+	if not floor_node:
+		return
+	
+	# Clear previously disabled tiles (they'll be re-disabled if obstacles still exist)
+	if floors[floor_number].disabled_nav_tiles:
+		floors[floor_number].disabled_nav_tiles.clear()
+	
+	# Reprocess obstacles
+	_process_obstacle_tilemaps(floor_node, floor_number)
+
+func disable_navigation_at_world_pos(floor_number: int, world_pos: Vector2) -> void:
+	"""Disable navigation at a specific world position"""
+	var nav_tile_coords: Vector2i = _world_pos_to_nav_tile_direct(world_pos, floor_number)
+	if nav_tile_coords != Vector2i(-99999, -99999):
+		disable_navigation_at_tile(floor_number, nav_tile_coords)
+
+func enable_navigation_at_world_pos(floor_number: int, world_pos: Vector2) -> void:
+	"""Enable navigation at a specific world position"""
+	var nav_tile_coords: Vector2i = _world_pos_to_nav_tile_direct(world_pos, floor_number)
+	if nav_tile_coords != Vector2i(-99999, -99999):
+		enable_navigation_at_tile(floor_number, nav_tile_coords)

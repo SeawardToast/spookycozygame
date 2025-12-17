@@ -7,14 +7,6 @@ res://assets/game/characters/sprites/girl_ghost_1/girl_ghost_1.tres
 res://assets/game/characters/sprites/vampires/vampire_1/vampire_1.tres
 res://scenes/objects/rocks/rock_shake.gdshader
 res://scenes/characters/guide/replace_color.gdshader
-res://scenes/objects/tools/zone_creator.tscn
-res://scenes/objects/tools/zone_creator.gd
-res://scenes/test/test_scene_npc_zone_creator.tscn
-res://scenes/characters/base_npc/visual_npc.tscn
-res://scripts/globals/npc_simulation_manager.gd
-res://scenes/characters/base_npc/visual_npc.gd
 res://scripts/globals/floor_manager.gd
-res://scenes/floors/Floor2.tscn
 res://scripts/navigation/tilemap_layer_navigation_helper.gd
 res://scenes/floors/Floor1.tscn
-res://scripts/npc/main_hotel_scene_manager.gd
