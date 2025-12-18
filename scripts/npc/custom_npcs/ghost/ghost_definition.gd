@@ -1,5 +1,5 @@
 # GhostNPCDefinition.gd
-# Refactored ghost NPC definition using new architecture
+# Ghost NPC definition with action durations
 extends RefCounted
 class_name Ghost
 
@@ -11,7 +11,7 @@ var speed: float = 5.0
 # Ghost state
 var tired: bool = true
 var hunger: int = 100
-var spookiness: int = 50  # How scary the ghost is feeling
+var spookiness: int = 50
 
 func _init() -> void:
 	# Randomize name
@@ -25,33 +25,32 @@ func _init() -> void:
 	hunger = randi_range(50, 100)
 	spookiness = randi_range(20, 80)
 
-## Alternative: Get schedule in NEW format (preferred)
 func get_schedule() -> Array[ScheduleEntry]:
 	var schedule: Array[ScheduleEntry] = []
 	
-	# Morning breakfast
+	# breakfast entry, occurs in the kitchen, read the newspaper during breakfast
 	var breakfast: ScheduleEntry = ScheduleEntry.create("breakfast", 250, 360, "Kitchen")
-	breakfast.add_action(NPCAction.create("eat", "Eat Breakfast", eat_breakfast))
-	breakfast.add_action(NPCAction.create("read", "Read Newspaper", read_newspaper))
+	breakfast.add_action(NPCAction.create_timed("eat", "Eat Breakfast", eat_breakfast, 30)) 
+	breakfast.add_action(NPCAction.create_timed("read", "Read Newspaper", read_newspaper, 30))  
 	schedule.append(breakfast)
 	
-	# Morning sleep
+	# Morning sleep - long duration
 	var sleep: ScheduleEntry = ScheduleEntry.create("morning_rest", 361, 540, "Sleep")
-	sleep.add_action(NPCAction.create("sleep", "Go to Sleep", go_to_sleep))
+	sleep.add_action(NPCAction.create_timed("sleep", "Go to Sleep", go_to_sleep, 30))  
 	schedule.append(sleep)
 	
-	# Afternoon haunting
+	# Afternoon haunting - multiple short activities
 	var haunt: ScheduleEntry = ScheduleEntry.create("afternoon_haunt", 900, 1080, "Haunt")
-	haunt.add_action(NPCAction.create("haunt", "Haunt Halls", haunt_halls))
-	haunt.add_action(NPCAction.create("scare", "Practice Scares", practice_scares))
-	haunt.priority = 5  # Higher priority
+	haunt.add_action(NPCAction.create_timed("haunt", "Haunt Halls", haunt_halls, 30))
+	haunt.add_action(NPCAction.create_timed("scare", "Practice Scares", practice_scares, 30))
+	haunt.priority = 5
 	schedule.append(haunt)
 	
-	# Evening reading
+	# Evening reading - relaxed pace
 	var reading: ScheduleEntry = ScheduleEntry.create("evening_reading", 1200, 1439, "Library")
-	reading.add_action(NPCAction.create("read_books", "Read Spooky Books", read_spooky_books))
-	reading.add_action(NPCAction.create("contemplate", "Contemplate Existence", contemplate_existence))
-	reading.can_interrupt = true  # Player can interrupt reading
+	reading.add_action(NPCAction.create_timed("read_books", "Read Spooky Books", read_spooky_books, 30))
+	reading.add_action(NPCAction.create_instant("contemplate", "Contemplate Existence", contemplate_existence))
+	reading.can_interrupt = true
 	schedule.append(reading)
 	
 	return schedule
@@ -64,13 +63,13 @@ func eat_breakfast() -> Array:
 	if hunger <= 20:
 		return [false, "Not hungry enough"]
 	
-	print("%s is eating a ghostly breakfast..." % npc_name)
+	print("%s is eating a ghostly breakfast... (will take 10 minutes)" % npc_name)
 	hunger = max(0, hunger - 30)
-	spookiness += 5  # Feel more energetic
+	spookiness += 5
 	return [true, ""]
 
 func read_newspaper() -> Dictionary:
-	print("%s is reading the obituaries..." % npc_name)
+	print("%s is reading the obituaries... (5 minutes)" % npc_name)
 	return {
 		"success": true,
 		"reason": "",
@@ -81,16 +80,16 @@ func go_to_sleep() -> Array:
 	if not tired:
 		return [false, "Not tired enough to sleep"]
 	
-	print("%s is resting peacefully..." % npc_name)
+	print("%s is resting peacefully... (2 hours)" % npc_name)
 	tired = false
-	hunger += 10  # Get hungrier while sleeping
+	hunger += 10
 	return [true, ""]
 
 func haunt_halls() -> Array:
 	if hunger > 80:
 		return [false, "Too hungry to haunt effectively"]
 	
-	print("%s is haunting the halls! Spookiness: %d" % [npc_name, spookiness])
+	print("%s is haunting the halls for 30 minutes! Spookiness: %d" % [npc_name, spookiness])
 	tired = true
 	spookiness = min(100, spookiness + 10)
 	return [true, ""]
@@ -100,7 +99,7 @@ func practice_scares() -> Dictionary:
 	var success: bool = scare_quality > 3
 	
 	if success:
-		print("%s practiced a great scare! (Quality: %d/10)" % [npc_name, scare_quality])
+		print("%s practiced scares for 15 minutes! (Quality: %d/10)" % [npc_name, scare_quality])
 		spookiness = min(100, spookiness + scare_quality)
 	else:
 		print("%s failed to scare anyone... (Quality: %d/10)" % [npc_name, scare_quality])
@@ -112,13 +111,12 @@ func practice_scares() -> Dictionary:
 	}
 
 func read_spooky_books() -> bool:
-	print("%s is reading 'The Phantom's Guide to Effective Haunting'..." % npc_name)
+	print("%s is reading for 45 minutes..." % npc_name)
 	spookiness += 3
 	return true
 
 func contemplate_existence() -> Array:
-	print("%s is pondering what it means to be a ghost..." % npc_name)
-	# Deep thoughts might make them less spooky but more wise
+	print("%s has an instant epiphany about existence!" % npc_name)
 	spookiness = max(0, spookiness - 5)
 	return [true, "Reached enlightenment"]
 

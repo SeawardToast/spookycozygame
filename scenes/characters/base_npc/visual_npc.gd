@@ -10,6 +10,7 @@ extends CharacterBody2D
 var simulation_state: Variant = null
 var is_synced: bool = false
 var current_animation: String = ""
+var current_action_animation: String = ""  # Track specific action animation
 
 const SPRITE_LIBRARY: Dictionary[String, Resource] = {
 	"ghost": preload("res://assets/game/characters/sprites/girl_ghost_1/girl_ghost_1.tres"),
@@ -21,6 +22,17 @@ const STATE_ANIMATIONS: Dictionary = {
 	NPCState.Type.NAVIGATING: "walk",
 	NPCState.Type.PERFORMING_ACTIONS: "action",
 	NPCState.Type.WAITING: "idle"
+}
+
+# Action-specific animations mapping (action_id -> animation_name)
+const ACTION_ANIMATIONS: Dictionary = {
+	"eat": "eat",
+	"read": "read",
+	"sleep": "sleep",
+	"haunt": "haunt",
+	"scare": "scare",
+	"read_books": "read",
+	"contemplate": "sit",
 }
 
 # =============================================================================
@@ -69,7 +81,9 @@ func _connect_signals() -> void:
 	NPCSimulationManager.npc_started_traveling.connect(_on_npc_started_traveling)
 	NPCSimulationManager.npc_arrived_at_zone.connect(_on_npc_arrived_at_zone)
 	NPCSimulationManager.npc_waypoint_reached.connect(_on_npc_waypoint_reached)
-	NPCSimulationManager.npc_action_attempted.connect(_on_npc_action_attempted)
+	NPCSimulationManager.npc_action_started.connect(_on_npc_action_started)
+	NPCSimulationManager.npc_action_completed.connect(_on_npc_action_completed)
+	NPCSimulationManager.npc_action_progress.connect(_on_npc_action_progress)
 	
 	if simulation_state and simulation_state.state:
 		simulation_state.state.state_changed.connect(_on_simulation_state_changed)
@@ -131,9 +145,11 @@ func _on_simulation_state_changed(old_state: int, new_state: int) -> void:
 		
 		NPCState.Type.IDLE:
 			velocity = Vector2.ZERO
+			_play_animation("idle")
 		
 		NPCState.Type.PERFORMING_ACTIONS:
-			_play_action_animation()
+			# Don't auto-play action animation here - wait for action_started signal
+			pass
 
 
 func _on_npc_started_traveling(id: String, from_pos: Vector2, to_pos: Vector2, destination: String) -> void:
@@ -144,6 +160,8 @@ func _on_npc_started_traveling(id: String, from_pos: Vector2, to_pos: Vector2, d
 	
 	if navigation_agent_2d and use_navigation:
 		navigation_agent_2d.target_position = to_pos
+		# Force the navigation agent to recalculate path
+		await get_tree().process_frame
 	
 	_play_animation("walk")
 
@@ -154,6 +172,8 @@ func _on_npc_arrived_at_zone(id: String, zone_name: String, position: Vector2) -
 	
 	print("Visual %s: Arrived at %s" % [simulation_state.npc_name, zone_name])
 	velocity = Vector2.ZERO
+	_play_animation("idle")
+
 
 func _on_npc_waypoint_reached(id: String, waypoint_type: String, position: Vector2) -> void:
 	if id != npc_id:
@@ -165,16 +185,50 @@ func _on_npc_waypoint_reached(id: String, waypoint_type: String, position: Vecto
 		_play_animation("climb")
 
 
-func _on_npc_action_attempted(id: String, action: Variant, success: bool) -> void:
+func _on_npc_action_started(id: String, action: NPCAction) -> void:
+	if id != npc_id:
+		return
+	
+	print("Visual %s: Started action: %s (duration: %.1fs)" % [
+		simulation_state.npc_name,
+		action.display_name,
+		action.duration
+	])
+	
+	# Play action-specific animation
+	_play_action_animation(action)
+	
+	# Visual feedback for action start
+	_play_action_start_effect(action)
+
+
+func _on_npc_action_completed(id: String, action: NPCAction, success: bool) -> void:
 	if id != npc_id:
 		return
 	
 	if success:
 		print("Visual %s: Completed action: %s" % [simulation_state.npc_name, action.display_name])
+		_play_action_completion_effect(action, true)
 	else:
 		print("Visual %s: Failed action: %s" % [simulation_state.npc_name, action.display_name])
+		_play_action_completion_effect(action, false)
 	
-	_play_action_effect(action, success)
+	# Return to idle animation after action completes
+	current_action_animation = ""
+	
+	# If we're still in PERFORMING_ACTIONS state, stay in action pose
+	# Otherwise return to idle
+	if simulation_state.state.type != NPCState.Type.PERFORMING_ACTIONS:
+		_play_animation("idle")
+
+
+func _on_npc_action_progress(id: String, action: NPCAction, progress: float) -> void:
+	if id != npc_id:
+		return
+	
+	# Optional: Update visual feedback based on progress
+	# For example, could update a progress bar, particle effects, etc.
+	_update_action_visual_progress(action, progress)
 
 
 # =============================================================================
@@ -193,6 +247,10 @@ func _play_animation(anim_name: String) -> void:
 	if animated_sprite_2d == null:
 		return
 	
+	# If we're currently playing an action animation, don't interrupt it
+	if current_action_animation != "" and anim_name != current_action_animation:
+		return
+	
 	if not animated_sprite_2d.sprite_frames.has_animation(anim_name):
 		if animated_sprite_2d.sprite_frames.has_animation("idle"):
 			anim_name = "idle"
@@ -204,22 +262,106 @@ func _play_animation(anim_name: String) -> void:
 		animated_sprite_2d.play(anim_name)
 
 
-func _play_action_animation() -> void:
-	if simulation_state.active_entry != null:
-		var count: int = simulation_state.active_entry.actions.size()
-		if simulation_state.current_action_index < count:
-			var action: Variant = simulation_state.active_entry.actions[simulation_state.current_action_index]
-			var action_anim: String = "action_" + action.action_id
-			
-			if animated_sprite_2d and animated_sprite_2d.sprite_frames.has_animation(action_anim):
-				_play_animation(action_anim)
-				return
+func _play_action_animation(action: NPCAction) -> void:
+	if animated_sprite_2d == null:
+		return
 	
-	_play_animation("action")
+	# Try action-specific animation first
+	var action_anim: String = ""
+	
+	# Check if we have a mapped animation for this action_id
+	if ACTION_ANIMATIONS.has(action.action_id):
+		action_anim = ACTION_ANIMATIONS[action.action_id]
+	else:
+		# Try "action_{action_id}" format
+		action_anim = "action_" + action.action_id
+	
+	# Check if the animation exists
+	if animated_sprite_2d.sprite_frames.has_animation(action_anim):
+		current_action_animation = action_anim
+		animated_sprite_2d.play(action_anim)
+		print("  Playing animation: %s" % action_anim)
+	else:
+		# Fallback to generic "action" animation
+		if animated_sprite_2d.sprite_frames.has_animation("action"):
+			current_action_animation = "action"
+			animated_sprite_2d.play("action")
+			print("  Playing fallback action animation")
+		else:
+			# Last resort: keep current animation
+			print("  No animation found for action: %s" % action.action_id)
+			current_action_animation = ""
 
 
-func _play_action_effect(action: Variant, success: bool) -> void:
+func _update_sprite_direction() -> void:
+	if animated_sprite_2d == null:
+		return
+	
+	if velocity.x != 0.0:
+		animated_sprite_2d.flip_h = velocity.x < 0.0
+
+
+# =============================================================================
+# ACTION VISUAL EFFECTS
+# =============================================================================
+
+func _play_action_start_effect(action: NPCAction) -> void:
+	"""Play visual/audio effects when action starts"""
+	# TODO: Add particles, sound effects, etc.
+	# Examples:
+	# - Eating: Show food particles
+	# - Reading: Show book open effect
+	# - Sleeping: Show ZZZ particles
+	# - Haunting: Show ghost trail
 	pass
+
+
+func _play_action_completion_effect(action: NPCAction, success: bool) -> void:
+	"""Play visual/audio effects when action completes"""
+	# TODO: Add completion effects
+	# Examples:
+	# - Success: Star particles, happy sound
+	# - Failure: Question mark icon, sad sound
+	
+	if success:
+		_flash_sprite(Color.GREEN, 0.2)
+	else:
+		_flash_sprite(Color.RED, 0.2)
+
+
+func _update_action_visual_progress(action: NPCAction, progress: float) -> void:
+	"""Update visuals based on action progress (0.0 to 1.0)"""
+	# TODO: Could update:
+	# - Progress bar above NPC
+	# - Particle intensity
+	# - Animation speed
+	# - Visual effects
+	
+	# Example: Modulate sprite based on action progress
+	if action.action_id == "sleep":
+		# Fade out as sleeping progresses
+		var alpha: float = 1.0 - (progress * 0.3)  # Fade to 70% opacity
+		if animated_sprite_2d:
+			animated_sprite_2d.modulate.a = alpha
+	elif action.action_id == "haunt":
+		# Flicker effect during haunting
+		if animated_sprite_2d:
+			var flicker: float = 0.8 + (sin(progress * 20.0) * 0.2)
+			animated_sprite_2d.modulate.a = flicker
+
+
+func _flash_sprite(color: Color, duration: float) -> void:
+	"""Flash the sprite with a color"""
+	if animated_sprite_2d == null:
+		return
+	
+	var original_modulate: Color = animated_sprite_2d.modulate
+	animated_sprite_2d.modulate = color
+	
+	await get_tree().create_timer(duration).timeout
+	
+	if animated_sprite_2d:
+		animated_sprite_2d.modulate = original_modulate
 
 
 # =============================================================================
@@ -278,18 +420,20 @@ func _update_idle(delta: float) -> void:
 	var dist: float = global_position.distance_to(simulation_state.current_position)
 	if dist > 1.0:
 		global_position = global_position.lerp(simulation_state.current_position, delta * 3.0)
+	
+	# Reset action animation modulations when idle
+	if animated_sprite_2d and animated_sprite_2d.modulate.a != 1.0:
+		animated_sprite_2d.modulate.a = lerp(animated_sprite_2d.modulate.a, 1.0, delta * 2.0)
 
 
 func _update_performing_actions(delta: float) -> void:
 	velocity = Vector2.ZERO
-
-
-func _update_sprite_direction() -> void:
-	if animated_sprite_2d == null:
-		return
 	
-	if velocity.x != 0.0:
-		animated_sprite_2d.flip_h = velocity.x < 0.0
+	# Keep NPC stationary while performing actions
+	# Sync position to simulation state in case of drift
+	var dist: float = global_position.distance_to(simulation_state.current_position)
+	if dist > 1.0:
+		global_position = global_position.lerp(simulation_state.current_position, delta * 5.0)
 
 
 func _on_navigation_velocity_computed(safe_velocity: Vector2) -> void:
@@ -315,6 +459,18 @@ func get_current_state_name() -> String:
 	return "UNKNOWN"
 
 
+func get_current_action_info() -> String:
+	"""Get info about current action being performed"""
+	if simulation_state and simulation_state.current_action:
+		var action: NPCAction = simulation_state.current_action
+		return "%s (%.0f%% complete, %.1fs remaining)" % [
+			action.display_name,
+			action.get_progress() * 100.0,
+			action.get_remaining_duration()
+		]
+	return "None"
+
+
 func debug_info() -> String:
 	if simulation_state:
 		return """
@@ -322,6 +478,8 @@ func debug_info() -> String:
 		Position: %s
 		Velocity: %s
 		Animation: %s
+		Action Animation: %s
+		Current Action: %s
 		Simulation State: %s
 		Floor: %d
 		""" % [
@@ -329,6 +487,8 @@ func debug_info() -> String:
 			global_position,
 			velocity,
 			current_animation,
+			current_action_animation if current_action_animation != "" else "None",
+			get_current_action_info(),
 			get_current_state_name(),
 			simulation_state.current_floor
 		]
@@ -343,7 +503,9 @@ func _exit_tree() -> void:
 	NPCSimulationManager.npc_started_traveling.disconnect(_on_npc_started_traveling)
 	NPCSimulationManager.npc_arrived_at_zone.disconnect(_on_npc_arrived_at_zone)
 	NPCSimulationManager.npc_waypoint_reached.disconnect(_on_npc_waypoint_reached)
-	NPCSimulationManager.npc_action_attempted.disconnect(_on_npc_action_attempted)
+	NPCSimulationManager.npc_action_started.disconnect(_on_npc_action_started)
+	NPCSimulationManager.npc_action_completed.disconnect(_on_npc_action_completed)
+	NPCSimulationManager.npc_action_progress.disconnect(_on_npc_action_progress)
 	
 	if simulation_state and simulation_state.state:
 		simulation_state.state.state_changed.disconnect(_on_simulation_state_changed)

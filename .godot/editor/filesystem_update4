@@ -7,5 +7,5 @@ res://assets/game/characters/sprites/girl_ghost_1/girl_ghost_1.tres
 res://assets/game/characters/sprites/vampires/vampire_1/vampire_1.tres
 res://scenes/objects/rocks/rock_shake.gdshader
 res://scenes/characters/guide/replace_color.gdshader
-res://scripts/globals/floor_manager.gd
-res://scripts/definitions/floor_data.gd
+res://scripts/npc/npc_action.gd
+res://scripts/npc/custom_npcs/ghost/ghost_definition.gd
