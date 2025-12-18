@@ -1,6 +1,7 @@
-[gd_scene load_steps=5 format=3 uid="uid://g8vv4qq0q8f0"]
+[gd_scene load_steps=6 format=3 uid="uid://g8vv4qq0q8f0"]
 
 [ext_resource type="Script" uid="uid://dgm5knshx78wa" path="res://scripts/npc/main_hotel_scene_manager.gd" id="1_kbwh4"]
+[ext_resource type="Script" uid="uid://ca5tgsogyltll" path="res://scripts/camera/camera_controller.gd" id="2_hiv5b"]
 [ext_resource type="PackedScene" uid="uid://6fa2m4vt6287" path="res://scenes/characters/player/player.tscn" id="2_lfaip"]
 [ext_resource type="PackedScene" uid="uid://d0dhtip02w7f6" path="res://scenes/ui/game_screen.tscn" id="3_kbwh4"]
 [ext_resource type="Script" uid="uid://c1uamwi6562u7" path="res://scripts/npc/visual_npc_spawner.gd" id="4_lfaip"]
@@ -10,10 +11,13 @@ y_sort_enabled = true
 script = ExtResource("1_kbwh4")
 metadata/_edit_group_ = true
 
+[node name="Camera2D" type="Camera2D" parent="." node_paths=PackedStringArray("target")]
+position = Vector2(545, 178)
+script = ExtResource("2_hiv5b")
+target = NodePath("../Player")
+
 [node name="Player" parent="." instance=ExtResource("2_lfaip")]
 position = Vector2(545, 178)
-
-[node name="Camera2D" type="Camera2D" parent="Player"]
 
 [node name="FloorContainer" type="Node2D" parent="."]
 

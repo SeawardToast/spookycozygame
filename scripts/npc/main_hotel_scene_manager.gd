@@ -3,7 +3,7 @@ extends Node2D
 
 @onready var floor_container: Node2D = $FloorContainer
 @onready var player: Player = $Player
-@onready var camera: Camera2D = $Player/Camera2D
+@onready var camera: Camera2D = $Camera2D
 @onready var visual_npc_spawner: Node2D = $VisualNpcSpawner
 
 @export var starting_floor: int = 1
@@ -67,6 +67,7 @@ func load_floor(floor: int, initializing: bool = false) -> void:
 # Signal handlers
 func _on_floor_changed(old_floor: int, new_floor: int) -> void:
 	current_player_floor = new_floor
+	$Camera2D.recalculate_bounds()
 	print("MainScene: Floor changed %d -> %d" % [old_floor, new_floor])
 
 func _on_floor_loaded(floor_number: int) -> void:
