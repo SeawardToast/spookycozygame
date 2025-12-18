@@ -28,27 +28,27 @@ func _init() -> void:
 func get_schedule() -> Array[ScheduleEntry]:
 	var schedule: Array[ScheduleEntry] = []
 	
-	# Morning breakfast - 15 minutes of eating
+	# breakfast entry, occurs in the kitchen, read the newspaper during breakfast
 	var breakfast: ScheduleEntry = ScheduleEntry.create("breakfast", 250, 360, "Kitchen")
-	breakfast.add_action(NPCAction.create_timed("eat", "Eat Breakfast", eat_breakfast, 60.0 * 2))  # 10 minutes
-	breakfast.add_action(NPCAction.create_timed("read", "Read Newspaper", read_newspaper, 60.0))  
+	breakfast.add_action(NPCAction.create_timed("eat", "Eat Breakfast", eat_breakfast, 30)) 
+	breakfast.add_action(NPCAction.create_timed("read", "Read Newspaper", read_newspaper, 30))  
 	schedule.append(breakfast)
 	
 	# Morning sleep - long duration
 	var sleep: ScheduleEntry = ScheduleEntry.create("morning_rest", 361, 540, "Sleep")
-	sleep.add_action(NPCAction.create_timed("sleep", "Go to Sleep", go_to_sleep, 60.0))  
+	sleep.add_action(NPCAction.create_timed("sleep", "Go to Sleep", go_to_sleep, 30))  
 	schedule.append(sleep)
 	
 	# Afternoon haunting - multiple short activities
 	var haunt: ScheduleEntry = ScheduleEntry.create("afternoon_haunt", 900, 1080, "Haunt")
-	haunt.add_action(NPCAction.create_timed("haunt", "Haunt Halls", haunt_halls, 60.0))
-	haunt.add_action(NPCAction.create_timed("scare", "Practice Scares", practice_scares, 60.0))
+	haunt.add_action(NPCAction.create_timed("haunt", "Haunt Halls", haunt_halls, 30))
+	haunt.add_action(NPCAction.create_timed("scare", "Practice Scares", practice_scares, 30))
 	haunt.priority = 5
 	schedule.append(haunt)
 	
 	# Evening reading - relaxed pace
 	var reading: ScheduleEntry = ScheduleEntry.create("evening_reading", 1200, 1439, "Library")
-	reading.add_action(NPCAction.create_timed("read_books", "Read Spooky Books", read_spooky_books, 60.0))
+	reading.add_action(NPCAction.create_timed("read_books", "Read Spooky Books", read_spooky_books, 30))
 	reading.add_action(NPCAction.create_instant("contemplate", "Contemplate Existence", contemplate_existence))
 	reading.can_interrupt = true
 	schedule.append(reading)
