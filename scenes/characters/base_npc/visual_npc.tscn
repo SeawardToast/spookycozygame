@@ -13,7 +13,8 @@ animated_sprite_2d = NodePath("AnimatedSprite2D")
 navigation_agent_2d = NodePath("NavigationAgent2D")
 
 [node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="."]
-position = Vector2(0, -64)
+position = Vector2(0, -45)
+scale = Vector2(0.7, 0.7)
 sprite_frames = ExtResource("2_t4gmt")
 animation = &"idle"
 
@@ -31,9 +32,9 @@ debug_enabled = true
 shape = SubResource("CircleShape2D_cllpf")
 
 [node name="NameLabel" type="Label" parent="."]
-offset_left = -40.0
-offset_top = -50.0
-offset_right = 43.0
-offset_bottom = -27.0
+offset_left = -32.0
+offset_top = -72.0
+offset_right = 37.0
+offset_bottom = -54.0
 theme_override_font_sizes/font_size = 13
 text = "NPC Name"

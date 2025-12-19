@@ -16,35 +16,34 @@ script = ExtResource("1_ulvp7")
 offset_right = 853.0
 offset_bottom = 480.0
 
-[node name="TextureRect" type="TextureRect" parent="MarginContainer"]
-custom_minimum_size = Vector2(500, 300)
+[node name="MainInventoryTextureRect" type="TextureRect" parent="MarginContainer"]
+custom_minimum_size = Vector2(400, 250)
 layout_mode = 2
 size_flags_horizontal = 4
 size_flags_vertical = 4
 texture = ExtResource("2_weae1")
 
-[node name="MarginContainer" type="MarginContainer" parent="MarginContainer/TextureRect"]
+[node name="MarginContainer" type="MarginContainer" parent="MarginContainer/MainInventoryTextureRect"]
 layout_mode = 1
 anchors_preset = 11
 anchor_left = 1.0
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_left = -207.0
-offset_top = 43.0
-offset_right = -31.0
-offset_bottom = -23.0
+offset_left = -221.0
+offset_top = 38.0
+offset_right = -29.0
 grow_horizontal = 0
 grow_vertical = 2
 
-[node name="GridContainer" type="GridContainer" parent="MarginContainer/TextureRect/MarginContainer"]
+[node name="InventoryContainer" type="GridContainer" parent="MarginContainer/MainInventoryTextureRect/MarginContainer"]
 layout_mode = 2
-size_flags_horizontal = 4
+size_flags_horizontal = 0
 size_flags_vertical = 4
-theme_override_constants/h_separation = 4
-theme_override_constants/v_separation = 4
+theme_override_constants/h_separation = 8
+theme_override_constants/v_separation = 6
 columns = 5
 
-[node name="Slot1" type="Panel" parent="MarginContainer/TextureRect/MarginContainer/GridContainer"]
+[node name="Slot1" type="Panel" parent="MarginContainer/MainInventoryTextureRect/MarginContainer/InventoryContainer"]
 custom_minimum_size = Vector2(32, 32)
 layout_mode = 2
 size_flags_horizontal = 4
@@ -52,13 +51,13 @@ size_flags_vertical = 4
 theme_override_styles/panel = SubResource("StyleBoxTexture_umydw")
 script = ExtResource("4_vj5ws")
 
-[node name="InventoryItem" type="Node2D" parent="MarginContainer/TextureRect/MarginContainer/GridContainer/Slot1"]
+[node name="InventoryItem" type="Node2D" parent="MarginContainer/MainInventoryTextureRect/MarginContainer/InventoryContainer/Slot1"]
 script = ExtResource("5_i8fht")
 
-[node name="Sprite2D" type="Sprite2D" parent="MarginContainer/TextureRect/MarginContainer/GridContainer/Slot1/InventoryItem"]
+[node name="Sprite2D" type="Sprite2D" parent="MarginContainer/MainInventoryTextureRect/MarginContainer/InventoryContainer/Slot1/InventoryItem"]
 position = Vector2(-440, -207)
 
-[node name="Slot2" type="Panel" parent="MarginContainer/TextureRect/MarginContainer/GridContainer"]
+[node name="Slot2" type="Panel" parent="MarginContainer/MainInventoryTextureRect/MarginContainer/InventoryContainer"]
 custom_minimum_size = Vector2(32, 32)
 layout_mode = 2
 size_flags_horizontal = 4
@@ -66,13 +65,13 @@ size_flags_vertical = 4
 theme_override_styles/panel = SubResource("StyleBoxTexture_umydw")
 script = ExtResource("4_vj5ws")
 
-[node name="InventoryItem" type="Node2D" parent="MarginContainer/TextureRect/MarginContainer/GridContainer/Slot2"]
+[node name="InventoryItem" type="Node2D" parent="MarginContainer/MainInventoryTextureRect/MarginContainer/InventoryContainer/Slot2"]
 script = ExtResource("5_i8fht")
 
-[node name="Sprite2D" type="Sprite2D" parent="MarginContainer/TextureRect/MarginContainer/GridContainer/Slot2/InventoryItem"]
+[node name="Sprite2D" type="Sprite2D" parent="MarginContainer/MainInventoryTextureRect/MarginContainer/InventoryContainer/Slot2/InventoryItem"]
 position = Vector2(-440, -207)
 
-[node name="Slot3" type="Panel" parent="MarginContainer/TextureRect/MarginContainer/GridContainer"]
+[node name="Slot3" type="Panel" parent="MarginContainer/MainInventoryTextureRect/MarginContainer/InventoryContainer"]
 custom_minimum_size = Vector2(32, 32)
 layout_mode = 2
 size_flags_horizontal = 4
@@ -80,13 +79,13 @@ size_flags_vertical = 4
 theme_override_styles/panel = SubResource("StyleBoxTexture_umydw")
 script = ExtResource("4_vj5ws")
 
-[node name="InventoryItem" type="Node2D" parent="MarginContainer/TextureRect/MarginContainer/GridContainer/Slot3"]
+[node name="InventoryItem" type="Node2D" parent="MarginContainer/MainInventoryTextureRect/MarginContainer/InventoryContainer/Slot3"]
 script = ExtResource("5_i8fht")
 
-[node name="Sprite2D" type="Sprite2D" parent="MarginContainer/TextureRect/MarginContainer/GridContainer/Slot3/InventoryItem"]
+[node name="Sprite2D" type="Sprite2D" parent="MarginContainer/MainInventoryTextureRect/MarginContainer/InventoryContainer/Slot3/InventoryItem"]
 position = Vector2(-440, -207)
 
-[node name="Slot4" type="Panel" parent="MarginContainer/TextureRect/MarginContainer/GridContainer"]
+[node name="Slot4" type="Panel" parent="MarginContainer/MainInventoryTextureRect/MarginContainer/InventoryContainer"]
 custom_minimum_size = Vector2(32, 32)
 layout_mode = 2
 size_flags_horizontal = 4
@@ -94,13 +93,13 @@ size_flags_vertical = 4
 theme_override_styles/panel = SubResource("StyleBoxTexture_umydw")
 script = ExtResource("4_vj5ws")
 
-[node name="InventoryItem" type="Node2D" parent="MarginContainer/TextureRect/MarginContainer/GridContainer/Slot4"]
+[node name="InventoryItem" type="Node2D" parent="MarginContainer/MainInventoryTextureRect/MarginContainer/InventoryContainer/Slot4"]
 script = ExtResource("5_i8fht")
 
-[node name="Sprite2D" type="Sprite2D" parent="MarginContainer/TextureRect/MarginContainer/GridContainer/Slot4/InventoryItem"]
+[node name="Sprite2D" type="Sprite2D" parent="MarginContainer/MainInventoryTextureRect/MarginContainer/InventoryContainer/Slot4/InventoryItem"]
 position = Vector2(-440, -207)
 
-[node name="Slot5" type="Panel" parent="MarginContainer/TextureRect/MarginContainer/GridContainer"]
+[node name="Slot5" type="Panel" parent="MarginContainer/MainInventoryTextureRect/MarginContainer/InventoryContainer"]
 custom_minimum_size = Vector2(32, 32)
 layout_mode = 2
 size_flags_horizontal = 4
@@ -108,13 +107,13 @@ size_flags_vertical = 4
 theme_override_styles/panel = SubResource("StyleBoxTexture_umydw")
 script = ExtResource("4_vj5ws")
 
-[node name="InventoryItem" type="Node2D" parent="MarginContainer/TextureRect/MarginContainer/GridContainer/Slot5"]
+[node name="InventoryItem" type="Node2D" parent="MarginContainer/MainInventoryTextureRect/MarginContainer/InventoryContainer/Slot5"]
 script = ExtResource("5_i8fht")
 
-[node name="Sprite2D" type="Sprite2D" parent="MarginContainer/TextureRect/MarginContainer/GridContainer/Slot5/InventoryItem"]
+[node name="Sprite2D" type="Sprite2D" parent="MarginContainer/MainInventoryTextureRect/MarginContainer/InventoryContainer/Slot5/InventoryItem"]
 position = Vector2(-440, -207)
 
-[node name="Slot6" type="Panel" parent="MarginContainer/TextureRect/MarginContainer/GridContainer"]
+[node name="Slot6" type="Panel" parent="MarginContainer/MainInventoryTextureRect/MarginContainer/InventoryContainer"]
 custom_minimum_size = Vector2(32, 32)
 layout_mode = 2
 size_flags_horizontal = 4
@@ -122,13 +121,13 @@ size_flags_vertical = 4
 theme_override_styles/panel = SubResource("StyleBoxTexture_umydw")
 script = ExtResource("4_vj5ws")
 
-[node name="InventoryItem" type="Node2D" parent="MarginContainer/TextureRect/MarginContainer/GridContainer/Slot6"]
+[node name="InventoryItem" type="Node2D" parent="MarginContainer/MainInventoryTextureRect/MarginContainer/InventoryContainer/Slot6"]
 script = ExtResource("5_i8fht")
 
-[node name="Sprite2D" type="Sprite2D" parent="MarginContainer/TextureRect/MarginContainer/GridContainer/Slot6/InventoryItem"]
+[node name="Sprite2D" type="Sprite2D" parent="MarginContainer/MainInventoryTextureRect/MarginContainer/InventoryContainer/Slot6/InventoryItem"]
 position = Vector2(-440, -207)
 
-[node name="Slot7" type="Panel" parent="MarginContainer/TextureRect/MarginContainer/GridContainer"]
+[node name="Slot7" type="Panel" parent="MarginContainer/MainInventoryTextureRect/MarginContainer/InventoryContainer"]
 custom_minimum_size = Vector2(32, 32)
 layout_mode = 2
 size_flags_horizontal = 4
@@ -136,13 +135,13 @@ size_flags_vertical = 4
 theme_override_styles/panel = SubResource("StyleBoxTexture_umydw")
 script = ExtResource("4_vj5ws")
 
-[node name="InventoryItem" type="Node2D" parent="MarginContainer/TextureRect/MarginContainer/GridContainer/Slot7"]
+[node name="InventoryItem" type="Node2D" parent="MarginContainer/MainInventoryTextureRect/MarginContainer/InventoryContainer/Slot7"]
 script = ExtResource("5_i8fht")
 
-[node name="Sprite2D" type="Sprite2D" parent="MarginContainer/TextureRect/MarginContainer/GridContainer/Slot7/InventoryItem"]
+[node name="Sprite2D" type="Sprite2D" parent="MarginContainer/MainInventoryTextureRect/MarginContainer/InventoryContainer/Slot7/InventoryItem"]
 position = Vector2(-440, -207)
 
-[node name="Slot8" type="Panel" parent="MarginContainer/TextureRect/MarginContainer/GridContainer"]
+[node name="Slot8" type="Panel" parent="MarginContainer/MainInventoryTextureRect/MarginContainer/InventoryContainer"]
 custom_minimum_size = Vector2(32, 32)
 layout_mode = 2
 size_flags_horizontal = 4
@@ -150,13 +149,13 @@ size_flags_vertical = 4
 theme_override_styles/panel = SubResource("StyleBoxTexture_umydw")
 script = ExtResource("4_vj5ws")
 
-[node name="InventoryItem" type="Node2D" parent="MarginContainer/TextureRect/MarginContainer/GridContainer/Slot8"]
+[node name="InventoryItem" type="Node2D" parent="MarginContainer/MainInventoryTextureRect/MarginContainer/InventoryContainer/Slot8"]
 script = ExtResource("5_i8fht")
 
-[node name="Sprite2D" type="Sprite2D" parent="MarginContainer/TextureRect/MarginContainer/GridContainer/Slot8/InventoryItem"]
+[node name="Sprite2D" type="Sprite2D" parent="MarginContainer/MainInventoryTextureRect/MarginContainer/InventoryContainer/Slot8/InventoryItem"]
 position = Vector2(-440, -207)
 
-[node name="Slot9" type="Panel" parent="MarginContainer/TextureRect/MarginContainer/GridContainer"]
+[node name="Slot9" type="Panel" parent="MarginContainer/MainInventoryTextureRect/MarginContainer/InventoryContainer"]
 custom_minimum_size = Vector2(32, 32)
 layout_mode = 2
 size_flags_horizontal = 4
@@ -164,13 +163,13 @@ size_flags_vertical = 4
 theme_override_styles/panel = SubResource("StyleBoxTexture_umydw")
 script = ExtResource("4_vj5ws")
 
-[node name="InventoryItem" type="Node2D" parent="MarginContainer/TextureRect/MarginContainer/GridContainer/Slot9"]
+[node name="InventoryItem" type="Node2D" parent="MarginContainer/MainInventoryTextureRect/MarginContainer/InventoryContainer/Slot9"]
 script = ExtResource("5_i8fht")
 
-[node name="Sprite2D" type="Sprite2D" parent="MarginContainer/TextureRect/MarginContainer/GridContainer/Slot9/InventoryItem"]
+[node name="Sprite2D" type="Sprite2D" parent="MarginContainer/MainInventoryTextureRect/MarginContainer/InventoryContainer/Slot9/InventoryItem"]
 position = Vector2(-440, -207)
 
-[node name="Slot10" type="Panel" parent="MarginContainer/TextureRect/MarginContainer/GridContainer"]
+[node name="Slot10" type="Panel" parent="MarginContainer/MainInventoryTextureRect/MarginContainer/InventoryContainer"]
 custom_minimum_size = Vector2(32, 32)
 layout_mode = 2
 size_flags_horizontal = 4
@@ -178,13 +177,13 @@ size_flags_vertical = 4
 theme_override_styles/panel = SubResource("StyleBoxTexture_umydw")
 script = ExtResource("4_vj5ws")
 
-[node name="InventoryItem" type="Node2D" parent="MarginContainer/TextureRect/MarginContainer/GridContainer/Slot10"]
+[node name="InventoryItem" type="Node2D" parent="MarginContainer/MainInventoryTextureRect/MarginContainer/InventoryContainer/Slot10"]
 script = ExtResource("5_i8fht")
 
-[node name="Sprite2D" type="Sprite2D" parent="MarginContainer/TextureRect/MarginContainer/GridContainer/Slot10/InventoryItem"]
+[node name="Sprite2D" type="Sprite2D" parent="MarginContainer/MainInventoryTextureRect/MarginContainer/InventoryContainer/Slot10/InventoryItem"]
 position = Vector2(-440, -207)
 
-[node name="Slot11" type="Panel" parent="MarginContainer/TextureRect/MarginContainer/GridContainer"]
+[node name="Slot11" type="Panel" parent="MarginContainer/MainInventoryTextureRect/MarginContainer/InventoryContainer"]
 custom_minimum_size = Vector2(32, 32)
 layout_mode = 2
 size_flags_horizontal = 4
@@ -192,13 +191,13 @@ size_flags_vertical = 4
 theme_override_styles/panel = SubResource("StyleBoxTexture_umydw")
 script = ExtResource("4_vj5ws")
 
-[node name="InventoryItem" type="Node2D" parent="MarginContainer/TextureRect/MarginContainer/GridContainer/Slot11"]
+[node name="InventoryItem" type="Node2D" parent="MarginContainer/MainInventoryTextureRect/MarginContainer/InventoryContainer/Slot11"]
 script = ExtResource("5_i8fht")
 
-[node name="Sprite2D" type="Sprite2D" parent="MarginContainer/TextureRect/MarginContainer/GridContainer/Slot11/InventoryItem"]
+[node name="Sprite2D" type="Sprite2D" parent="MarginContainer/MainInventoryTextureRect/MarginContainer/InventoryContainer/Slot11/InventoryItem"]
 position = Vector2(-440, -207)
 
-[node name="Slot12" type="Panel" parent="MarginContainer/TextureRect/MarginContainer/GridContainer"]
+[node name="Slot12" type="Panel" parent="MarginContainer/MainInventoryTextureRect/MarginContainer/InventoryContainer"]
 custom_minimum_size = Vector2(32, 32)
 layout_mode = 2
 size_flags_horizontal = 4
@@ -206,13 +205,13 @@ size_flags_vertical = 4
 theme_override_styles/panel = SubResource("StyleBoxTexture_umydw")
 script = ExtResource("4_vj5ws")
 
-[node name="InventoryItem" type="Node2D" parent="MarginContainer/TextureRect/MarginContainer/GridContainer/Slot12"]
+[node name="InventoryItem" type="Node2D" parent="MarginContainer/MainInventoryTextureRect/MarginContainer/InventoryContainer/Slot12"]
 script = ExtResource("5_i8fht")
 
-[node name="Sprite2D" type="Sprite2D" parent="MarginContainer/TextureRect/MarginContainer/GridContainer/Slot12/InventoryItem"]
+[node name="Sprite2D" type="Sprite2D" parent="MarginContainer/MainInventoryTextureRect/MarginContainer/InventoryContainer/Slot12/InventoryItem"]
 position = Vector2(-440, -207)
 
-[node name="Slot13" type="Panel" parent="MarginContainer/TextureRect/MarginContainer/GridContainer"]
+[node name="Slot13" type="Panel" parent="MarginContainer/MainInventoryTextureRect/MarginContainer/InventoryContainer"]
 custom_minimum_size = Vector2(32, 32)
 layout_mode = 2
 size_flags_horizontal = 4
@@ -220,13 +219,13 @@ size_flags_vertical = 4
 theme_override_styles/panel = SubResource("StyleBoxTexture_umydw")
 script = ExtResource("4_vj5ws")
 
-[node name="InventoryItem" type="Node2D" parent="MarginContainer/TextureRect/MarginContainer/GridContainer/Slot13"]
+[node name="InventoryItem" type="Node2D" parent="MarginContainer/MainInventoryTextureRect/MarginContainer/InventoryContainer/Slot13"]
 script = ExtResource("5_i8fht")
 
-[node name="Sprite2D" type="Sprite2D" parent="MarginContainer/TextureRect/MarginContainer/GridContainer/Slot13/InventoryItem"]
+[node name="Sprite2D" type="Sprite2D" parent="MarginContainer/MainInventoryTextureRect/MarginContainer/InventoryContainer/Slot13/InventoryItem"]
 position = Vector2(-440, -207)
 
-[node name="Slot14" type="Panel" parent="MarginContainer/TextureRect/MarginContainer/GridContainer"]
+[node name="Slot14" type="Panel" parent="MarginContainer/MainInventoryTextureRect/MarginContainer/InventoryContainer"]
 custom_minimum_size = Vector2(32, 32)
 layout_mode = 2
 size_flags_horizontal = 4
@@ -234,13 +233,13 @@ size_flags_vertical = 4
 theme_override_styles/panel = SubResource("StyleBoxTexture_umydw")
 script = ExtResource("4_vj5ws")
 
-[node name="InventoryItem" type="Node2D" parent="MarginContainer/TextureRect/MarginContainer/GridContainer/Slot14"]
+[node name="InventoryItem" type="Node2D" parent="MarginContainer/MainInventoryTextureRect/MarginContainer/InventoryContainer/Slot14"]
 script = ExtResource("5_i8fht")
 
-[node name="Sprite2D" type="Sprite2D" parent="MarginContainer/TextureRect/MarginContainer/GridContainer/Slot14/InventoryItem"]
+[node name="Sprite2D" type="Sprite2D" parent="MarginContainer/MainInventoryTextureRect/MarginContainer/InventoryContainer/Slot14/InventoryItem"]
 position = Vector2(-440, -207)
 
-[node name="Slot15" type="Panel" parent="MarginContainer/TextureRect/MarginContainer/GridContainer"]
+[node name="Slot15" type="Panel" parent="MarginContainer/MainInventoryTextureRect/MarginContainer/InventoryContainer"]
 custom_minimum_size = Vector2(32, 32)
 layout_mode = 2
 size_flags_horizontal = 4
@@ -248,13 +247,13 @@ size_flags_vertical = 4
 theme_override_styles/panel = SubResource("StyleBoxTexture_umydw")
 script = ExtResource("4_vj5ws")
 
-[node name="InventoryItem" type="Node2D" parent="MarginContainer/TextureRect/MarginContainer/GridContainer/Slot15"]
+[node name="InventoryItem" type="Node2D" parent="MarginContainer/MainInventoryTextureRect/MarginContainer/InventoryContainer/Slot15"]
 script = ExtResource("5_i8fht")
 
-[node name="Sprite2D" type="Sprite2D" parent="MarginContainer/TextureRect/MarginContainer/GridContainer/Slot15/InventoryItem"]
+[node name="Sprite2D" type="Sprite2D" parent="MarginContainer/MainInventoryTextureRect/MarginContainer/InventoryContainer/Slot15/InventoryItem"]
 position = Vector2(-440, -207)
 
-[node name="Slot16" type="Panel" parent="MarginContainer/TextureRect/MarginContainer/GridContainer"]
+[node name="Slot16" type="Panel" parent="MarginContainer/MainInventoryTextureRect/MarginContainer/InventoryContainer"]
 custom_minimum_size = Vector2(32, 32)
 layout_mode = 2
 size_flags_horizontal = 4
@@ -262,13 +261,13 @@ size_flags_vertical = 4
 theme_override_styles/panel = SubResource("StyleBoxTexture_umydw")
 script = ExtResource("4_vj5ws")
 
-[node name="InventoryItem" type="Node2D" parent="MarginContainer/TextureRect/MarginContainer/GridContainer/Slot16"]
+[node name="InventoryItem" type="Node2D" parent="MarginContainer/MainInventoryTextureRect/MarginContainer/InventoryContainer/Slot16"]
 script = ExtResource("5_i8fht")
 
-[node name="Sprite2D" type="Sprite2D" parent="MarginContainer/TextureRect/MarginContainer/GridContainer/Slot16/InventoryItem"]
+[node name="Sprite2D" type="Sprite2D" parent="MarginContainer/MainInventoryTextureRect/MarginContainer/InventoryContainer/Slot16/InventoryItem"]
 position = Vector2(-440, -207)
 
-[node name="Slot17" type="Panel" parent="MarginContainer/TextureRect/MarginContainer/GridContainer"]
+[node name="Slot17" type="Panel" parent="MarginContainer/MainInventoryTextureRect/MarginContainer/InventoryContainer"]
 custom_minimum_size = Vector2(32, 32)
 layout_mode = 2
 size_flags_horizontal = 4
@@ -276,13 +275,13 @@ size_flags_vertical = 4
 theme_override_styles/panel = SubResource("StyleBoxTexture_umydw")
 script = ExtResource("4_vj5ws")
 
-[node name="InventoryItem" type="Node2D" parent="MarginContainer/TextureRect/MarginContainer/GridContainer/Slot17"]
+[node name="InventoryItem" type="Node2D" parent="MarginContainer/MainInventoryTextureRect/MarginContainer/InventoryContainer/Slot17"]
 script = ExtResource("5_i8fht")
 
-[node name="Sprite2D" type="Sprite2D" parent="MarginContainer/TextureRect/MarginContainer/GridContainer/Slot17/InventoryItem"]
+[node name="Sprite2D" type="Sprite2D" parent="MarginContainer/MainInventoryTextureRect/MarginContainer/InventoryContainer/Slot17/InventoryItem"]
 position = Vector2(-440, -207)
 
-[node name="Slot18" type="Panel" parent="MarginContainer/TextureRect/MarginContainer/GridContainer"]
+[node name="Slot18" type="Panel" parent="MarginContainer/MainInventoryTextureRect/MarginContainer/InventoryContainer"]
 custom_minimum_size = Vector2(32, 32)
 layout_mode = 2
 size_flags_horizontal = 4
@@ -290,13 +289,13 @@ size_flags_vertical = 4
 theme_override_styles/panel = SubResource("StyleBoxTexture_umydw")
 script = ExtResource("4_vj5ws")
 
-[node name="InventoryItem" type="Node2D" parent="MarginContainer/TextureRect/MarginContainer/GridContainer/Slot18"]
+[node name="InventoryItem" type="Node2D" parent="MarginContainer/MainInventoryTextureRect/MarginContainer/InventoryContainer/Slot18"]
 script = ExtResource("5_i8fht")
 
-[node name="Sprite2D" type="Sprite2D" parent="MarginContainer/TextureRect/MarginContainer/GridContainer/Slot18/InventoryItem"]
+[node name="Sprite2D" type="Sprite2D" parent="MarginContainer/MainInventoryTextureRect/MarginContainer/InventoryContainer/Slot18/InventoryItem"]
 position = Vector2(-440, -207)
 
-[node name="Slot19" type="Panel" parent="MarginContainer/TextureRect/MarginContainer/GridContainer"]
+[node name="Slot19" type="Panel" parent="MarginContainer/MainInventoryTextureRect/MarginContainer/InventoryContainer"]
 custom_minimum_size = Vector2(32, 32)
 layout_mode = 2
 size_flags_horizontal = 4
@@ -304,13 +303,13 @@ size_flags_vertical = 4
 theme_override_styles/panel = SubResource("StyleBoxTexture_umydw")
 script = ExtResource("4_vj5ws")
 
-[node name="InventoryItem" type="Node2D" parent="MarginContainer/TextureRect/MarginContainer/GridContainer/Slot19"]
+[node name="InventoryItem" type="Node2D" parent="MarginContainer/MainInventoryTextureRect/MarginContainer/InventoryContainer/Slot19"]
 script = ExtResource("5_i8fht")
 
-[node name="Sprite2D" type="Sprite2D" parent="MarginContainer/TextureRect/MarginContainer/GridContainer/Slot19/InventoryItem"]
+[node name="Sprite2D" type="Sprite2D" parent="MarginContainer/MainInventoryTextureRect/MarginContainer/InventoryContainer/Slot19/InventoryItem"]
 position = Vector2(-440, -207)
 
-[node name="Slot20" type="Panel" parent="MarginContainer/TextureRect/MarginContainer/GridContainer"]
+[node name="Slot20" type="Panel" parent="MarginContainer/MainInventoryTextureRect/MarginContainer/InventoryContainer"]
 custom_minimum_size = Vector2(32, 32)
 layout_mode = 2
 size_flags_horizontal = 4
@@ -318,13 +317,13 @@ size_flags_vertical = 4
 theme_override_styles/panel = SubResource("StyleBoxTexture_umydw")
 script = ExtResource("4_vj5ws")
 
-[node name="InventoryItem" type="Node2D" parent="MarginContainer/TextureRect/MarginContainer/GridContainer/Slot20"]
+[node name="InventoryItem" type="Node2D" parent="MarginContainer/MainInventoryTextureRect/MarginContainer/InventoryContainer/Slot20"]
 script = ExtResource("5_i8fht")
 
-[node name="Sprite2D" type="Sprite2D" parent="MarginContainer/TextureRect/MarginContainer/GridContainer/Slot20/InventoryItem"]
+[node name="Sprite2D" type="Sprite2D" parent="MarginContainer/MainInventoryTextureRect/MarginContainer/InventoryContainer/Slot20/InventoryItem"]
 position = Vector2(-440, -207)
 
-[node name="Slot21" type="Panel" parent="MarginContainer/TextureRect/MarginContainer/GridContainer"]
+[node name="Slot21" type="Panel" parent="MarginContainer/MainInventoryTextureRect/MarginContainer/InventoryContainer"]
 custom_minimum_size = Vector2(32, 32)
 layout_mode = 2
 size_flags_horizontal = 4
@@ -332,13 +331,13 @@ size_flags_vertical = 4
 theme_override_styles/panel = SubResource("StyleBoxTexture_umydw")
 script = ExtResource("4_vj5ws")
 
-[node name="InventoryItem" type="Node2D" parent="MarginContainer/TextureRect/MarginContainer/GridContainer/Slot21"]
+[node name="InventoryItem" type="Node2D" parent="MarginContainer/MainInventoryTextureRect/MarginContainer/InventoryContainer/Slot21"]
 script = ExtResource("5_i8fht")
 
-[node name="Sprite2D" type="Sprite2D" parent="MarginContainer/TextureRect/MarginContainer/GridContainer/Slot21/InventoryItem"]
+[node name="Sprite2D" type="Sprite2D" parent="MarginContainer/MainInventoryTextureRect/MarginContainer/InventoryContainer/Slot21/InventoryItem"]
 position = Vector2(-440, -207)
 
-[node name="Slot22" type="Panel" parent="MarginContainer/TextureRect/MarginContainer/GridContainer"]
+[node name="Slot22" type="Panel" parent="MarginContainer/MainInventoryTextureRect/MarginContainer/InventoryContainer"]
 custom_minimum_size = Vector2(32, 32)
 layout_mode = 2
 size_flags_horizontal = 4
@@ -346,13 +345,13 @@ size_flags_vertical = 4
 theme_override_styles/panel = SubResource("StyleBoxTexture_umydw")
 script = ExtResource("4_vj5ws")
 
-[node name="InventoryItem" type="Node2D" parent="MarginContainer/TextureRect/MarginContainer/GridContainer/Slot22"]
+[node name="InventoryItem" type="Node2D" parent="MarginContainer/MainInventoryTextureRect/MarginContainer/InventoryContainer/Slot22"]
 script = ExtResource("5_i8fht")
 
-[node name="Sprite2D" type="Sprite2D" parent="MarginContainer/TextureRect/MarginContainer/GridContainer/Slot22/InventoryItem"]
+[node name="Sprite2D" type="Sprite2D" parent="MarginContainer/MainInventoryTextureRect/MarginContainer/InventoryContainer/Slot22/InventoryItem"]
 position = Vector2(-440, -207)
 
-[node name="Slot23" type="Panel" parent="MarginContainer/TextureRect/MarginContainer/GridContainer"]
+[node name="Slot23" type="Panel" parent="MarginContainer/MainInventoryTextureRect/MarginContainer/InventoryContainer"]
 custom_minimum_size = Vector2(32, 32)
 layout_mode = 2
 size_flags_horizontal = 4
@@ -360,13 +359,13 @@ size_flags_vertical = 4
 theme_override_styles/panel = SubResource("StyleBoxTexture_umydw")
 script = ExtResource("4_vj5ws")
 
-[node name="InventoryItem" type="Node2D" parent="MarginContainer/TextureRect/MarginContainer/GridContainer/Slot23"]
+[node name="InventoryItem" type="Node2D" parent="MarginContainer/MainInventoryTextureRect/MarginContainer/InventoryContainer/Slot23"]
 script = ExtResource("5_i8fht")
 
-[node name="Sprite2D" type="Sprite2D" parent="MarginContainer/TextureRect/MarginContainer/GridContainer/Slot23/InventoryItem"]
+[node name="Sprite2D" type="Sprite2D" parent="MarginContainer/MainInventoryTextureRect/MarginContainer/InventoryContainer/Slot23/InventoryItem"]
 position = Vector2(-440, -207)
 
-[node name="Slot24" type="Panel" parent="MarginContainer/TextureRect/MarginContainer/GridContainer"]
+[node name="Slot24" type="Panel" parent="MarginContainer/MainInventoryTextureRect/MarginContainer/InventoryContainer"]
 custom_minimum_size = Vector2(32, 32)
 layout_mode = 2
 size_flags_horizontal = 4
@@ -374,13 +373,13 @@ size_flags_vertical = 4
 theme_override_styles/panel = SubResource("StyleBoxTexture_umydw")
 script = ExtResource("4_vj5ws")
 
-[node name="InventoryItem" type="Node2D" parent="MarginContainer/TextureRect/MarginContainer/GridContainer/Slot24"]
+[node name="InventoryItem" type="Node2D" parent="MarginContainer/MainInventoryTextureRect/MarginContainer/InventoryContainer/Slot24"]
 script = ExtResource("5_i8fht")
 
-[node name="Sprite2D" type="Sprite2D" parent="MarginContainer/TextureRect/MarginContainer/GridContainer/Slot24/InventoryItem"]
+[node name="Sprite2D" type="Sprite2D" parent="MarginContainer/MainInventoryTextureRect/MarginContainer/InventoryContainer/Slot24/InventoryItem"]
 position = Vector2(-440, -207)
 
-[node name="Slot25" type="Panel" parent="MarginContainer/TextureRect/MarginContainer/GridContainer"]
+[node name="Slot25" type="Panel" parent="MarginContainer/MainInventoryTextureRect/MarginContainer/InventoryContainer"]
 custom_minimum_size = Vector2(32, 32)
 layout_mode = 2
 size_flags_horizontal = 4
@@ -388,13 +387,41 @@ size_flags_vertical = 4
 theme_override_styles/panel = SubResource("StyleBoxTexture_umydw")
 script = ExtResource("4_vj5ws")
 
-[node name="InventoryItem" type="Node2D" parent="MarginContainer/TextureRect/MarginContainer/GridContainer/Slot25"]
+[node name="InventoryItem" type="Node2D" parent="MarginContainer/MainInventoryTextureRect/MarginContainer/InventoryContainer/Slot25"]
 script = ExtResource("5_i8fht")
 
-[node name="Sprite2D" type="Sprite2D" parent="MarginContainer/TextureRect/MarginContainer/GridContainer/Slot25/InventoryItem"]
+[node name="Sprite2D" type="Sprite2D" parent="MarginContainer/MainInventoryTextureRect/MarginContainer/InventoryContainer/Slot25/InventoryItem"]
 position = Vector2(-440, -207)
 
-[node name="Slot26" type="Panel" parent="MarginContainer/TextureRect/MarginContainer/GridContainer"]
+[node name="HotbarTextureRect" type="TextureRect" parent="MarginContainer"]
+custom_minimum_size = Vector2(351.22, 45.905)
+layout_mode = 2
+size_flags_horizontal = 4
+size_flags_vertical = 8
+texture = ExtResource("2_weae1")
+expand_mode = 1
+
+[node name="HotbarMarginContainer" type="MarginContainer" parent="MarginContainer/HotbarTextureRect"]
+layout_mode = 0
+offset_left = 57.0
+offset_top = 9.904999
+offset_right = 351.0
+offset_bottom = 42.905
+
+[node name="HotbarItemMarginContainer" type="MarginContainer" parent="MarginContainer/HotbarTextureRect/HotbarMarginContainer"]
+layout_mode = 2
+size_flags_horizontal = 4
+size_flags_vertical = 4
+
+[node name="HotbarContainer" type="GridContainer" parent="MarginContainer/HotbarTextureRect/HotbarMarginContainer/HotbarItemMarginContainer"]
+layout_mode = 2
+size_flags_horizontal = 0
+size_flags_vertical = 4
+theme_override_constants/h_separation = 8
+theme_override_constants/v_separation = 6
+columns = 5
+
+[node name="Slot1" type="Panel" parent="MarginContainer/HotbarTextureRect/HotbarMarginContainer/HotbarItemMarginContainer/HotbarContainer" groups=["hotbar_slot"]]
 custom_minimum_size = Vector2(32, 32)
 layout_mode = 2
 size_flags_horizontal = 4
@@ -402,13 +429,13 @@ size_flags_vertical = 4
 theme_override_styles/panel = SubResource("StyleBoxTexture_umydw")
 script = ExtResource("4_vj5ws")
 
-[node name="InventoryItem" type="Node2D" parent="MarginContainer/TextureRect/MarginContainer/GridContainer/Slot26"]
+[node name="InventoryItem" type="Node2D" parent="MarginContainer/HotbarTextureRect/HotbarMarginContainer/HotbarItemMarginContainer/HotbarContainer/Slot1"]
 script = ExtResource("5_i8fht")
 
-[node name="Sprite2D" type="Sprite2D" parent="MarginContainer/TextureRect/MarginContainer/GridContainer/Slot26/InventoryItem"]
+[node name="Sprite2D" type="Sprite2D" parent="MarginContainer/HotbarTextureRect/HotbarMarginContainer/HotbarItemMarginContainer/HotbarContainer/Slot1/InventoryItem"]
 position = Vector2(-440, -207)
 
-[node name="Slot27" type="Panel" parent="MarginContainer/TextureRect/MarginContainer/GridContainer"]
+[node name="Slot2" type="Panel" parent="MarginContainer/HotbarTextureRect/HotbarMarginContainer/HotbarItemMarginContainer/HotbarContainer" groups=["hotbar_slot"]]
 custom_minimum_size = Vector2(32, 32)
 layout_mode = 2
 size_flags_horizontal = 4
@@ -416,13 +443,13 @@ size_flags_vertical = 4
 theme_override_styles/panel = SubResource("StyleBoxTexture_umydw")
 script = ExtResource("4_vj5ws")
 
-[node name="InventoryItem" type="Node2D" parent="MarginContainer/TextureRect/MarginContainer/GridContainer/Slot27"]
+[node name="InventoryItem" type="Node2D" parent="MarginContainer/HotbarTextureRect/HotbarMarginContainer/HotbarItemMarginContainer/HotbarContainer/Slot2"]
 script = ExtResource("5_i8fht")
 
-[node name="Sprite2D" type="Sprite2D" parent="MarginContainer/TextureRect/MarginContainer/GridContainer/Slot27/InventoryItem"]
+[node name="Sprite2D" type="Sprite2D" parent="MarginContainer/HotbarTextureRect/HotbarMarginContainer/HotbarItemMarginContainer/HotbarContainer/Slot2/InventoryItem"]
 position = Vector2(-440, -207)
 
-[node name="Slot28" type="Panel" parent="MarginContainer/TextureRect/MarginContainer/GridContainer"]
+[node name="Slot3" type="Panel" parent="MarginContainer/HotbarTextureRect/HotbarMarginContainer/HotbarItemMarginContainer/HotbarContainer" groups=["hotbar_slot"]]
 custom_minimum_size = Vector2(32, 32)
 layout_mode = 2
 size_flags_horizontal = 4
@@ -430,13 +457,13 @@ size_flags_vertical = 4
 theme_override_styles/panel = SubResource("StyleBoxTexture_umydw")
 script = ExtResource("4_vj5ws")
 
-[node name="InventoryItem" type="Node2D" parent="MarginContainer/TextureRect/MarginContainer/GridContainer/Slot28"]
+[node name="InventoryItem" type="Node2D" parent="MarginContainer/HotbarTextureRect/HotbarMarginContainer/HotbarItemMarginContainer/HotbarContainer/Slot3"]
 script = ExtResource("5_i8fht")
 
-[node name="Sprite2D" type="Sprite2D" parent="MarginContainer/TextureRect/MarginContainer/GridContainer/Slot28/InventoryItem"]
+[node name="Sprite2D" type="Sprite2D" parent="MarginContainer/HotbarTextureRect/HotbarMarginContainer/HotbarItemMarginContainer/HotbarContainer/Slot3/InventoryItem"]
 position = Vector2(-440, -207)
 
-[node name="Slot29" type="Panel" parent="MarginContainer/TextureRect/MarginContainer/GridContainer"]
+[node name="Slot4" type="Panel" parent="MarginContainer/HotbarTextureRect/HotbarMarginContainer/HotbarItemMarginContainer/HotbarContainer" groups=["hotbar_slot"]]
 custom_minimum_size = Vector2(32, 32)
 layout_mode = 2
 size_flags_horizontal = 4
@@ -444,13 +471,13 @@ size_flags_vertical = 4
 theme_override_styles/panel = SubResource("StyleBoxTexture_umydw")
 script = ExtResource("4_vj5ws")
 
-[node name="InventoryItem" type="Node2D" parent="MarginContainer/TextureRect/MarginContainer/GridContainer/Slot29"]
+[node name="InventoryItem" type="Node2D" parent="MarginContainer/HotbarTextureRect/HotbarMarginContainer/HotbarItemMarginContainer/HotbarContainer/Slot4"]
 script = ExtResource("5_i8fht")
 
-[node name="Sprite2D" type="Sprite2D" parent="MarginContainer/TextureRect/MarginContainer/GridContainer/Slot29/InventoryItem"]
+[node name="Sprite2D" type="Sprite2D" parent="MarginContainer/HotbarTextureRect/HotbarMarginContainer/HotbarItemMarginContainer/HotbarContainer/Slot4/InventoryItem"]
 position = Vector2(-440, -207)
 
-[node name="Slot30" type="Panel" parent="MarginContainer/TextureRect/MarginContainer/GridContainer"]
+[node name="Slot5" type="Panel" parent="MarginContainer/HotbarTextureRect/HotbarMarginContainer/HotbarItemMarginContainer/HotbarContainer" groups=["hotbar_slot"]]
 custom_minimum_size = Vector2(32, 32)
 layout_mode = 2
 size_flags_horizontal = 4
@@ -458,10 +485,10 @@ size_flags_vertical = 4
 theme_override_styles/panel = SubResource("StyleBoxTexture_umydw")
 script = ExtResource("4_vj5ws")
 
-[node name="InventoryItem" type="Node2D" parent="MarginContainer/TextureRect/MarginContainer/GridContainer/Slot30"]
+[node name="InventoryItem" type="Node2D" parent="MarginContainer/HotbarTextureRect/HotbarMarginContainer/HotbarItemMarginContainer/HotbarContainer/Slot5"]
 script = ExtResource("5_i8fht")
 
-[node name="Sprite2D" type="Sprite2D" parent="MarginContainer/TextureRect/MarginContainer/GridContainer/Slot30/InventoryItem"]
+[node name="Sprite2D" type="Sprite2D" parent="MarginContainer/HotbarTextureRect/HotbarMarginContainer/HotbarItemMarginContainer/HotbarContainer/Slot5/InventoryItem"]
 position = Vector2(-440, -207)
 
 [node name="TooltipLabel" type="Label" parent="."]

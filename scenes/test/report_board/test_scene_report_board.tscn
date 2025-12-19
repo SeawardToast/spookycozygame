@@ -13,6 +13,7 @@ metadata/_edit_group_ = true
 
 [node name="Camera2D" type="Camera2D" parent="." node_paths=PackedStringArray("target")]
 position = Vector2(545, 178)
+zoom = Vector2(1.2, 1.2)
 script = ExtResource("2_hiv5b")
 target = NodePath("../Player")
 

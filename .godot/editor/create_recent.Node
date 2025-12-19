@@ -1,3 +1,4 @@
+MarginContainer
 Node
 Node2D
 Area2D
@@ -6,10 +7,8 @@ AnimatedSprite2D
 Label
 HBoxContainer
 VBoxContainer
-MarginContainer
 PanelContainer
 Control
 TextureRect
 Sprite2D
 Line2D
-CollisionShape2D

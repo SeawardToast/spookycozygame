@@ -1,9 +1,9 @@
 extends Node2D
-
-@onready var margin_container: MarginContainer = $MarginContainer
-@onready var inventory_slots: GridContainer = $MarginContainer/TextureRect/MarginContainer/GridContainer
+@onready var inventory_slots: GridContainer = $MarginContainer/MainInventoryTextureRect/MarginContainer/InventoryContainer
+@onready var hotbar_slots: GridContainer = $MarginContainer/HotbarTextureRect/HotbarMarginContainer/HotbarItemMarginContainer/HotbarContainer
 @onready var drag_preview_layer: Control = $DragPreview
 @onready var tooltip_label: Label = $TooltipLabel
+@onready var main_inventory_texture_rect: TextureRect = $MarginContainer/MainInventoryTextureRect
 
 var holding_item: Variant = null          # The actual item node in hand
 var holding_quantity: int = 0            # Quantity held
@@ -14,13 +14,12 @@ var item_data: Variant = JsonDataManager.load_data("res://resources/data/item_da
 
 
 func _ready() -> void:
-	margin_container.hide()
+	main_inventory_texture_rect.hide()
 	tooltip_label.hide()
 	_connect_slot_signals()
 	_connect_inventory_manager()
 	_render_inventory()
 	set_process_input(true)
-
 
 # --------------------------------------------
 # Slot / Inventory Connections
@@ -31,11 +30,19 @@ func _connect_slot_signals() -> void:
 		slot.gui_input.connect(_on_slot_gui_input.bind(slot))
 		slot.mouse_entered.connect(_on_slot_mouse_entered.bind(slot))
 		slot.mouse_exited.connect(_on_slot_mouse_exited.bind(slot))
+	
+	for slot: Variant in hotbar_slots.get_children():
+		slot.gui_input.connect(_on_slot_gui_input.bind(slot))
+		slot.mouse_entered.connect(_on_slot_mouse_entered.bind(slot))
+		slot.mouse_exited.connect(_on_slot_mouse_exited.bind(slot))
 
 
 func _connect_inventory_manager() -> void:
 	if InventoryManager.has_signal("inventory_updated"):
 		InventoryManager.connect("inventory_updated", Callable(self, "_on_inventory_updated"))
+		
+	if InventoryManager.has_signal("hotbar_updated"):
+		InventoryManager.connect("hotbar_updated", Callable(self, "_on_hotbar_updated"))
 
 
 # --------------------------------------------
@@ -43,27 +50,52 @@ func _connect_inventory_manager() -> void:
 # --------------------------------------------
 
 func _render_inventory() -> void:
-	var slots: Array = inventory_slots.get_children()
-	var index: int = 0
+	var inventory_items: Array = InventoryManager.inventory.keys()
+	var hotbar_items: Array = InventoryManager.hotbar.keys()
+	var inventory_slots_array: Array = inventory_slots.get_children()
+	var hotbar_slots_array: Array = hotbar_slots.get_children()
 
-	for item_name: String in InventoryManager.inventory.keys():
+	var index := 0
+
+	# Fill inventory slots first
+	index = _render_slots(inventory_slots_array, inventory_items, index)
+
+	# Continue filling hotbar slots
+	_render_slots(hotbar_slots_array, hotbar_items, index)
+		
+func _render_slots(slots: Array, items: Array, start_index: int) -> int:
+	var index := start_index
+
+	for item_name: String in items:
 		if index >= slots.size():
-			print("Warning: not enough UI slots for item:", item_name)
 			break
+
 		var quantity: int = InventoryManager.inventory[item_name]
 		slots[index].put_item_from_inventory(item_name, quantity)
 		index += 1
 
-	for i: int in range(index, slots.size()):
+	# Clear remaining slots
+	for i in range(index, slots.size()):
 		slots[i].clear_slot()
+
+	return index
+
 
 
 # --------------------------------------------
 # On Inventory Update
 # --------------------------------------------
 
-func _on_inventory_updated(item_name: String, quantity: int) -> void:
-	for slot: Variant in inventory_slots.get_children():
+func _on_inventory_updated(item_name: String, quantity: int, slot_type: String) -> void:
+	apply_item_to_slots(inventory_slots.get_children(), item_name, quantity)
+	
+	
+func _on_hotbar_updated(item_name: String, quantity: int, slot_type: String) -> void:
+	apply_item_to_slots(hotbar_slots.get_children(), item_name, quantity)
+			
+func apply_item_to_slots(slots: Array, item_name: String, quantity: int) -> void:
+	# First: try to update existing item
+	for slot: Variant in slots:
 		if slot.item_name == item_name:
 			if quantity > 0:
 				slot.update_quantity(quantity)
@@ -71,7 +103,8 @@ func _on_inventory_updated(item_name: String, quantity: int) -> void:
 				slot.clear_slot()
 			return
 
-	for slot: Variant in inventory_slots.get_children():
+	# Second: try to put item into empty slot
+	for slot: Variant in slots:
 		if slot.item_name == "" or slot.item_name == null:
 			if quantity > 0:
 				slot.put_item_from_inventory(item_name, quantity)
@@ -84,7 +117,7 @@ func _on_inventory_updated(item_name: String, quantity: int) -> void:
 
 func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed("toggle_inventory"):
-		margin_container.visible = !margin_container.visible
+		main_inventory_texture_rect.visible = !main_inventory_texture_rect.visible
 
 
 # --------------------------------------------
@@ -142,6 +175,13 @@ func _start_drag_from_swap(slot: Variant, item: Variant) -> void:
 func _handle_drop(slot: Variant) -> void:
 	if not slot.item:
 		slot.put_into_slot(holding_item)
+		
+		# manage distinct hotbar and inventory dictionaries in inventory manager 
+		if slot.is_in_group("hotbar_slot"):
+			InventoryManager.add_hotbar_item(holding_item.item_name)
+			InventoryManager.remove_inventory_item(holding_item.item_name)
+
+			
 		holding_item = null
 		holding_source_slot = null
 		holding_quantity = 0
@@ -150,9 +190,16 @@ func _handle_drop(slot: Variant) -> void:
 
 	var held_prev: Variant = holding_item
 	var slot_item: Variant = slot.pick_from_slot()
-	print("slot item name", slot_item.name)
+
 
 	slot.put_into_slot(holding_item)
+	
+		# remove item from hotbar if you swapped with it
+	if slot.is_in_group("hotbar_slot"):
+		InventoryManager.remove_hotbar_item(slot_item.item_name)
+		InventoryManager.add_hotbar_item(holding_item.item_name)
+
+		
 	holding_item = slot_item
 	holding_quantity = holding_item.item_quantity
 
