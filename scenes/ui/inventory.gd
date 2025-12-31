@@ -63,23 +63,26 @@ func _render_inventory() -> void:
 	# Continue filling hotbar slots
 	_render_slots(hotbar_slots_array, hotbar_items, index)
 		
-func _render_slots(slots: Array, items: Array, start_index: int) -> int:
+func _render_slots(slots: Array, item_ids: Array, start_index: int) -> int:
 	var index := start_index
-
-	for item_name: String in items:
+	
+	for item_id: int in item_ids:
 		if index >= slots.size():
 			break
-
-		var quantity: int = InventoryManager.inventory[item_name]
-		slots[index].put_item_from_inventory(item_name, quantity)
+		
+		# Get the Item resource from InventoryManager
+		var item: Item = InventoryManager.get_item(item_id)
+		var quantity: int = InventoryManager.inventory[item_id]
+		
+		if item:
+			slots[index].put_item_from_inventory(item, quantity)
 		index += 1
-
+	
 	# Clear remaining slots
 	for i in range(index, slots.size()):
 		slots[i].clear_slot()
-
+	
 	return index
-
 
 
 # --------------------------------------------
@@ -178,8 +181,8 @@ func _handle_drop(slot: Variant) -> void:
 		
 		# manage distinct hotbar and inventory dictionaries in inventory manager 
 		if slot.is_in_group("hotbar_slot"):
-			InventoryManager.add_hotbar_item(holding_item.item_name)
-			InventoryManager.remove_inventory_item(holding_item.item_name)
+			InventoryManager.add_hotbar_item(holding_item.item_reference)
+			InventoryManager.remove_inventory_item(holding_item.item_reference)
 
 			
 		holding_item = null

@@ -1,0 +1,12 @@
+[gd_resource type="Resource" script_class="Item" load_steps=3 format=3 uid="uid://hmovibnihks8"]
+
+[ext_resource type="Texture2D" uid="uid://faxd0h1anx1y" path="res://assets/ui/inventory_icons/slime_potion.png" id="1_idyn5"]
+[ext_resource type="Script" uid="uid://cc4itcgfmstki" path="res://scripts/definitions/item.gd" id="1_r4o1l"]
+
+[resource]
+script = ExtResource("1_r4o1l")
+id = "1"
+display_name = "Slime Potion"
+description = "A potion made out of slime"
+icon = ExtResource("1_idyn5")
+metadata/_custom_type_script = "uid://cc4itcgfmstki"

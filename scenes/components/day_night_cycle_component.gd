@@ -30,6 +30,6 @@ func _ready() -> void:
 	DayAndNightCycleManager.game_time.connect(on_game_time)
 	
 func on_game_time(time: float) -> void:
-	var sample_value = 0.5 * (sin(time - PI * 0.5) + 1.0)
+	var sample_value: float = 0.5 * (sin(time - PI * 0.5) + 1.0)
 	color = dayand_night_gradient_texture.gradient.sample(sample_value)
 	

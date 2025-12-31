@@ -20,10 +20,10 @@ target = NodePath("../Player")
 [node name="Player" parent="." instance=ExtResource("2_lfaip")]
 position = Vector2(545, 178)
 
-[node name="FloorContainer" type="Node2D" parent="."]
-
 [node name="GameScreen" parent="." instance=ExtResource("3_kbwh4")]
 
 [node name="VisualNpcSpawner" type="Node2D" parent="." node_paths=PackedStringArray("player")]
 script = ExtResource("4_lfaip")
 player = NodePath("../Player")
+
+[node name="FloorContainer" type="Node2D" parent="."]

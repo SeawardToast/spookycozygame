@@ -1,52 +1,184 @@
 extends Node
 
-var inventory: Dictionary = {}
-var hotbar: Dictionary = {}
+# Item definitions - loaded once and referenced everywhere
+var item_definitions: Dictionary = {}  # [item_id -> Item resource]
 
-signal inventory_updated(item_name: String, quantity: int)
-signal hotbar_updated(item_name: String, quantity: int)
+# Actual inventory data - just quantities
+var inventory: Dictionary = {}  # [item_id -> quantity]
+var hotbar: Dictionary = {}     # [item_id -> quantity]
+
+var selected_item_id: int = -1
+
+signal hotbar_item_selected(item: Item)
+signal enable_tool(tool: DataTypes.Tools)
+signal inventory_updated(item: Item, quantity: int)
+signal hotbar_updated(item: Item, quantity: int)
 
 func _ready() -> void:
-	# Example starting items for testing
-	if inventory.size() == 0:
-		add_inventory_item("Palm Tree", 3)
-		add_inventory_item("Slime Potion", 5)
-		add_hotbar_item("Slime Potion", 5)
-
-func add_inventory_item(item_name: String, quantity: int = 1) -> void:
-	if inventory.has(item_name):
-		inventory[item_name] += quantity
-	else:
-		inventory[item_name] = quantity
-		print("Inventory updated: ", inventory)
-		print("Hotbar: ", hotbar)
-	inventory_updated.emit(item_name, inventory[item_name])
-
-func remove_inventory_item(item_name: String, quantity: int = 1) -> void:
-	if not inventory.has(item_name):
-		return
-	inventory[item_name] -= quantity
-	if inventory[item_name] <= 0:
-		inventory[item_name] = 0
-	print("Inventory updated: ", inventory)
-	print("Hotbar: ", hotbar)
-	inventory_updated.emit(item_name, inventory[item_name])
+	_load_item_definitions()
 	
-func add_hotbar_item(item_name: String, quantity: int = 1) -> void:
-	if hotbar.has(item_name):
-		hotbar[item_name] += quantity
-	else:
-		hotbar[item_name] = quantity
-	print("Inventory updated: ", inventory)
-	print("Hotbar: ", hotbar)
-	hotbar_updated.emit(item_name, hotbar[item_name])
+	# Example starting items
+	if inventory.size() == 0:
+		var palm_tree: Item = get_item(2) # get by item id
+		var slime_potion: Item = get_item(1)
+		
+		if palm_tree:
+			add_inventory_item(palm_tree, 3)
+		if slime_potion:
+			add_inventory_item(slime_potion, 5)
+			add_hotbar_item(slime_potion, 5)
 
-func remove_hotbar_item(item_name: String, quantity: int = 1) -> void:
-	if not hotbar.has(item_name):
+# --------------------------------------------
+# Item Definition Loading
+# --------------------------------------------
+
+func _load_item_definitions() -> void:
+	# Automatically load all .tres files from items folder
+	var items_path: String = "res://scenes/objects/interactable_items/"
+	var dir: DirAccess = DirAccess.open(items_path)
+	
+	if dir:
+		dir.list_dir_begin()
+		var file_name: String = dir.get_next()
+		
+		while file_name != "":
+			if file_name.ends_with(".tres"):
+				var item: Item = load(items_path + file_name)
+				if item and item.id != null:
+					item_definitions[item.id] = item
+					print("Loaded item: ", item.display_name, " (", item.id, ")")
+			file_name = dir.get_next()
+		
+		dir.list_dir_end()
+	else:
+		push_error("Failed to open items directory: " + items_path)
+	
+	 # Option 2: Manual loading (if you prefer explicit control)
+	#var palm_tree = load("res://items/resources/palm_tree.tres")
+	#item_definitions[palm_tree.id] = palm_tree
+
+# --------------------------------------------
+# Item Lookup
+# --------------------------------------------
+
+func get_item(item_id: int) -> Item:
+	var item: Item = item_definitions.get(item_id)
+	return item
+
+func get_item_quantity(item_id: int, in_hotbar: bool = false) -> int:
+	var target: Dictionary = hotbar if in_hotbar else inventory
+	return target.get(item_id, 0)
+
+func has_item(item_id: int, quantity: int = 1, in_hotbar: bool = false) -> bool:
+	return get_item_quantity(item_id, in_hotbar) >= quantity
+
+# --------------------------------------------
+# Selection
+# --------------------------------------------
+
+func select_item(item_id: int) -> void:
+	selected_item_id = item_id
+	var item: Item = get_item(item_id)
+	
+	if item:
+		hotbar_item_selected.emit(item)
+		
+		#if item.item_type == DataTypes.ItemType.TOOL:
+			#enable_tool.emit(item.tool_type)
+
+func get_selected_item() -> Item:
+	return get_item(selected_item_id)
+
+# --------------------------------------------
+# Inventory Operations
+# --------------------------------------------
+
+func add_inventory_item(item: Item, quantity: int = 1) -> void:
+	if not item:
 		return
-	hotbar[item_name] -= quantity
-	if hotbar[item_name] <= 0:
-		hotbar[item_name] = 0
+	
+	if inventory.has(item.id):
+		inventory[item.id] += quantity
+	else:
+		inventory[item.id] = quantity
+	
 	print("Inventory updated: ", inventory)
 	print("Hotbar: ", hotbar)
-	hotbar_updated.emit(item_name, hotbar[item_name])
+	inventory_updated.emit(item, inventory[item.id])
+
+func remove_inventory_item(item: Item, quantity: int = 1) -> bool:
+	if not item or not inventory.has(item.id):
+		return false
+	
+	inventory[item.id] -= quantity
+	
+	if inventory[item.id] <= 0:
+		inventory.erase(item.id)
+		inventory_updated.emit(item, 0)
+	else:
+		inventory_updated.emit(item, inventory[item.id])
+	
+	print("Inventory updated: ", inventory)
+	print("Hotbar: ", hotbar)
+	return true
+
+# --------------------------------------------
+# Hotbar Operations
+# --------------------------------------------
+
+func add_hotbar_item(item: Item, quantity: int = 1) -> void:
+	if not item:
+		return
+	
+	if hotbar.has(item.id):
+		hotbar[item.id] += quantity
+	else:
+		hotbar[item.id] = quantity
+	
+	print("Inventory updated: ", inventory)
+	print("Hotbar: ", hotbar)
+	hotbar_updated.emit(item, hotbar[item.id])
+
+func remove_hotbar_item(item: Item, quantity: int = 1) -> bool:
+	if not item or not hotbar.has(item.id):
+		return false
+	
+	hotbar[item.id] -= quantity
+	
+	if hotbar[item.id] <= 0:
+		hotbar.erase(item.id)
+		hotbar_updated.emit(item, 0)
+	else:
+		hotbar_updated.emit(item, hotbar[item.id])
+	
+	print("Inventory updated: ", inventory)
+	print("Hotbar: ", hotbar)
+	return true
+
+# --------------------------------------------
+# Utility Functions
+# --------------------------------------------
+
+func get_inventory_summary() -> String:
+	var summary: String = ""
+	for item_id: int in inventory:
+		var item: Item = get_item(item_id)
+		if item:
+			summary += "%s: %d\n" % [item.display_name, inventory[item_id]]
+	return summary
+
+func transfer_to_hotbar(item: Item, quantity: int = 1) -> bool:
+	if not has_item(item.id, quantity):
+		return false
+	
+	remove_inventory_item(item, quantity)
+	add_hotbar_item(item, quantity)
+	return true
+
+func transfer_to_inventory(item: Item, quantity: int = 1) -> bool:
+	if not has_item(item.id, quantity, true):
+		return false
+	
+	remove_hotbar_item(item, quantity)
+	add_inventory_item(item, quantity)
+	return true
