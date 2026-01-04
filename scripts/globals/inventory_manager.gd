@@ -8,6 +8,7 @@ var inventory: Dictionary = {}  # [item_id -> quantity]
 var hotbar: Dictionary = {}     # [item_id -> quantity]
 
 var selected_item_id: int = -1
+var selected_hotbar_slot_index: int = 0
 
 signal hotbar_item_selected(item: Item)
 signal inventory_updated(item: Item, quantity: int)
@@ -63,8 +64,9 @@ func has_item(item_id: int, quantity: int = 1, in_hotbar: bool = false) -> bool:
 # Selection
 # --------------------------------------------
 
-func select_item(item_id: int) -> void:
+func select_item(item_id: int, hotbar_slot_index: int) -> void:
 	selected_item_id = item_id
+	selected_hotbar_slot_index = hotbar_slot_index
 	var item: Item = get_item(item_id)
 	
 	if item:
