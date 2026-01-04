@@ -15,14 +15,14 @@ grow_horizontal = 2
 grow_vertical = 2
 theme = ExtResource("1_e2vrk")
 
-[node name="DayAndNightPanel" parent="MarginContainer" instance=ExtResource("4_gkbp4")]
-layout_mode = 2
-size_flags_horizontal = 8
-size_flags_vertical = 0
-
 [node name="Inventory" parent="MarginContainer" instance=ExtResource("6_nwa5a")]
 
 [node name="ReportBoard" parent="MarginContainer" instance=ExtResource("5_0kkfd")]
 layout_mode = 2
 size_flags_horizontal = 4
 size_flags_vertical = 4
+
+[node name="DayAndNightPanel" parent="MarginContainer" instance=ExtResource("4_gkbp4")]
+layout_mode = 2
+size_flags_horizontal = 8
+size_flags_vertical = 0

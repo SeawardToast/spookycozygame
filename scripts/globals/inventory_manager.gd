@@ -10,7 +10,6 @@ var hotbar: Dictionary = {}     # [item_id -> quantity]
 var selected_item_id: int = -1
 
 signal hotbar_item_selected(item: Item)
-signal enable_tool(tool: DataTypes.Tools)
 signal inventory_updated(item: Item, quantity: int)
 signal hotbar_updated(item: Item, quantity: int)
 
@@ -21,16 +20,12 @@ func _ready() -> void:
 	if inventory.size() == 0:
 		var palm_tree: Item = get_item(2) # get by item id
 		var slime_potion: Item = get_item(1)
+		var tomato_seed: Item = get_item(3)
 		
-		if palm_tree:
-			add_inventory_item(palm_tree, 3)
-		if slime_potion:
-			add_inventory_item(slime_potion, 5)
-			add_hotbar_item(slime_potion, 5)
-
-# --------------------------------------------
-# Item Definition Loading
-# --------------------------------------------
+		add_inventory_item(palm_tree, 3)
+		add_inventory_item(slime_potion, 5)
+		add_hotbar_item(tomato_seed, 3)
+		add_hotbar_item(slime_potion, 5)
 
 func _load_item_definitions() -> void:
 	# Automatically load all .tres files from items folder
@@ -52,14 +47,6 @@ func _load_item_definitions() -> void:
 		dir.list_dir_end()
 	else:
 		push_error("Failed to open items directory: " + items_path)
-	
-	 # Option 2: Manual loading (if you prefer explicit control)
-	#var palm_tree = load("res://items/resources/palm_tree.tres")
-	#item_definitions[palm_tree.id] = palm_tree
-
-# --------------------------------------------
-# Item Lookup
-# --------------------------------------------
 
 func get_item(item_id: int) -> Item:
 	var item: Item = item_definitions.get(item_id)
@@ -82,9 +69,6 @@ func select_item(item_id: int) -> void:
 	
 	if item:
 		hotbar_item_selected.emit(item)
-		
-		#if item.item_type == DataTypes.ItemType.TOOL:
-			#enable_tool.emit(item.tool_type)
 
 func get_selected_item() -> Item:
 	return get_item(selected_item_id)

@@ -1,3 +1,4 @@
+res://assets/game/objects
 res://scenes/objects/interactable_items
 res://assets/game/tilesets
 res://assets/game/tilesets/dungeon2
@@ -17,6 +18,5 @@ res://audio/music
 res://audio
 res://scenes
 res://scenes/levels
-res://assets/game/objects
 res://scenes/objects/chest
 res://assets/ui

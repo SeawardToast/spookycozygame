@@ -22,8 +22,8 @@ position = Vector2(545, 178)
 
 [node name="GameScreen" parent="." instance=ExtResource("3_kbwh4")]
 
+[node name="FloorContainer" type="Node2D" parent="."]
+
 [node name="VisualNpcSpawner" type="Node2D" parent="." node_paths=PackedStringArray("player")]
 script = ExtResource("4_lfaip")
 player = NodePath("../Player")
-
-[node name="FloorContainer" type="Node2D" parent="."]

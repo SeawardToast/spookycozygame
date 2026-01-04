@@ -61,9 +61,9 @@ func _render_inventory() -> void:
 	index = _render_slots(inventory_slots_array, inventory_items, index)
 
 	# Continue filling hotbar slots
-	_render_slots(hotbar_slots_array, hotbar_items, index)
+	_render_slots(hotbar_slots_array, hotbar_items, index, true)
 		
-func _render_slots(slots: Array, item_ids: Array, start_index: int) -> int:
+func _render_slots(slots: Array, item_ids: Array, start_index: int, hotbar_slots: bool = false) -> int:
 	var index := start_index
 	
 	for item_id: int in item_ids:
@@ -72,7 +72,7 @@ func _render_slots(slots: Array, item_ids: Array, start_index: int) -> int:
 		
 		# Get the Item resource from InventoryManager
 		var item: Item = InventoryManager.get_item(item_id)
-		var quantity: int = InventoryManager.inventory[item_id]
+		var quantity: int = InventoryManager.get_item_quantity(item_id, hotbar_slots)
 		
 		if item:
 			slots[index].put_item_from_inventory(item, quantity)

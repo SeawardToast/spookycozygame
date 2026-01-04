@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="Item" load_steps=4 format=3 uid="uid://ddutignwnq4a3"]
+
+[ext_resource type="Texture2D" uid="uid://ces4og4p3j8lw" path="res://assets/game/objects/basic_plants.png" id="1_hl2ec"]
+[ext_resource type="Script" uid="uid://cc4itcgfmstki" path="res://scripts/definitions/item.gd" id="1_wvq5i"]
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_o4wqn"]
+atlas = ExtResource("1_hl2ec")
+region = Rect2(82, 17, 12, 13)
+
+[resource]
+script = ExtResource("1_wvq5i")
+id = 3
+display_name = "Tomato Seed"
+description = "Can be planted to grow a tomato"
+icon = SubResource("AtlasTexture_o4wqn")
+item_type = 5
+metadata/_custom_type_script = "uid://cc4itcgfmstki"

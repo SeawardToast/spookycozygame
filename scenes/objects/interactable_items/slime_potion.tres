@@ -5,7 +5,7 @@
 
 [resource]
 script = ExtResource("1_r4o1l")
-id = "1"
+id = 1
 display_name = "Slime Potion"
 description = "A potion made out of slime"
 icon = ExtResource("1_idyn5")
