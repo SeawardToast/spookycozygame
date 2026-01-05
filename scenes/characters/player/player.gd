@@ -2,14 +2,14 @@ class_name Player
 extends CharacterBody2D
 
 @onready var hit_component: HitComponent = $HitComponent
-@export var current_tool: DataTypes.Tools = DataTypes.Tools.None
+@export var current_item: Item
 
 var player_direction: Vector2
 
 func _ready() -> void:
-	ToolManager.tool_selected.connect(on_tool_selected)
+	InventoryManager.hotbar_item_selected.connect(on_hotbar_item_selected)
 	
 	
-func on_tool_selected(tool: DataTypes.Tools) -> void:
-	current_tool = tool
-	hit_component.current_tool = tool
+func on_hotbar_item_selected(item: Item) -> void:
+	current_item = item
+	hit_component.current_tool = item.tool_type

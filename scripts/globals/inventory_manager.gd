@@ -22,11 +22,13 @@ func _ready() -> void:
 		var palm_tree: Item = get_item(2) # get by item id
 		var slime_potion: Item = get_item(1)
 		var tomato_seed: Item = get_item(3)
+		var watering_can: Item = get_item(4)
 		
 		add_inventory_item(palm_tree, 3)
 		add_inventory_item(slime_potion, 5)
 		add_hotbar_item(tomato_seed, 3)
 		add_hotbar_item(slime_potion, 5)
+		add_hotbar_item(watering_can, 1)
 
 func _load_item_definitions() -> void:
 	# Automatically load all .tres files from items folder
@@ -168,3 +170,10 @@ func transfer_to_inventory(item: Item, quantity: int = 1) -> bool:
 	remove_hotbar_item(item, quantity)
 	add_inventory_item(item, quantity)
 	return true
+	
+func _unhandled_input(event: InputEvent) -> void:
+	if event.is_action_pressed("hit"):
+		var selected_item: Item = item_definitions.get(selected_item_id)
+		if selected_item == null:
+			return
+		selected_item.use()

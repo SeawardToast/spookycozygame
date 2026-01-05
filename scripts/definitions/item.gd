@@ -34,3 +34,6 @@ class_name Item
 
 func can_be_placed() -> bool:
 	return is_placeable and placeable_scene != null
+	
+func use() -> void:
+	print(display_name, " being used!")
