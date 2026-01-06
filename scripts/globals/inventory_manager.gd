@@ -73,6 +73,8 @@ func select_item(item_id: int, hotbar_slot_index: int) -> void:
 	
 	if item:
 		hotbar_item_selected.emit(item)
+	else:
+		hotbar_item_selected.emit(null)
 
 func get_selected_item() -> Item:
 	return get_item(selected_item_id)

@@ -1,24 +1,21 @@
 extends Node2D
 
+class_name InventoryItem
+
 @onready var sprite: Sprite2D = $Sprite2D
 @onready var label: Label = $Label
 
-var item_id: int = -1
 var item_reference: Item = null
-var item_name: String = ""
 var item_quantity: int = 0
-
 # Initialize the item with an Item resource
 func set_item(item_resource: Item, quantity: int = 0) -> void:
 	if not item_resource:
 		clear_item()
 		return
 	
-	item_id = item_resource.id
-	item_name = item_resource.display_name
+	item_reference = item_resource
 	item_quantity = quantity
-	
-	print("Setting item: ", item_name)
+	print("Setting item: ", item_resource.display_name)
 	
 	_update_label()
 	_update_icon(item_resource)
@@ -30,8 +27,6 @@ func set_quantity(quantity: int) -> void:
 
 # Clear the item
 func clear_item() -> void:
-	item_id = -1
-	item_name = ""
 	item_quantity = 0
 	sprite.texture = null
 	label.text = ""

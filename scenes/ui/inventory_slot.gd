@@ -1,11 +1,12 @@
 extends Panel
 
+class_name InventorySlot
 var empty_background: Resource = preload("res://assets/ui/item_slot_empty_background.png")
 var default_background: Resource = preload("res://assets/ui/item_slot_default_background.png")
 var selected_background: Resource = preload("res://assets/ui/item_slot_selected_background.png")
 var inventory_item_scene: Resource = preload("res://scenes/ui/inventory_item.tscn")
 
-var item: Node2D = null
+var inventory_item: InventoryItem = null
 var item_id: int = -1
 var item_name: String = ""
 var item_quantity: int = 0
@@ -38,22 +39,27 @@ func _refresh_style() -> void:
 	if is_hotbar_slot and is_selected:
 		set("theme_override_styles/panel", selected_style)
 	else:
-		if item == null:
+		if inventory_item == null:
 			set("theme_override_styles/panel", empty_style)
 		else:
 			set("theme_override_styles/panel", default_style)
 
 func pick_from_slot() -> Node2D:
-	if item == null:
+	if inventory_item == null:
 		return null
 	
-	var picked_item: Node2D = item
+	var picked_item: Node2D = inventory_item
 	print("Item picked from slot: ", item_name)
 	
-	if item.get_parent():
-		item.get_parent().remove_child(item)
+	# if this is a hotbar slot and it is currently selected, select a null item for this slot when picking up item
+	if is_hotbar_slot and InventoryManager.selected_hotbar_slot_index == hotbar_index:
+		InventoryManager.select_item(-1, hotbar_index)
+		
 	
-	item = null
+	if inventory_item.get_parent():
+		inventory_item.get_parent().remove_child(inventory_item)
+	
+	inventory_item = null
 	item_id = -1
 	item_name = ""
 	item_quantity = 0
@@ -65,17 +71,35 @@ func put_into_slot(new_item: Node2D) -> void:
 	if new_item == null:
 		return
 	
-	item = new_item
+	inventory_item = new_item
 	
-	if item.get_parent():
-		item.get_parent().remove_child(item)
+	if inventory_item.get_parent():
+		inventory_item.get_parent().remove_child(inventory_item)
 	
-	add_child(item)
-	item.position = Vector2.ZERO
+	add_child(inventory_item)
+	inventory_item.position = Vector2.ZERO
 	
-	item_id = item.item_id
-	item_name = item.item_name
-	item_quantity = item.item_quantity
+	item_id = inventory_item.item_reference.id
+	item_name = inventory_item.item_reference.display_name
+	item_quantity = inventory_item.item_quantity
+	
+	_refresh_style()
+
+func put_into_slot_quantity(new_item: Node2D, quantity: int) -> void:
+	if new_item == null:
+		return
+	
+	inventory_item = new_item
+	
+	if inventory_item.get_parent():
+		inventory_item.get_parent().remove_child(inventory_item)
+	
+	add_child(inventory_item)
+	inventory_item.position = Vector2.ZERO
+	
+	item_id = inventory_item.item_reference.id
+	item_name = inventory_item.item_reference.display_name
+	item_quantity = quantity
 	
 	_refresh_style()
 
@@ -87,27 +111,27 @@ func put_item_from_inventory(item_resource: Item, quantity: int) -> void:
 	item_name = item_resource.display_name
 	item_quantity = quantity
 	
-	if item == null:
-		item = inventory_item_scene.instantiate()
-		add_child(item)
+	if inventory_item == null:
+		inventory_item = inventory_item_scene.instantiate()
+		add_child(inventory_item)
 	
-	item.set_item(item_resource, item_quantity)
+	inventory_item.set_item(item_resource, item_quantity)
 	_refresh_style()
 
 func update_quantity(quantity: int) -> void:
 	item_quantity = quantity
-	if item != null:
-		item.set_quantity(item_quantity)
+	if inventory_item != null:
+		inventory_item.set_quantity(item_quantity)
 
 func clear_slot() -> void:
 	item_id = -1
 	item_name = ""
 	item_quantity = 0
 	
-	if item != null:
-		remove_child(item)
-		item.queue_free()
-		item = null
+	if inventory_item != null:
+		remove_child(inventory_item)
+		inventory_item.queue_free()
+		inventory_item = null
 	
 	_refresh_style()
 
