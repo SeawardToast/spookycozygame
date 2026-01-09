@@ -1,4 +1,5 @@
 extends Node2D
+
 @onready var inventory_slots: GridContainer = $MarginContainer/MainInventoryTextureRect/MarginContainer/InventoryContainer
 @onready var hotbar_slots: GridContainer = $MarginContainer/HotbarTextureRect/HotbarMarginContainer/HotbarItemMarginContainer/HotbarContainer
 @onready var drag_preview_layer: Control = $DragPreview
@@ -6,375 +7,185 @@ extends Node2D
 @onready var main_inventory_texture_rect: TextureRect = $MarginContainer/MainInventoryTextureRect
 
 var holding_item: InventoryItem = null
-var holding_quantity: int = 0
 var holding_source_slot: InventorySlot = null
 var drag_ghost: TextureRect = null
-
-var item_data: Variant = JsonDataManager.load_data("res://resources/data/item_data.json")
-
-# Hotbar selection
 var current_hotbar_index: int = 0
+
+const INVENTORY_ITEM_SCENE = preload("res://scenes/ui/inventory_item.tscn")
 
 func _ready() -> void:
 	main_inventory_texture_rect.hide()
 	tooltip_label.hide()
 	
-	# Initialize hotbar slots
 	_setup_hotbar_slots()
-	
-	_connect_slot_signals()
-	_connect_inventory_manager()
-
+	_connect_all_signals()
 	_render_inventory()
-	set_process_input(true)
-
-	# Select first hotbar slot by default
 	_select_hotbar_slot(2)
 
 # --------------------------------------------
-# Hotbar Setup
+# Setup & Connections
 # --------------------------------------------
 
 func _setup_hotbar_slots() -> void:
-	var slots_array: Array = hotbar_slots.get_children()
-	for i in range(slots_array.size()):
-		slots_array[i].is_hotbar_slot = true
-		slots_array[i].hotbar_index = i
+	for i: int in hotbar_slots.get_child_count():
+		var slot: InventorySlot = hotbar_slots.get_child(i)
+		slot.is_hotbar_slot = true
+		slot.hotbar_index = i
 
-# --------------------------------------------
-# Slot / Inventory Connections
-# --------------------------------------------
-
-func _connect_slot_signals() -> void:
-	for slot: Variant in inventory_slots.get_children():
+func _connect_all_signals() -> void:
+	for slot: InventorySlot in inventory_slots.get_children() + hotbar_slots.get_children():
 		slot.gui_input.connect(_on_slot_gui_input.bind(slot))
 		slot.mouse_entered.connect(_on_slot_mouse_entered.bind(slot))
-		slot.mouse_exited.connect(_on_slot_mouse_exited.bind(slot))
+		slot.mouse_exited.connect(_on_slot_mouse_exited)
 	
-	for slot: Variant in hotbar_slots.get_children():
-		slot.gui_input.connect(_on_slot_gui_input.bind(slot))
-		slot.mouse_entered.connect(_on_slot_mouse_entered.bind(slot))
-		slot.mouse_exited.connect(_on_slot_mouse_exited.bind(slot))
-
-func _connect_inventory_manager() -> void:
-	InventoryManager.connect("inventory_updated", Callable(self, "_on_inventory_updated"))
-	InventoryManager.connect("hotbar_updated", Callable(self, "_on_hotbar_updated"))
+	InventoryManager.inventory_updated.connect(_on_inventory_updated)
+	InventoryManager.hotbar_updated.connect(_on_hotbar_updated)
 
 # --------------------------------------------
-# Render Initial Inventory
+# Rendering
 # --------------------------------------------
 
 func _render_inventory() -> void:
-	var inventory_items: Array = InventoryManager.inventory.keys()
-	var hotbar_items: Array = InventoryManager.hotbar.keys()
-	var inventory_slots_array: Array = inventory_slots.get_children()
-	var hotbar_slots_array: Array = hotbar_slots.get_children()
+	_render_slot_group(inventory_slots.get_children(), InventoryManager.inventory.keys(), false)
+	_render_slot_group(hotbar_slots.get_children(), InventoryManager.hotbar.keys(), true)
 
-	var index := 0
-
-	index = _render_slots(inventory_slots_array, inventory_items, index)
-	_render_slots(hotbar_slots_array, hotbar_items, index, true)
-		
-func _render_slots(slots: Array, item_ids: Array, start_index: int, hotbar_slots: bool = false) -> int:
-	var index := start_index
+func _render_slot_group(slots: Array, item_ids: Array, is_hotbar: bool) -> void:
+	var index: int = 0
 	
 	for item_id: int in item_ids:
 		if index >= slots.size():
 			break
 		
 		var item: Item = InventoryManager.get_item(item_id)
-		var quantity: int = InventoryManager.get_item_quantity(item_id, hotbar_slots)
+		var quantity: int = InventoryManager.get_item_quantity(item_id, is_hotbar)
 		
 		if item:
-			slots[index].put_item_from_inventory(item, quantity)
+			var slot: InventorySlot = slots[index]
+			slot.put_item_from_inventory(item, quantity)
 		index += 1
 	
-	for i in range(index, slots.size()):
-		slots[i].clear_slot()
-	
-	return index
+	# Clear remaining slots
+	for i: int in range(index, slots.size()):
+		var slot: InventorySlot = slots[i]
+		slot.clear_slot()
 
-# to be used when you are picking stuff up, receiving items, etc
-func _on_inventory_updated(item: Item, quantity: int, slot_type: String) -> void:
-	apply_item_to_slots(inventory_slots.get_children(), item, quantity)
-	
-func _on_hotbar_updated(item: Item, quantity: int, slot_type: String) -> void:
-	apply_item_to_slots(hotbar_slots.get_children(), item, quantity)
-			
-# should parse through slots and add it to an existing slot if found, otherwise place it in the first free slot
-func apply_item_to_slots(slots: Array, item: Item, quantity: int) -> void:
-	for slot: Variant in slots:
+func _on_inventory_updated(item: Item, quantity: int, _slot_type: String) -> void:
+	_apply_item_to_slots(inventory_slots.get_children(), item, quantity)
+
+func _on_hotbar_updated(item: Item, quantity: int, _slot_type: String) -> void:
+	_apply_item_to_slots(hotbar_slots.get_children(), item, quantity)
+
+func _apply_item_to_slots(slots: Array, item: Item, quantity: int) -> void:
+	# Try to update existing slot
+	for slot: InventorySlot in slots:
 		if slot.item_id == item.id:
 			if quantity > 0:
 				slot.update_quantity(quantity)
 			else:
 				slot.clear_slot()
 			return
-
-	for slot: Variant in slots:
-		if slot.item_name == "" or slot.item_name == null:
+	
+	# Place in first empty slot
+	for slot: InventorySlot in slots:
+		if not slot.item_name:
 			if quantity > 0:
 				slot.put_item_from_inventory(item, quantity)
 			return
 
+# --------------------------------------------
+# Hotbar Selection
+# --------------------------------------------
 
 func _select_hotbar_slot(index: int) -> void:
-	var slots_array: Array = hotbar_slots.get_children()
-	if index < 0 or index >= slots_array.size():
+	var slots: Array = hotbar_slots.get_children()
+	if index < 0 or index >= slots.size():
 		return
 	
 	current_hotbar_index = index
-	var slot: Variant = slots_array[index]
+	var slot: InventorySlot = slots[index]
 	
-	# Update InventoryManager with the selected item ID
-	if slot and slot.item_id != -1:
-		InventoryManager.select_item(slot.item_id, index)
-	else:
-		InventoryManager.select_item(-1, index)
-		
-	# Refresh all hotbar slots
-	for hotbar_slot: Variant in slots_array:
+	InventoryManager.select_item(slot.item_id if slot.item_id != -1 else -1, index)
+	
+	for hotbar_slot: InventorySlot in slots:
 		hotbar_slot.on_selection_changed()
 
 func _cycle_hotbar(direction: int) -> void:
-	var slots_array: Array = hotbar_slots.get_children()
-	if slots_array.is_empty():
+	var slot_count: int = hotbar_slots.get_child_count()
+	if slot_count == 0:
 		return
 	
-	current_hotbar_index = (current_hotbar_index + direction)
-	if current_hotbar_index < 0:
-		current_hotbar_index = slots_array.size() - 1
-	if current_hotbar_index > slots_array.size() - 1:
-		current_hotbar_index = 0
-	
+	current_hotbar_index = (current_hotbar_index + direction + slot_count) % slot_count
 	_select_hotbar_slot(current_hotbar_index)
+
+# --------------------------------------------
+# Input Handling
+# --------------------------------------------
 
 func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed("toggle_inventory"):
 		main_inventory_texture_rect.visible = !main_inventory_texture_rect.visible
 
-func _on_slot_gui_input(event: InputEvent, slot: InventorySlot) -> void:
+func _input(event: InputEvent) -> void:
+	# Update drag ghost position
+	if holding_item and drag_ghost:
+		drag_ghost.global_position = get_global_mouse_position() - drag_ghost.size * 0.5
+	
+	# Handle hotbar scrolling
 	if event is InputEventMouseButton and event.pressed:
-		if event.button_index == MOUSE_BUTTON_LEFT:
+		if event.button_index == MOUSE_BUTTON_WHEEL_UP:
+			_cycle_hotbar(-1)
+			get_viewport().set_input_as_handled()
+		elif event.button_index == MOUSE_BUTTON_WHEEL_DOWN:
+			_cycle_hotbar(1)
+			get_viewport().set_input_as_handled()
+
+func _on_slot_gui_input(event: InputEvent, slot: InventorySlot) -> void:
+	if not event is InputEventMouseButton or not event.pressed:
+		return
+	
+	var mouse_event: InputEventMouseButton = event as InputEventMouseButton
+	match mouse_event.button_index:
+		MOUSE_BUTTON_LEFT:
 			if holding_item:
 				_handle_drop(slot)
 			elif slot.inventory_item:
 				_start_drag(slot)
-		if event.button_index == MOUSE_BUTTON_RIGHT:
+		MOUSE_BUTTON_RIGHT:
 			if holding_item:
 				_handle_drop_single(slot)
 			elif slot.inventory_item:
 				_split_stack(slot)
 
-func _start_drag(slot: Variant) -> void:
+# --------------------------------------------
+# Drag Operations
+# --------------------------------------------
+
+func _start_drag(slot: InventorySlot) -> void:
 	holding_item = slot.pick_from_slot()
 	if not holding_item:
 		return
-
+	
 	holding_source_slot = slot
-	holding_quantity = holding_item.item_quantity
+	_create_drag_ghost(holding_item.sprite.texture)
 
-	drag_ghost = TextureRect.new()
-	drag_ghost.texture = holding_item.sprite.texture
-	drag_ghost.modulate = Color(1, 1, 1, 0.75)
-	drag_ghost.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	drag_ghost.scale = Vector2(1.2, 1.2)
-
-	drag_preview_layer.add_child(drag_ghost)
-	drag_ghost.global_position = get_global_mouse_position() - drag_ghost.size * 0.5
-
-func _start_drag_from_swap(slot: Variant, item: Variant) -> void:
-	if not item:
-		return
-
-	holding_source_slot = slot
-	holding_quantity = item.item_quantity
-
-	drag_ghost = TextureRect.new()
-	drag_ghost.texture = item.sprite.texture
-	drag_ghost.modulate = Color(1, 1, 1, 0.75)
-	drag_ghost.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	drag_ghost.scale = Vector2(1.2, 1.2)
-
-	drag_preview_layer.add_child(drag_ghost)
-	drag_ghost.global_position = get_global_mouse_position() - drag_ghost.size * 0.5
-	
-
-func _handle_drop_single(slot: InventorySlot) -> void:
-	# slot has no item in it
-	if not slot.inventory_item:
-		slot.put_item_from_inventory(holding_item.item_reference, 1)
-		
-		# Track movement between hotbar and inventory
-		var came_from_hotbar: bool = holding_source_slot and holding_source_slot.is_in_group("hotbar_slot")
-		var going_to_hotbar: bool = slot.is_in_group("hotbar_slot")
-
-		# Remove from source
-		if came_from_hotbar:
-			InventoryManager.remove_hotbar_item(holding_item.item_reference, 1)
-		else:
-			InventoryManager.remove_inventory_item(holding_item.item_reference, 1)
-
-		# Add to destination
-		if going_to_hotbar:
-			InventoryManager.add_hotbar_item(holding_item.item_reference, 1)
-		else:
-			InventoryManager.add_inventory_item(holding_item.item_reference, 1)
-			
-		# if holding item is going to be depleted after this, kill the drag ghost
-		# otherwise, decrease the quantity of the held item
-		if holding_item.item_quantity <= 1:
-			_destroy_drag_ghost()
-			holding_item = null
-			holding_source_slot = null
-		else:
-			holding_item.set_quantity(holding_item.item_quantity - 1)
-		return
-
-	# Stacking the same item
-	if holding_item.item_reference.id == slot.inventory_item.item_reference.id:
-		slot.update_quantity(slot.item_quantity + 1)
-		
-		# Track movement between hotbar and inventory
-		var came_from_hotbar: bool = holding_source_slot and holding_source_slot.is_in_group("hotbar_slot")
-		var going_to_hotbar: bool = slot.is_in_group("hotbar_slot")
-
-		# Remove from source
-		if came_from_hotbar:
-			InventoryManager.remove_hotbar_item(holding_item.item_reference, 1)
-		else:
-			InventoryManager.remove_inventory_item(holding_item.item_reference, 1)
-
-		# Add to destination
-		if going_to_hotbar:
-			InventoryManager.add_hotbar_item(holding_item.item_reference, 1)
-		else:
-			InventoryManager.add_inventory_item(holding_item.item_reference, 1)
-			
-		# Decrease held quantity
-		if holding_item.item_quantity <= 1:
-			_destroy_drag_ghost()
-			holding_item = null
-			holding_source_slot = null
-		else:
-			holding_item.set_quantity(holding_item.item_quantity - 1)
-
-func _handle_drop(slot: InventorySlot) -> void:
-	# Track where the item came from and where it's going
-	var came_from_hotbar: bool = holding_source_slot and holding_source_slot.is_in_group("hotbar_slot")
-	var going_to_hotbar: bool = slot.is_in_group("hotbar_slot")
-
-	# Dropping into empty slot
-	if not slot.inventory_item:
-		slot.put_into_slot(holding_item)
-		
-		# Remove from source
-		if came_from_hotbar:
-			InventoryManager.remove_hotbar_item(holding_item.item_reference, holding_item.item_quantity)
-		elif holding_source_slot:  # Only remove if there was a source slot
-			InventoryManager.remove_inventory_item(holding_item.item_reference, holding_item.item_quantity)
-
-		# Add to destination
-		if going_to_hotbar:
-			InventoryManager.add_hotbar_item(holding_item.item_reference, holding_item.item_quantity)
-		else:
-			InventoryManager.add_inventory_item(holding_item.item_reference, holding_item.item_quantity)
-			
-		holding_item = null
-		holding_source_slot = null
-		holding_quantity = 0
-		_destroy_drag_ghost()
-		
-		# Update selection if dropped into current hotbar slot
-		if slot.is_hotbar_slot and slot.hotbar_index == current_hotbar_index:
-			_select_hotbar_slot(current_hotbar_index)
-		return
-		
-	# Stacking the same item
-	if holding_item.item_reference.id == slot.inventory_item.item_reference.id:
-		slot.update_quantity(holding_item.item_quantity + slot.item_quantity)
-		
-		# Remove from source
-		if came_from_hotbar:
-			InventoryManager.remove_hotbar_item(holding_item.item_reference, holding_item.item_quantity)
-		elif holding_source_slot:
-			InventoryManager.remove_inventory_item(holding_item.item_reference, holding_item.item_quantity)
-
-		# Add to destination (the merged stack)
-		if going_to_hotbar:
-			InventoryManager.add_hotbar_item(holding_item.item_reference, holding_item.item_quantity)
-		else:
-			InventoryManager.add_inventory_item(holding_item.item_reference, holding_item.item_quantity)
-		
-		_destroy_drag_ghost()
-		holding_item = null
-		holding_source_slot = null
-		return
-
-	# Swapping items
-	var slot_item: InventoryItem = slot.pick_from_slot()
-	
-	# Remove both items from their locations
-	# Remove held item from source
-	if came_from_hotbar:
-		InventoryManager.remove_hotbar_item(holding_item.item_reference, holding_item.item_quantity)
-	elif holding_source_slot:
-		InventoryManager.remove_inventory_item(holding_item.item_reference, holding_item.item_quantity)
-	
-	# Remove slot item from destination
-	if going_to_hotbar:
-		InventoryManager.remove_hotbar_item(slot_item.item_reference, slot_item.item_quantity)
-	else:
-		InventoryManager.remove_inventory_item(slot_item.item_reference, slot_item.item_quantity)
-	
-	# Place held item into slot
-	slot.put_into_slot(holding_item)
-	
-	# Add held item to destination
-	if going_to_hotbar:
-		InventoryManager.add_hotbar_item(holding_item.item_reference, holding_item.item_quantity)
-	else:
-		InventoryManager.add_inventory_item(holding_item.item_reference, holding_item.item_quantity)
-	
-	# Add slot item to source (now being held)
-	if came_from_hotbar:
-		InventoryManager.add_hotbar_item(slot_item.item_reference, slot_item.item_quantity)
-	else:
-		InventoryManager.add_inventory_item(slot_item.item_reference, slot_item.item_quantity)
-	
-	# Now hold the swapped item
-	holding_item = slot_item
-	holding_quantity = holding_item.item_quantity
-	
-	_destroy_drag_ghost()
-	_start_drag_from_swap(slot, holding_item)
-	
-	# Update selection if swapped in current hotbar slot
-	if slot.is_hotbar_slot and slot.hotbar_index == current_hotbar_index:
-		_select_hotbar_slot(current_hotbar_index)
-
-func _split_stack(slot: Variant) -> void:
+func _split_stack(slot: InventorySlot) -> void:
 	var half: int = int(slot.item_quantity / 2)
 	if half <= 0:
 		return
 	
-	# Create new instance
-	holding_item = preload("res://scenes/ui/inventory_item.tscn").instantiate()
-	
-	# IMPORTANT: Add to scene tree temporarily so @onready vars initialize
+	# Create and initialize new item instance
+	holding_item = INVENTORY_ITEM_SCENE.instantiate() as InventoryItem
 	add_child(holding_item)
-	
-	# Now set the item data (sprite and label are ready)
 	holding_item.set_item(slot.inventory_item.item_reference, half)
-	holding_quantity = half
-	
-	# Remove from this parent - it will be re-added when dropped
 	remove_child(holding_item)
 	
 	slot.update_quantity(slot.item_quantity - half)
-	
+	holding_source_slot = slot
+	_create_drag_ghost(holding_item.sprite.texture)
+
+func _create_drag_ghost(texture: Texture2D) -> void:
 	drag_ghost = TextureRect.new()
-	drag_ghost.texture = holding_item.sprite.texture
+	drag_ghost.texture = texture
 	drag_ghost.modulate = Color(1, 1, 1, 0.75)
 	drag_ghost.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	drag_ghost.scale = Vector2(1.2, 1.2)
@@ -387,7 +198,115 @@ func _destroy_drag_ghost() -> void:
 		drag_ghost = null
 
 # --------------------------------------------
-# Tooltip Handling
+# Drop Operations
+# --------------------------------------------
+
+func _handle_drop_single(slot: InventorySlot) -> void:
+	var same_item: bool = slot.inventory_item and holding_item.item_reference.id == slot.inventory_item.item_reference.id
+	
+	# Place or stack item
+	if not slot.inventory_item:
+		slot.put_item_from_inventory(holding_item.item_reference, 1)
+	elif same_item:
+		slot.update_quantity(slot.item_quantity + 1)
+	else:
+		return  # Can't drop single on different item
+	
+	# Update inventory tracking
+	_update_inventory_tracking(holding_source_slot, slot, 1)
+	
+	# Update held item
+	if holding_item.item_quantity <= 1:
+		_cleanup_holding()
+	else:
+		holding_item.set_quantity(holding_item.item_quantity - 1)
+
+func _handle_drop(slot: InventorySlot) -> void:
+	# Empty slot - simple drop
+	if not slot.inventory_item:
+		_drop_into_empty_slot(slot)
+		return
+	
+	# Same item - stack
+	if holding_item.item_reference.id == slot.inventory_item.item_reference.id:
+		_stack_items(slot)
+		return
+	
+	# Different items - swap
+	_swap_items(slot)
+
+func _drop_into_empty_slot(slot: InventorySlot) -> void:
+	var quantity: int = holding_item.item_quantity
+	slot.put_into_slot(holding_item)
+	
+	_update_inventory_tracking(holding_source_slot, slot, quantity)
+	_cleanup_holding()
+	_update_hotbar_selection_if_needed(slot)
+
+func _stack_items(slot: InventorySlot) -> void:
+	var quantity: int = holding_item.item_quantity
+	slot.update_quantity(holding_item.item_quantity + slot.item_quantity)
+	
+	_update_inventory_tracking(holding_source_slot, slot, quantity)
+	_cleanup_holding()
+
+func _swap_items(slot: InventorySlot) -> void:
+	var slot_item: InventoryItem = slot.pick_from_slot()
+	var held_quantity: int = holding_item.item_quantity
+	var slot_quantity: int = slot_item.item_quantity
+	
+	# Remove both items from their original locations
+	_remove_from_inventory(holding_source_slot, holding_item.item_reference, held_quantity)
+	_remove_from_inventory(slot, slot_item.item_reference, slot_quantity)
+	
+	# Place held item into slot
+	slot.put_into_slot(holding_item)
+	_add_to_inventory(slot, holding_item.item_reference, held_quantity)
+	
+	# Add swapped item to source location
+	_add_to_inventory(holding_source_slot, slot_item.item_reference, slot_quantity)
+	
+	# Update holding item
+	holding_item = slot_item
+	_destroy_drag_ghost()
+	_create_drag_ghost(holding_item.sprite.texture)
+	_update_hotbar_selection_if_needed(slot)
+
+# --------------------------------------------
+# Inventory Tracking Helpers
+# --------------------------------------------
+
+func _update_inventory_tracking(from_slot: InventorySlot, to_slot: InventorySlot, quantity: int) -> void:
+	if from_slot:
+		_remove_from_inventory(from_slot, holding_item.item_reference, quantity)
+	_add_to_inventory(to_slot, holding_item.item_reference, quantity)
+
+func _remove_from_inventory(slot: InventorySlot, item: Item, quantity: int) -> void:
+	if not slot:
+		return
+	
+	if slot.is_in_group("hotbar_slot"):
+		InventoryManager.remove_hotbar_item(item, quantity)
+	else:
+		InventoryManager.remove_inventory_item(item, quantity)
+
+func _add_to_inventory(slot: InventorySlot, item: Item, quantity: int) -> void:
+	if slot.is_in_group("hotbar_slot"):
+		InventoryManager.add_hotbar_item(item, quantity)
+	else:
+		InventoryManager.add_inventory_item(item, quantity)
+
+func _cleanup_holding() -> void:
+	holding_item = null
+	holding_source_slot = null
+	_destroy_drag_ghost()
+
+func _update_hotbar_selection_if_needed(slot: InventorySlot) -> void:
+	if slot.is_hotbar_slot and slot.hotbar_index == current_hotbar_index:
+		_select_hotbar_slot(current_hotbar_index)
+
+# --------------------------------------------
+# Tooltip
 # --------------------------------------------
 
 func _on_slot_mouse_entered(slot: InventorySlot) -> void:
@@ -395,23 +314,5 @@ func _on_slot_mouse_entered(slot: InventorySlot) -> void:
 		tooltip_label.text = slot.item_name
 		tooltip_label.show()
 
-func _on_slot_mouse_exited(slot: Variant) -> void:
+func _on_slot_mouse_exited() -> void:
 	tooltip_label.hide()
-
-# --------------------------------------------
-# Input Handling (Drag Ghost + Hotbar Scroll)
-# --------------------------------------------
-
-func _input(event: InputEvent) -> void:
-	# Handle drag ghost movement
-	if holding_item and drag_ghost:
-		drag_ghost.global_position = get_global_mouse_position() - drag_ghost.size * 0.5
-	
-	# Handle hotbar scrolling
-	if event is InputEventMouseButton and event.pressed:
-		if event.button_index == MOUSE_BUTTON_WHEEL_UP:
-			_cycle_hotbar(-1)
-			get_viewport().set_input_as_handled()
-		elif event.button_index == MOUSE_BUTTON_WHEEL_DOWN:
-			_cycle_hotbar(1)
-			get_viewport().set_input_as_handled()
