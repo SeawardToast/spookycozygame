@@ -272,9 +272,6 @@ func _swap_items(slot: InventorySlot) -> void:
 	_create_drag_ghost(holding_item.sprite.texture)
 	_update_hotbar_selection_if_needed(slot)
 
-# --------------------------------------------
-# Inventory Tracking Helpers
-# --------------------------------------------
 
 func _update_inventory_tracking(from_slot: InventorySlot, to_slot: InventorySlot, quantity: int) -> void:
 	if from_slot:
@@ -304,10 +301,6 @@ func _cleanup_holding() -> void:
 func _update_hotbar_selection_if_needed(slot: InventorySlot) -> void:
 	if slot.is_hotbar_slot and slot.hotbar_index == current_hotbar_index:
 		_select_hotbar_slot(current_hotbar_index)
-
-# --------------------------------------------
-# Tooltip
-# --------------------------------------------
 
 func _on_slot_mouse_entered(slot: InventorySlot) -> void:
 	if slot.inventory_item:

@@ -1,6 +1,7 @@
+Sprite2D
+Node2D
 MarginContainer
 Node
-Node2D
 Area2D
 CollisionPolygon2D
 AnimatedSprite2D
@@ -10,5 +11,4 @@ VBoxContainer
 PanelContainer
 Control
 TextureRect
-Sprite2D
 Line2D

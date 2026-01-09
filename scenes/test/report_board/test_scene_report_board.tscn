@@ -1,10 +1,11 @@
-[gd_scene load_steps=6 format=3 uid="uid://g8vv4qq0q8f0"]
+[gd_scene load_steps=7 format=3 uid="uid://g8vv4qq0q8f0"]
 
 [ext_resource type="Script" uid="uid://dgm5knshx78wa" path="res://scripts/npc/main_hotel_scene_manager.gd" id="1_kbwh4"]
 [ext_resource type="Script" uid="uid://ca5tgsogyltll" path="res://scripts/camera/camera_controller.gd" id="2_hiv5b"]
 [ext_resource type="PackedScene" uid="uid://6fa2m4vt6287" path="res://scenes/characters/player/player.tscn" id="2_lfaip"]
 [ext_resource type="PackedScene" uid="uid://d0dhtip02w7f6" path="res://scenes/ui/game_screen.tscn" id="3_kbwh4"]
 [ext_resource type="Script" uid="uid://c1uamwi6562u7" path="res://scripts/npc/visual_npc_spawner.gd" id="4_lfaip"]
+[ext_resource type="Script" uid="uid://cbao8t4xipws4" path="res://scripts/scene_helpers/placeable_item_preview.gd" id="6_lh1nm"]
 
 [node name="MainHotelScene" type="Node2D"]
 y_sort_enabled = true
@@ -27,3 +28,6 @@ position = Vector2(545, 178)
 [node name="VisualNpcSpawner" type="Node2D" parent="." node_paths=PackedStringArray("player")]
 script = ExtResource("4_lfaip")
 player = NodePath("../Player")
+
+[node name="PlaceableItemPreview" type="Sprite2D" parent="."]
+script = ExtResource("6_lh1nm")

@@ -35,6 +35,7 @@ NPCSimulationManager="*res://scripts/globals/npc_simulation_manager.gd"
 NPCTypeRegistry="*res://scripts/globals/npc_type_registry.gd"
 FloorManager="*res://scripts/globals/floor_manager.gd"
 DailyReportManager="*res://scripts/globals/guest_report_manager.gd"
+ItemPlacementManager="*res://scripts/globals/item_placement_manager.gd"
 
 [debug]
 

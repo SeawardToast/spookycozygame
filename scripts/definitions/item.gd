@@ -27,7 +27,6 @@ class_name Item
 @export var placement_offset: Vector3 = Vector3.ZERO  # Offset for placement position
 @export var can_rotate: bool = true  # Whether player can rotate before placing
 @export var requires_ground: bool = true  # Whether it needs to be on ground
-@export var placement_radius: float = 5.0  # Max distance from player to place
 
 # Optional: Preview material for ghost preview
 @export var preview_material: Material
