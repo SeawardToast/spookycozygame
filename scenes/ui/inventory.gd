@@ -208,8 +208,22 @@ func _handle_drop_single(slot: InventorySlot) -> void:
 	elif holding_item.item_reference.id == slot.inventory_item.item_reference.id:
 		slot.update_quantity(slot.item_quantity + 1)
 		
-	if slot.is_in_group("hotbar_slot"):
-		InventoryManager.add_hotbar_item(holding_item.item_reference)
+	# Track where the item came from
+	var came_from_hotbar: bool = holding_source_slot and holding_source_slot.is_in_group("hotbar_slot")
+	var going_to_hotbar: bool = slot.is_in_group("hotbar_slot")
+
+	# Remove from source
+	if came_from_hotbar:
+		InventoryManager.remove_hotbar_item(holding_item.item_reference, 1)
+	else:
+		InventoryManager.remove_inventory_item(holding_item.item_reference, 1)
+
+	# Add to destination
+	if going_to_hotbar:
+		InventoryManager.add_hotbar_item(holding_item.item_reference, 1)
+	else:
+		InventoryManager.add_inventory_item(holding_item.item_reference, 1)
+		
 	# if holding item is going to be depleted after this, kill the drag ghost
 	# otherwise, decrease the quantity of the held item
 	if holding_item.item_quantity <= 1:
@@ -222,8 +236,21 @@ func _handle_drop(slot: InventorySlot) -> void:
 	if not slot.inventory_item:
 		slot.put_into_slot(holding_item)
 		
-		if slot.is_in_group("hotbar_slot"):
-			InventoryManager.add_hotbar_item(holding_item.item_reference)
+	# Track where the item came from
+	var came_from_hotbar: bool = holding_source_slot and holding_source_slot.is_in_group("hotbar_slot")
+	var going_to_hotbar: bool = slot.is_in_group("hotbar_slot")
+
+	# Remove from source
+	if came_from_hotbar:
+		InventoryManager.remove_hotbar_item(holding_item.item_reference, holding_item.item_quantity)
+	else:
+		InventoryManager.remove_inventory_item(holding_item.item_reference, holding_item.item_quantity)
+
+	# Add to destination
+	if going_to_hotbar:
+		InventoryManager.add_hotbar_item(holding_item.item_reference, holding_item.item_quantity)
+	else:
+		InventoryManager.add_inventory_item(holding_item.item_reference, holding_item.item_quantity)
 			
 		holding_item = null
 		holding_source_slot = null

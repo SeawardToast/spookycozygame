@@ -9,3 +9,4 @@ res://scenes/objects/rocks/rock_shake.gdshader
 res://scenes/characters/guide/replace_color.gdshader
 res://scenes/ui/inventory.gd
 res://scenes/ui/inventory_slot.gd
+res://scenes/ui/inventory_item.tscn
