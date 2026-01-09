@@ -204,53 +204,81 @@ func _handle_drop_single(slot: InventorySlot) -> void:
 	# slot has no item in it
 	if not slot.inventory_item:
 		slot.put_item_from_inventory(holding_item.item_reference, 1)
+		
+		# Track movement between hotbar and inventory
+		var came_from_hotbar: bool = holding_source_slot and holding_source_slot.is_in_group("hotbar_slot")
+		var going_to_hotbar: bool = slot.is_in_group("hotbar_slot")
 
-	elif holding_item.item_reference.id == slot.inventory_item.item_reference.id:
+		# Remove from source
+		if came_from_hotbar:
+			InventoryManager.remove_hotbar_item(holding_item.item_reference, 1)
+		else:
+			InventoryManager.remove_inventory_item(holding_item.item_reference, 1)
+
+		# Add to destination
+		if going_to_hotbar:
+			InventoryManager.add_hotbar_item(holding_item.item_reference, 1)
+		else:
+			InventoryManager.add_inventory_item(holding_item.item_reference, 1)
+			
+		# if holding item is going to be depleted after this, kill the drag ghost
+		# otherwise, decrease the quantity of the held item
+		if holding_item.item_quantity <= 1:
+			_destroy_drag_ghost()
+			holding_item = null
+			holding_source_slot = null
+		else:
+			holding_item.set_quantity(holding_item.item_quantity - 1)
+		return
+
+	# Stacking the same item
+	if holding_item.item_reference.id == slot.inventory_item.item_reference.id:
 		slot.update_quantity(slot.item_quantity + 1)
 		
-	# Track where the item came from
+		# Track movement between hotbar and inventory
+		var came_from_hotbar: bool = holding_source_slot and holding_source_slot.is_in_group("hotbar_slot")
+		var going_to_hotbar: bool = slot.is_in_group("hotbar_slot")
+
+		# Remove from source
+		if came_from_hotbar:
+			InventoryManager.remove_hotbar_item(holding_item.item_reference, 1)
+		else:
+			InventoryManager.remove_inventory_item(holding_item.item_reference, 1)
+
+		# Add to destination
+		if going_to_hotbar:
+			InventoryManager.add_hotbar_item(holding_item.item_reference, 1)
+		else:
+			InventoryManager.add_inventory_item(holding_item.item_reference, 1)
+			
+		# Decrease held quantity
+		if holding_item.item_quantity <= 1:
+			_destroy_drag_ghost()
+			holding_item = null
+			holding_source_slot = null
+		else:
+			holding_item.set_quantity(holding_item.item_quantity - 1)
+
+func _handle_drop(slot: InventorySlot) -> void:
+	# Track where the item came from and where it's going
 	var came_from_hotbar: bool = holding_source_slot and holding_source_slot.is_in_group("hotbar_slot")
 	var going_to_hotbar: bool = slot.is_in_group("hotbar_slot")
 
-	# Remove from source
-	if came_from_hotbar:
-		InventoryManager.remove_hotbar_item(holding_item.item_reference, 1)
-	else:
-		InventoryManager.remove_inventory_item(holding_item.item_reference, 1)
-
-	# Add to destination
-	if going_to_hotbar:
-		InventoryManager.add_hotbar_item(holding_item.item_reference, 1)
-	else:
-		InventoryManager.add_inventory_item(holding_item.item_reference, 1)
-		
-	# if holding item is going to be depleted after this, kill the drag ghost
-	# otherwise, decrease the quantity of the held item
-	if holding_item.item_quantity <= 1:
-		_destroy_drag_ghost()
-		holding_item = null
-	else:
-		holding_item.set_quantity(holding_item.item_quantity - 1)
-
-func _handle_drop(slot: InventorySlot) -> void:
+	# Dropping into empty slot
 	if not slot.inventory_item:
 		slot.put_into_slot(holding_item)
 		
-	# Track where the item came from
-	var came_from_hotbar: bool = holding_source_slot and holding_source_slot.is_in_group("hotbar_slot")
-	var going_to_hotbar: bool = slot.is_in_group("hotbar_slot")
+		# Remove from source
+		if came_from_hotbar:
+			InventoryManager.remove_hotbar_item(holding_item.item_reference, holding_item.item_quantity)
+		elif holding_source_slot:  # Only remove if there was a source slot
+			InventoryManager.remove_inventory_item(holding_item.item_reference, holding_item.item_quantity)
 
-	# Remove from source
-	if came_from_hotbar:
-		InventoryManager.remove_hotbar_item(holding_item.item_reference, holding_item.item_quantity)
-	else:
-		InventoryManager.remove_inventory_item(holding_item.item_reference, holding_item.item_quantity)
-
-	# Add to destination
-	if going_to_hotbar:
-		InventoryManager.add_hotbar_item(holding_item.item_reference, holding_item.item_quantity)
-	else:
-		InventoryManager.add_inventory_item(holding_item.item_reference, holding_item.item_quantity)
+		# Add to destination
+		if going_to_hotbar:
+			InventoryManager.add_hotbar_item(holding_item.item_reference, holding_item.item_quantity)
+		else:
+			InventoryManager.add_inventory_item(holding_item.item_reference, holding_item.item_quantity)
 			
 		holding_item = null
 		holding_source_slot = null
@@ -262,26 +290,62 @@ func _handle_drop(slot: InventorySlot) -> void:
 			_select_hotbar_slot(current_hotbar_index)
 		return
 		
-	# if we are stacking the same item
-	# need to add stack size logic
+	# Stacking the same item
 	if holding_item.item_reference.id == slot.inventory_item.item_reference.id:
 		slot.update_quantity(holding_item.item_quantity + slot.item_quantity)
+		
+		# Remove from source
+		if came_from_hotbar:
+			InventoryManager.remove_hotbar_item(holding_item.item_reference, holding_item.item_quantity)
+		elif holding_source_slot:
+			InventoryManager.remove_inventory_item(holding_item.item_reference, holding_item.item_quantity)
+
+		# Add to destination (the merged stack)
+		if going_to_hotbar:
+			InventoryManager.add_hotbar_item(holding_item.item_reference, holding_item.item_quantity)
+		else:
+			InventoryManager.add_inventory_item(holding_item.item_reference, holding_item.item_quantity)
+		
 		_destroy_drag_ghost()
 		holding_item = null
+		holding_source_slot = null
 		return
 
-	var held_prev: InventoryItem = holding_item
+	# Swapping items
 	var slot_item: InventoryItem = slot.pick_from_slot()
-
+	
+	# Remove both items from their locations
+	# Remove held item from source
+	if came_from_hotbar:
+		InventoryManager.remove_hotbar_item(holding_item.item_reference, holding_item.item_quantity)
+	elif holding_source_slot:
+		InventoryManager.remove_inventory_item(holding_item.item_reference, holding_item.item_quantity)
+	
+	# Remove slot item from destination
+	if going_to_hotbar:
+		InventoryManager.remove_hotbar_item(slot_item.item_reference, slot_item.item_quantity)
+	else:
+		InventoryManager.remove_inventory_item(slot_item.item_reference, slot_item.item_quantity)
+	
+	# Place held item into slot
 	slot.put_into_slot(holding_item)
 	
-	if slot.is_in_group("hotbar_slot"):
-		InventoryManager.remove_hotbar_item(slot_item.item_name)
-		InventoryManager.add_hotbar_item(holding_item.item_name)
-		
+	# Add held item to destination
+	if going_to_hotbar:
+		InventoryManager.add_hotbar_item(holding_item.item_reference, holding_item.item_quantity)
+	else:
+		InventoryManager.add_inventory_item(holding_item.item_reference, holding_item.item_quantity)
+	
+	# Add slot item to source (now being held)
+	if came_from_hotbar:
+		InventoryManager.add_hotbar_item(slot_item.item_reference, slot_item.item_quantity)
+	else:
+		InventoryManager.add_inventory_item(slot_item.item_reference, slot_item.item_quantity)
+	
+	# Now hold the swapped item
 	holding_item = slot_item
 	holding_quantity = holding_item.item_quantity
-
+	
 	_destroy_drag_ghost()
 	_start_drag_from_swap(slot, holding_item)
 	
