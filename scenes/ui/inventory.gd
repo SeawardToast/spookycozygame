@@ -5,9 +5,9 @@ extends Node2D
 @onready var tooltip_label: Label = $TooltipLabel
 @onready var main_inventory_texture_rect: TextureRect = $MarginContainer/MainInventoryTextureRect
 
-var holding_item: Variant = null
+var holding_item: InventoryItem = null
 var holding_quantity: int = 0
-var holding_source_slot: Variant = null
+var holding_source_slot: InventorySlot = null
 var drag_ghost: TextureRect = null
 
 var item_data: Variant = JsonDataManager.load_data("res://resources/data/item_data.json")
@@ -117,9 +117,6 @@ func apply_item_to_slots(slots: Array, item: Item, quantity: int) -> void:
 				slot.put_item_from_inventory(item, quantity)
 			return
 
-# --------------------------------------------
-# Hotbar Selection
-# --------------------------------------------
 
 func _select_hotbar_slot(index: int) -> void:
 	var slots_array: Array = hotbar_slots.get_children()
@@ -166,6 +163,8 @@ func _on_slot_gui_input(event: InputEvent, slot: InventorySlot) -> void:
 		if event.button_index == MOUSE_BUTTON_RIGHT:
 			if holding_item:
 				_handle_drop_single(slot)
+			elif slot.inventory_item:
+				_split_stack(slot)
 
 func _start_drag(slot: Variant) -> void:
 	holding_item = slot.pick_from_slot()
@@ -202,48 +201,22 @@ func _start_drag_from_swap(slot: Variant, item: Variant) -> void:
 	
 
 func _handle_drop_single(slot: InventorySlot) -> void:
+	# slot has no item in it
 	if not slot.inventory_item:
-		slot.put_into_slot_quantity(holding_item, 1)
+		slot.put_item_from_inventory(holding_item.item_reference, 1)
+
+	elif holding_item.item_reference.id == slot.inventory_item.item_reference.id:
+		slot.update_quantity(slot.item_quantity + 1)
 		
-		if holding_item.item_quantity == 1:
-			holding_item = null
-			holding_source_slot = null
-			holding_quantity = 0
-			_destroy_drag_ghost()
-		else:
-			holding_quantity -= 1
-		
-		# Update selection if dropped into current hotbar slot
-		if slot.is_hotbar_slot and slot.hotbar_index == current_hotbar_index:
-			_select_hotbar_slot(current_hotbar_index)
-		return
-		
-	# if we are stacking the same item
-	# need to add stack size logic
-	if holding_item.item_reference.id == slot.inventory_item.item_reference.id:
-		slot.update_quantity(holding_item.item_quantity + slot.item_quantity)
+	if slot.is_in_group("hotbar_slot"):
+		InventoryManager.add_hotbar_item(holding_item.item_reference)
+	# if holding item is going to be depleted after this, kill the drag ghost
+	# otherwise, decrease the quantity of the held item
+	if holding_item.item_quantity <= 1:
 		_destroy_drag_ghost()
 		holding_item = null
-		return
-
-	var held_prev: InventoryItem = holding_item
-	var slot_item: InventoryItem = slot.pick_from_slot()
-
-	slot.put_into_slot(holding_item)
-	
-	if slot.is_in_group("hotbar_slot"):
-		InventoryManager.remove_hotbar_item(slot_item.item_name)
-		InventoryManager.add_hotbar_item(holding_item.item_name)
-		
-	holding_item = slot_item
-	holding_quantity = holding_item.item_quantity
-
-	_destroy_drag_ghost()
-	_start_drag_from_swap(slot, holding_item)
-	
-	# Update selection if swapped in current hotbar slot
-	if slot.is_hotbar_slot and slot.hotbar_index == current_hotbar_index:
-		_select_hotbar_slot(current_hotbar_index)
+	else:
+		holding_item.set_quantity(holding_item.item_quantity - 1)
 
 func _handle_drop(slot: InventorySlot) -> void:
 	if not slot.inventory_item:
@@ -251,7 +224,6 @@ func _handle_drop(slot: InventorySlot) -> void:
 		
 		if slot.is_in_group("hotbar_slot"):
 			InventoryManager.add_hotbar_item(holding_item.item_reference)
-			InventoryManager.remove_inventory_item(holding_item.item_reference)
 			
 		holding_item = null
 		holding_source_slot = null
@@ -294,17 +266,27 @@ func _split_stack(slot: Variant) -> void:
 	var half: int = int(slot.item_quantity / 2)
 	if half <= 0:
 		return
-
-	holding_item = slot.item
+	
+	# Create new instance
+	holding_item = preload("res://scenes/ui/inventory_item.tscn").instantiate()
+	
+	# IMPORTANT: Add to scene tree temporarily so @onready vars initialize
+	add_child(holding_item)
+	
+	# Now set the item data (sprite and label are ready)
+	holding_item.set_item(slot.inventory_item.item_reference, half)
 	holding_quantity = half
+	
+	# Remove from this parent - it will be re-added when dropped
+	remove_child(holding_item)
+	
 	slot.update_quantity(slot.item_quantity - half)
-
+	
 	drag_ghost = TextureRect.new()
 	drag_ghost.texture = holding_item.sprite.texture
 	drag_ghost.modulate = Color(1, 1, 1, 0.75)
 	drag_ghost.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	drag_ghost.scale = Vector2(1.2, 1.2)
-
 	drag_preview_layer.add_child(drag_ghost)
 	drag_ghost.global_position = get_global_mouse_position() - drag_ghost.size * 0.5
 

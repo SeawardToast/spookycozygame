@@ -85,24 +85,6 @@ func put_into_slot(new_item: Node2D) -> void:
 	
 	_refresh_style()
 
-func put_into_slot_quantity(new_item: Node2D, quantity: int) -> void:
-	if new_item == null:
-		return
-	
-	inventory_item = new_item
-	
-	if inventory_item.get_parent():
-		inventory_item.get_parent().remove_child(inventory_item)
-	
-	add_child(inventory_item)
-	inventory_item.position = Vector2.ZERO
-	
-	item_id = inventory_item.item_reference.id
-	item_name = inventory_item.item_reference.display_name
-	item_quantity = quantity
-	
-	_refresh_style()
-
 func put_item_from_inventory(item_resource: Item, quantity: int) -> void:
 	if not item_resource:
 		return

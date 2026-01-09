@@ -7,10 +7,5 @@ res://assets/game/characters/sprites/girl_ghost_1/girl_ghost_1.tres
 res://assets/game/characters/sprites/vampires/vampire_1/vampire_1.tres
 res://scenes/objects/rocks/rock_shake.gdshader
 res://scenes/characters/guide/replace_color.gdshader
-res://scripts/globals/inventory_manager.gd
-res://scenes/characters/player/player.gd
-res://scenes/ui/inventory.tscn
-res://scenes/ui/inventory_slot.gd
 res://scenes/ui/inventory.gd
-res://scenes/ui/inventory_item.tscn
-res://scenes/ui/inventory_item.gd
+res://scenes/ui/inventory_slot.gd
