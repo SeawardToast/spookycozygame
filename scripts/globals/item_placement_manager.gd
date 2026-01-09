@@ -11,7 +11,7 @@ var placement_valid: bool = false
 var preview_position: Vector2 = Vector2.ZERO
 
 func _input(event: InputEvent) -> void:
-	if event.is_action_pressed("place_item"):
+	if event.is_action_pressed("hit"):
 		_try_place_selected_item()
 
 func _process(_delta: float) -> void:
@@ -19,13 +19,9 @@ func _process(_delta: float) -> void:
 		_update_placement_preview()
 
 func _try_place_selected_item() -> void:
-	var selected_item_id: int = InventoryManager.get_selected_item_id()
-	if selected_item_id == -1:
-		placement_failed.emit("No item selected")
-		return
+	var selected_item: Item = InventoryManager.get_selected_item()
 	
-	var item: Item = InventoryManager.get_item(selected_item_id)
-	if not item or not item.can_be_placed:
+	if not selected_item or not selected_item.can_be_placed():
 		placement_failed.emit("Item cannot be placed")
 		return
 	
@@ -44,10 +40,10 @@ func _try_place_selected_item() -> void:
 		return
 	
 	# Spawn the item at mouse position
-	_spawn_item(item, mouse_pos)
+	_spawn_item(selected_item, mouse_pos)
 	
 	# Remove from inventory
-	InventoryManager.remove_hotbar_item(item, 1)
+	InventoryManager.remove_hotbar_item(selected_item, 1)
 
 func _update_placement_preview() -> void:
 	var player: Node2D = get_tree().get_first_node_in_group("player")
@@ -70,20 +66,13 @@ func _update_placement_preview() -> void:
 
 func _spawn_item(item: Item, position: Vector2) -> void:
 	# Load and instantiate the scene from the item's scene_path
-	if not ResourceLoader.exists(item.scene_path):
-		push_error("Scene path does not exist: " + item.scene_path)
-		placement_failed.emit("Invalid scene path")
-		return
-	
-	var item_scene: PackedScene = item.scene_path
+	var item_scene: PackedScene = item.placeable_scene
 	if not item_scene:
-		push_error("Failed to load scene: " + item.scene_path)
+		push_error("Failed to load scene")
 		placement_failed.emit("Failed to load item scene")
 		return
 	
-	var placed_item: Node2D = item_scene.instantiate()
-	placed_item.set_item(item)
-	
+	var placed_item: Node2D = item_scene.instantiate()	
 	placed_item.global_position = position
 	get_tree().current_scene.add_child(placed_item)
 	item_placed.emit(item, position)
