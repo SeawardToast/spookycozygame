@@ -4,7 +4,7 @@
 [ext_resource type="PackedScene" uid="uid://6fa2m4vt6287" path="res://scenes/characters/player/player.tscn" id="3_41ysk"]
 [ext_resource type="Script" uid="uid://dlgkrnfwi8irn" path="res://scenes/test/grass.gd" id="3_ql1b7"]
 [ext_resource type="TileSet" uid="uid://bk0iolupu4pg" path="res://tilesets/large_house_tile_set.tres" id="4_s7bjn"]
-[ext_resource type="PackedScene" uid="uid://b8rmgeoryatiu" path="res://scenes/houses/door.tscn" id="5_c31ig"]
+[ext_resource type="PackedScene" uid="uid://b8rmgeoryatiu" path="res://scenes/objects/door/door.tscn" id="5_c31ig"]
 [ext_resource type="PackedScene" uid="uid://8qpho0ri8727" path="res://scenes/ui/day_and_night_panel.tscn" id="5_x2co1"]
 [ext_resource type="PackedScene" uid="uid://bax4g3mp3xmv7" path="res://scenes/objects/tools/zone_creator.tscn" id="6_s3vu1"]
 [ext_resource type="Script" uid="uid://cjcidgf73xbg8" path="res://scripts/ZoneData.gd" id="7_41ysk"]

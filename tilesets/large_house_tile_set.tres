@@ -2,7 +2,7 @@
 
 [ext_resource type="Texture2D" uid="uid://bvigbp0ldbigu" path="res://assets/game/tilesets/Wooden_House_Walls_Tilset.png" id="1_rneel"]
 [ext_resource type="Texture2D" uid="uid://byyu1wy148ou" path="res://assets/game/objects/Basic Furniture.png" id="2_tn82m"]
-[ext_resource type="PackedScene" uid="uid://b8rmgeoryatiu" path="res://scenes/houses/door.tscn" id="3_j8al4"]
+[ext_resource type="PackedScene" uid="uid://b8rmgeoryatiu" path="res://scenes/objects/door/door.tscn" id="3_h2vcf"]
 
 [sub_resource type="NavigationPolygon" id="NavigationPolygon_h2vcf"]
 vertices = PackedVector2Array(8, 8, -8, 8, -8, -8, 8, -8)
@@ -97,7 +97,7 @@ texture = ExtResource("2_tn82m")
 5:1/0 = 0
 
 [sub_resource type="TileSetScenesCollectionSource" id="TileSetScenesCollectionSource_oc2yr"]
-scenes/1/scene = ExtResource("3_j8al4")
+scenes/1/scene = ExtResource("3_h2vcf")
 
 [resource]
 physics_layer_0/collision_layer = 1

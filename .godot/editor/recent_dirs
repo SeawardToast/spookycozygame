@@ -1,8 +1,12 @@
+res://scripts/globals
+res://assets/game/objects
+res://scenes/objects/interactable_items
+res://assets/game/tilesets
+res://assets/game/tilesets/dungeon2
+res://assets/game/tilesets/dungeon
 res://assets/game/characters/sprites/vampires/vampire_1
 res://assets/game/characters/sprites/girl_ghost_1
 C:/Users/aidan/Documents/spookycozygame/scripts/scene_helpers
-res://scripts/globals
-res://assets/game/tilesets
 res://assets/game/characters/sprites
 res://assets/game/characters
 C:/Users/aidan/Documents/spookycozygame/scenes/characters/base_npc
@@ -14,9 +18,5 @@ res://audio/music
 res://audio
 res://scenes
 res://scenes/levels
-res://assets/game/objects
 res://scenes/objects/chest
 res://assets/ui
-res://dialogue
-res://resources
-res://scenes/objects/plants

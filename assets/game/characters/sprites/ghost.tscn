@@ -108,6 +108,7 @@ animations = [{
 }]
 
 [node name="GirlGhost1" type="AnimatedSprite2D"]
+position = Vector2(0, -64)
 sprite_frames = SubResource("SpriteFrames_ginuw")
 animation = &"idle"
 frame = 2
