@@ -28,6 +28,7 @@ func _ready() -> void:
 	selected_style = StyleBoxTexture.new()
 	selected_style.texture = selected_background
 	_refresh_style()
+	InventoryManager.hotbar_updated.connect(_on_hotbar_updated)
 
 func _refresh_style() -> void:
 	var is_selected: bool = false
@@ -104,6 +105,9 @@ func update_quantity(quantity: int) -> void:
 	item_quantity = quantity
 	if inventory_item != null:
 		inventory_item.set_quantity(item_quantity)
+		if item_quantity == 0:
+			# clear item now
+			clear_slot()
 
 func clear_slot() -> void:
 	item_id = -1
@@ -124,3 +128,12 @@ func get_item_resource() -> Item:
 
 func on_selection_changed() -> void:
 	_refresh_style()
+	
+func _on_hotbar_updated(item: Item, new_quantity: int) -> void:
+	var slot_placed_from: int = InventoryManager.selected_hotbar_slot_index
+	if is_hotbar_slot and hotbar_index == slot_placed_from:
+		update_quantity(new_quantity)
+		# if we now have 0 quantity, need to unselect this item from inventory manager
+		if new_quantity == 0:
+			InventoryManager.select_item(-1, hotbar_index)
+		_refresh_style()

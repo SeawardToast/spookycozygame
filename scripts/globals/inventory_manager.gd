@@ -157,21 +157,21 @@ func get_inventory_summary() -> String:
 			summary += "%s: %d\n" % [item.display_name, inventory[item_id]]
 	return summary
 
-func transfer_to_hotbar(item: Item, quantity: int = 1) -> bool:
-	if not has_item(item.id, quantity):
-		return false
-	
-	remove_inventory_item(item, quantity)
-	add_hotbar_item(item, quantity)
-	return true
-
-func transfer_to_inventory(item: Item, quantity: int = 1) -> bool:
-	if not has_item(item.id, quantity, true):
-		return false
-	
-	remove_hotbar_item(item, quantity)
-	add_inventory_item(item, quantity)
-	return true
+#func transfer_to_hotbar(item: Item, quantity: int = 1) -> bool:
+	#if not has_item(item.id, quantity):
+		#return false
+	#
+	#remove_inventory_item(item, quantity)
+	#add_hotbar_item(item, quantity)
+	#return true
+#
+#func transfer_to_inventory(item: Item, quantity: int = 1) -> bool:
+	#if not has_item(item.id, quantity, true):
+		#return false
+	#
+	#remove_hotbar_item(item, quantity)
+	#add_inventory_item(item, quantity)
+	#return true
 	
 func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed("hit"):

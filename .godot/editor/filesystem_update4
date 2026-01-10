@@ -7,13 +7,6 @@ res://assets/game/characters/sprites/girl_ghost_1/girl_ghost_1.tres
 res://assets/game/characters/sprites/vampires/vampire_1/vampire_1.tres
 res://scenes/objects/rocks/rock_shake.gdshader
 res://scenes/characters/guide/replace_color.gdshader
-res://scenes/ui/inventory.gd
-res://scenes/ui/inventory_slot.gd
-res://scenes/ui/inventory_item.tscn
 res://scripts/globals/item_placement_manager.gd
-res://scripts/definitions/item.gd
-res://scenes/objects/interactable_items/watering_can.tres
-res://scenes/objects/interactable_items/tomato_seed.tres
-res://scripts/scene_helpers/placeable_item_preview.gd
-res://scenes/objects/plants/tomato.gd
-res://scenes/objects/plants/grow_cycle_component.gd
+res://scenes/ui/inventory_slot.gd
+res://scripts/globals/inventory_manager.gd
