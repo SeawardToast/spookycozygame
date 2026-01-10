@@ -74,7 +74,9 @@ func _spawn_item(item: Item, position: Vector2) -> void:
 	
 	var placed_item: Node2D = item_scene.instantiate()	
 	placed_item.global_position = position
-	get_tree().current_scene.add_child(placed_item)
+	var tree: Variant = get_tree()
+	var floor_node: Node2D = FloorManager.get_floor_node(FloorManager.current_floor)
+	floor_node.add_child(placed_item)
 	item_placed.emit(item, position)
 
 func get_placement_valid() -> bool:

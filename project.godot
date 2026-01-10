@@ -75,6 +75,7 @@ player=""
 door=""
 walkable=""
 navigation_obstacles=""
+floor_scene=""
 
 [input]
 

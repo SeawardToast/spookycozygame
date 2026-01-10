@@ -5,7 +5,7 @@
 [ext_resource type="PackedScene" uid="uid://d3wa7u06ykxxl" path="res://scenes/objects/movement/stairs.tscn" id="4_41s35"]
 [ext_resource type="Script" uid="uid://4nd2sutmq5tu" path="res://scripts/navigation/tilemap_layer_navigation_helper.gd" id="4_trkai"]
 
-[node name="Floor2" type="Node2D"]
+[node name="Floor2" type="Node2D" groups=["floor_scene"]]
 y_sort_enabled = true
 metadata/_edit_group_ = true
 
@@ -47,14 +47,12 @@ tile_set = ExtResource("2_41s35")
 [node name="Undergrowth" type="TileMapLayer" parent="GameTileMap"]
 tile_set = ExtResource("2_41s35")
 
-[node name="Objects" type="TileMapLayer" parent="GameTileMap" node_paths=PackedStringArray("navigation_tilemap") groups=["navigation_obstacles"]]
+[node name="Objects" type="TileMapLayer" parent="GameTileMap" groups=["navigation_obstacles"]]
 y_sort_enabled = true
 tile_map_data = PackedByteArray("AAAWAAwABQAAAAAAAAAWAA0ABQAAAAEAAAAWAA4ABQAAAAAAAAAWAA8ABQAAAAAAAAAWABAABQAAAAAAAAAWABEABQAAAAEAAAAWABIABQAAAAAAAAAWABMABQABAAIAAAAXABMABQACAAIAAAAYABMABQACAAIAAAAZABMABQACAAIAAAAaABMABQACAAIAAAAbABMABQACAAIAAAAcABMABQACAAIAAAAdABMABQACAAIAAAAeABMABQACAAIAAAAfABMABQADAAAAAAAfABQABQABAAIAAAAgABQABQACAAIAAAAhABQABQACAAIAAAAiABQABQACAAIAAAAjABQABQACAAIAAAAkABQABQACAAIAAAAlABQABQADAAIAAAAlABMABQAAAAEAAAAlABIABQAAAAEAAAAlABEABQAAAAEAAAAlABAABQADAAAAAAAlAA0ABQADAAAAAAAlAA8ABQADAAAAAAAlAA4ABQADAAAAAAAlAAwABQADAAEAAAAkAAwABQABAAAAAAAkAA0ABQABAAAAAAAkAA4ABQABAAAAAAAkAA8ABQABAAEAAAAkABAABQABAAIAAAA=")
 tile_set = ExtResource("2_41s35")
 navigation_enabled = false
 script = ExtResource("4_trkai")
-floor_number = 2
-navigation_tilemap = NodePath("../Grass")
 
 [node name="Stairs" parent="." instance=ExtResource("4_41s35")]
 position = Vector2(334, 224)

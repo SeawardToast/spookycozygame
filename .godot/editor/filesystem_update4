@@ -27,3 +27,5 @@ res://scripts/definitions/item.gd
 res://scripts/globals/data_types.gd
 res://scripts/npc/main_hotel_scene_manager.gd
 res://scripts/scene_helpers/placeable_item_preview.gd
+res://scenes/floors/Floor1.tscn
+res://scenes/floors/Floor2.tscn
