@@ -1,6 +1,7 @@
 extends Panel
 
 class_name InventorySlot
+
 var empty_background: Resource = preload("res://assets/ui/item_slot_empty_background.png")
 var default_background: Resource = preload("res://assets/ui/item_slot_default_background.png")
 var selected_background: Resource = preload("res://assets/ui/item_slot_selected_background.png")
@@ -27,8 +28,8 @@ func _ready() -> void:
 	
 	selected_style = StyleBoxTexture.new()
 	selected_style.texture = selected_background
+	
 	_refresh_style()
-	InventoryManager.hotbar_updated.connect(_on_hotbar_updated)
 
 func _refresh_style() -> void:
 	var is_selected: bool = false
@@ -52,10 +53,9 @@ func pick_from_slot() -> Node2D:
 	var picked_item: Node2D = inventory_item
 	print("Item picked from slot: ", item_name)
 	
-	# if this is a hotbar slot and it is currently selected, select a null item for this slot when picking up item
+	# If this is a hotbar slot and it is currently selected, deselect it
 	if is_hotbar_slot and InventoryManager.selected_hotbar_slot_index == hotbar_index:
 		InventoryManager.select_item(-1, hotbar_index)
-		
 	
 	if inventory_item.get_parent():
 		inventory_item.get_parent().remove_child(inventory_item)
@@ -106,10 +106,13 @@ func update_quantity(quantity: int) -> void:
 	if inventory_item != null:
 		inventory_item.set_quantity(item_quantity)
 		if item_quantity == 0:
-			# clear item now
 			clear_slot()
 
 func clear_slot() -> void:
+	# If this is a hotbar slot and it is currently selected, deselect it
+	if is_hotbar_slot and InventoryManager.selected_hotbar_slot_index == hotbar_index:
+		InventoryManager.select_item(-1, hotbar_index)
+	
 	item_id = -1
 	item_name = ""
 	item_quantity = 0
@@ -128,12 +131,3 @@ func get_item_resource() -> Item:
 
 func on_selection_changed() -> void:
 	_refresh_style()
-	
-func _on_hotbar_updated(item: Item, new_quantity: int) -> void:
-	var slot_placed_from: int = InventoryManager.selected_hotbar_slot_index
-	if is_hotbar_slot and hotbar_index == slot_placed_from:
-		update_quantity(new_quantity)
-		# if we now have 0 quantity, need to unselect this item from inventory manager
-		if new_quantity == 0:
-			InventoryManager.select_item(-1, hotbar_index)
-		_refresh_style()

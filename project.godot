@@ -36,6 +36,7 @@ NPCTypeRegistry="*res://scripts/globals/npc_type_registry.gd"
 FloorManager="*res://scripts/globals/floor_manager.gd"
 DailyReportManager="*res://scripts/globals/guest_report_manager.gd"
 ItemPlacementManager="*res://scripts/globals/item_placement_manager.gd"
+SignalBus="*res://scripts/globals/signal_bus.gd"
 
 [debug]
 
