@@ -12,3 +12,17 @@ res://scenes/ui/game_menu_screen.tscn
 res://scripts/globals/game_manager.gd
 res://scenes/main_scene.tscn
 res://scripts/npc/main_hotel_scene_manager.gd
+res://scenes/components/collectable_component.gd
+res://scenes/ui/inventory.gd
+res://scenes/ui/inventory_slot.gd
+res://scripts/globals/inventory_manager.gd
+res://scripts/globals/item_placement_manager.gd
+res://dialogue/base_game_dialog_baloon.gd
+res://scenes/ui/emotes_panel.gd
+res://scenes/characters/guide/guide.gd
+res://dialogue/dialogue_balloon_theme.tres
+res://dialogue/game_dialogue_balloon.tscn
+res://resources/tilemap_layer_data_resource.gd
+res://scenes/objects/chest/chest.gd
+res://scenes/objects/plants/corn.gd
+res://scenes/objects/plants/tomato_harvest.tscn

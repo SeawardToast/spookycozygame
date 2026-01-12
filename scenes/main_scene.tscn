@@ -1,4 +1,4 @@
-[gd_scene load_steps=7 format=3 uid="uid://bk75qublhtooq"]
+[gd_scene load_steps=7 format=3 uid="uid://c06hilbjokcwu"]
 
 [ext_resource type="Script" uid="uid://dgm5knshx78wa" path="res://scripts/npc/main_hotel_scene_manager.gd" id="1_y6eal"]
 [ext_resource type="Script" uid="uid://ca5tgsogyltll" path="res://scripts/camera/camera_controller.gd" id="2_003il"]
