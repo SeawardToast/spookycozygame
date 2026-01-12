@@ -310,9 +310,9 @@ func _handle_drop(slot: InventorySlot, slot_index: int) -> void:
 		return
 	
 	# Different items - swap
-	var slot_item := slot.pick_from_slot()
-	var held_item_id := holding_item.item_reference.id
-	var held_quantity := holding_item.item_quantity
+	var slot_item: InventoryItem = slot.pick_from_slot()
+	var held_item_id: int = holding_item.item_reference.id
+	var held_quantity: int = holding_item.item_quantity
 	
 	# Place held item in target slot
 	slot.put_into_slot(holding_item)
@@ -321,11 +321,6 @@ func _handle_drop(slot: InventorySlot, slot_index: int) -> void:
 	else:
 		InventoryManager.set_inventory_slot(slot_index, held_item_id, held_quantity)
 	
-	# Put slot item back in source location
-	if holding_from_hotbar:
-		InventoryManager.set_hotbar_slot(holding_source_slot_index, slot_item.item_reference.id, slot_item.item_quantity)
-	else:
-		InventoryManager.set_inventory_slot(holding_source_slot_index, slot_item.item_reference.id, slot_item.item_quantity)
 	
 	# Update holding item for continued drag
 	holding_item = slot_item

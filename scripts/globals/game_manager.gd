@@ -25,7 +25,7 @@ func _ready() -> void:
 			await get_tree().process_frame
 	
 	# Show menu on startup
-	show_game_menu_screen()
+	call_deferred("show_game_menu_screen")
 
 func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed("game_menu"):
