@@ -115,7 +115,7 @@ func _input(event: InputEvent) -> void:
 			get_viewport().set_input_as_handled()
 
 func _on_slot_gui_input(event: InputEvent, slot: InventorySlot) -> void:
-	if not event is InputEventMouseButton or not event.pressed:
+	if not event is InputEventMouseButton or not event.pressed or not main_inventory_texture_rect.visible:
 		return
 	
 	var mouse_event := event as InputEventMouseButton
@@ -295,7 +295,7 @@ func _cleanup_holding() -> void:
 # --------------------------------------------
 
 func _on_slot_mouse_entered(slot: InventorySlot) -> void:
-	if slot.inventory_item:
+	if slot.inventory_item and main_inventory_texture_rect.visible:
 		tooltip_label.text = slot.item_name
 		tooltip_label.show()
 
