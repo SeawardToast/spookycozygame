@@ -1,10 +1,10 @@
 # MainHotelScene.gd - For 2D floor switching
 extends Node2D
 
-@onready var floor_container: Node2D = $FloorContainer
+@onready var level_root: Node2D = $GameRoot/LevelRoot
 @onready var player: Player = $Player
-@onready var camera: Camera2D = $Camera2D
 @onready var visual_npc_spawner: Node2D = $VisualNpcSpawner
+@onready var camera_2d: Camera2D = $GameRoot/Camera2D
 
 @export var starting_floor: int = 1
 @export var preload_adjacent_floors: bool = false  # Usually false for 2D
@@ -17,7 +17,7 @@ func _ready() -> void:
 	print("=== HOTEL INITIALIZATION ===")
 	
 	# CRITICAL: Set the floor container in FloorManager
-	FloorManager.set_main_container(floor_container)
+	FloorManager.set_main_container(level_root)
 	
 	# Connect signals
 	FloorManager.floor_changed.connect(_on_floor_changed)
@@ -67,7 +67,7 @@ func load_floor(floor: int, initializing: bool = false) -> void:
 # Signal handlers
 func _on_floor_changed(old_floor: int, new_floor: int) -> void:
 	current_player_floor = new_floor
-	$Camera2D.recalculate_bounds()
+	camera_2d.recalculate_bounds()
 	print("MainScene: Floor changed %d -> %d" % [old_floor, new_floor])
 
 func _on_floor_loaded(floor_number: int) -> void:
