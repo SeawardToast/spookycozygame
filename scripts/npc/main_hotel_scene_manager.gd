@@ -1,10 +1,12 @@
-# MainHotelScene.gd - DEVELOPMENT ONLY - Remove for production build
+# MainHotelScene.gd - DEVELOPMENT ONLY
+# This script is ONLY used when testing individual scenes in the editor
+# Remove or disable this script for production builds
 extends Node2D
 
 @onready var level_root: Node2D = $GameRoot/LevelRoot
-@onready var player: Player = $Player
-@onready var visual_npc_spawner: Node2D = $VisualNpcSpawner
 @onready var camera_2d: Camera2D = $GameRoot/Camera2D
+@onready var player: Player = $GameRoot/Player
+@onready var visual_npc_spawner: Node2D = $GameRoot/VisualNpcSpawner
 
 @export var starting_floor: int = 1
 @export var preload_adjacent_floors: bool = false  # Usually false for 2D
@@ -12,11 +14,16 @@ extends Node2D
 var spawned_visuals: Dictionary = {}  # Dictionary[String, Node2D]
 
 func _ready() -> void:
-	# Initialize the game through GameManager
+	# Initialize game directly for testing
 	GameManager.initialize_game(level_root, player, camera_2d, starting_floor)
 	
-	# Connect to GameManager signals if needed for dev purposes
+	# Connect to GameManager signals for dev monitoring
+	GameManager.game_initialized.connect(_on_game_initialized)
 	GameManager.player_floor_changed.connect(_on_dev_floor_changed)
+
+func _on_game_initialized() -> void:
+	"""Called after game initialization completes"""
+	print("[DEV] Game initialized and ready")
 
 func _on_dev_floor_changed(new_floor: int) -> void:
 	"""Development callback for floor changes"""
@@ -37,9 +44,9 @@ func _input(event: InputEvent) -> void:
 			#KEY_5: GameManager.change_floor(5)
 			
 			# NPC spawning for testing
-			KEY_G: _dev_spawn_npc("ghost")
-			KEY_V: _dev_spawn_npc("vampire")
-			KEY_W: _dev_spawn_npc("werewolf")
+			#KEY_G: _dev_spawn_npc("ghost")
+			#KEY_V: _dev_spawn_npc("vampire")
+			#KEY_W: _dev_spawn_npc("werewolf")
 			
 			# Debug info
 			KEY_F1: _dev_print_floor_info()
