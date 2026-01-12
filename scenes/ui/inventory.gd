@@ -196,16 +196,17 @@ func _destroy_drag_ghost() -> void:
 		drag_ghost.queue_free()
 		drag_ghost = null
 
-# --------------------------------------------
-# Drop Operations
-# --------------------------------------------
-
 func _handle_drop_single(slot: InventorySlot, slot_index: int) -> void:
 	var is_hotbar := slot.is_in_group("hotbar_slot")
 	var same_item := slot.inventory_item and holding_item.item_reference.id == slot.item_id
 	
 	if slot.inventory_item and not same_item:
 		return
+	
+	# Check max stack size
+	var max_stack := holding_item.item_reference.max_stack_size
+	if slot.inventory_item and slot.item_quantity >= max_stack:
+		return  # Stack is already full
 	
 	var new_quantity := 1 if not slot.inventory_item else slot.item_quantity + 1
 	
@@ -227,22 +228,46 @@ func _handle_drop_single(slot: InventorySlot, slot_index: int) -> void:
 func _handle_drop(slot: InventorySlot, slot_index: int) -> void:
 	var is_hotbar := slot.is_in_group("hotbar_slot")
 	
-	# Empty slot - simple drop
+	# Empty slot - simple drop (with max stack consideration)
 	if not slot.inventory_item:
-		slot.put_into_slot(holding_item)
-		if is_hotbar:
-			InventoryManager.set_hotbar_slot(slot_index, holding_item.item_reference.id, holding_item.item_quantity)
-		else:
-			InventoryManager.set_inventory_slot(slot_index, holding_item.item_reference.id, holding_item.item_quantity)
+		var max_stack := holding_item.item_reference.max_stack_size
+		var amount_to_place: int = min(holding_item.item_quantity, max_stack)
+		var leftover: int = holding_item.item_quantity - amount_to_place
 		
-		_cleanup_holding()
+		# Create new item for the slot with the amount we're placing
+		var item_for_slot: InventoryItem = INVENTORY_ITEM_SCENE.instantiate() as InventoryItem
+		add_child(item_for_slot)
+		item_for_slot.set_item(holding_item.item_reference, amount_to_place)
+		remove_child(item_for_slot)
+		
+		slot.put_into_slot(item_for_slot)
+		if is_hotbar:
+			InventoryManager.set_hotbar_slot(slot_index, holding_item.item_reference.id, amount_to_place)
+		else:
+			InventoryManager.set_inventory_slot(slot_index, holding_item.item_reference.id, amount_to_place)
+		
+		if leftover > 0:
+			# Keep holding the leftover
+			holding_item.set_quantity(leftover)
+		else:
+			_cleanup_holding()
+		
 		if is_hotbar and slot_index == current_hotbar_index:
 			_select_hotbar_slot(current_hotbar_index)
 		return
 	
-	# Same item - stack
+	# Same item - stack with max stack size consideration
 	if holding_item.item_reference.id == slot.item_id:
-		var new_quantity := holding_item.item_quantity + slot.item_quantity
+		var max_stack := holding_item.item_reference.max_stack_size
+		var space_available := max_stack - slot.item_quantity
+		
+		if space_available <= 0:
+			return  # Stack is already full, can't add more
+		
+		var amount_to_add: int = min(holding_item.item_quantity, space_available)
+		var new_quantity: int = slot.item_quantity + amount_to_add
+		var leftover: int = holding_item.item_quantity - amount_to_add
+		
 		slot.update_quantity(new_quantity)
 		
 		if is_hotbar:
@@ -250,7 +275,11 @@ func _handle_drop(slot: InventorySlot, slot_index: int) -> void:
 		else:
 			InventoryManager.set_inventory_slot(slot_index, slot.item_id, new_quantity)
 		
-		_cleanup_holding()
+		if leftover > 0:
+			# Keep holding the leftover
+			holding_item.set_quantity(leftover)
+		else:
+			_cleanup_holding()
 		return
 	
 	# Different items - swap

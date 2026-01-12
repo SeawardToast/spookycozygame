@@ -29,6 +29,7 @@ func _initialize_slots() -> void:
 		hotbar_slots[i] = {item_id = -1, quantity = 0}
 
 func _setup_starting_items() -> void:
+	# slot index, item id, quantity
 	set_inventory_slot(0, 2, 3)  # Palm tree
 	set_inventory_slot(1, 1, 5)  # Slime potion
 	set_hotbar_slot(0, 3, 3)     # Tomato seed
@@ -111,15 +112,18 @@ func select_item(item_id: int, hotbar_slot_index: int) -> void:
 
 func try_add_item(item_id: int, quantity: int) -> int:
 	# Try to stack with existing items in hotbar first
+	var item: Item = get_item(item_id)
 	for i in hotbar_slots.size():
-		if hotbar_slots[i].item_id == item_id:
-			set_hotbar_slot(i, item_id, hotbar_slots[i].quantity + quantity)
+		if hotbar_slots[i].item_id == item_id and hotbar_slots[i].quantity < item.max_stack_size:
+			var new_quantity: int = min(hotbar_slots[i].quantity + quantity, item.max_stack_size)
+			set_hotbar_slot(i, item_id, new_quantity)
 			return i
 	
 	# Try to stack with existing items in inventory
 	for i in inventory_slots.size():
-		if inventory_slots[i].item_id == item_id:
-			set_inventory_slot(i, item_id, inventory_slots[i].quantity + quantity)
+		if inventory_slots[i].item_id == item_id and inventory_slots[i].quantity < item.max_stack_size:
+			var new_quantity: int = min(inventory_slots[i].quantity + quantity, item.max_stack_size)
+			set_inventory_slot(i, item_id, new_quantity)
 			return i
 	
 	# Find first empty hotbar slot
