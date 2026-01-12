@@ -14,7 +14,7 @@ func _save_data(node: Node2D) -> void:
 	tilemap_layer_used_cells = cells
 	
 func _load_data(window: Window) -> void:
-	var scene_node = window.get_node_or_null(node_path)
+	var scene_node: Node = window.get_node_or_null(node_path)
 	print("scene node ", scene_node)
 	if scene_node != null:
 		var tilemap_layer: TileMapLayer = scene_node as TileMapLayer

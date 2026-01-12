@@ -1,6 +1,6 @@
 extends Node2D
 
-var balloon_scene = preload("res://dialogue/game_dialogue_balloon.tscn")
+var balloon_scene: Resource = preload("res://dialogue/game_dialogue_balloon.tscn")
 
 @onready var interactable_component: InteractableComponent = $InteractableComponent
 @onready var interactable_label_component: Control = $InteractableComponent/InteractableLabelComponent
@@ -30,8 +30,5 @@ func _unhandled_input(event: InputEvent) -> void:
 		balloon.start(load("res://dialogue/conversations/guide.dialogue"), "start")
 		
 func on_give_crop_seeds() -> void:
-	ToolManager.enable_tool_button(DataTypes.Tools.TillGround)
-	ToolManager.enable_tool_button(DataTypes.Tools.WaterCrops)
-	ToolManager.enable_tool_button(DataTypes.Tools.PlantCorn)
-	ToolManager.enable_tool_button(DataTypes.Tools.PlantTomato)
+	print("giving crop seeds")
 	

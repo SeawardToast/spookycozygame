@@ -140,6 +140,20 @@ func try_add_item(item_id: int, quantity: int) -> int:
 	
 	return -1  # Inventory full
 
+func remove_item(item: Item, quantity: int = 1) -> bool:
+	"""Remove item from hotbar first, then inventory if not found in hotbar"""
+	if not item:
+		return false
+	
+	# Try hotbar first
+	if hotbar.has(item.id):
+		return remove_hotbar_item(item, quantity)
+	# Fall back to inventory
+	elif inventory.has(item.id):
+		return remove_inventory_item(item, quantity)
+	
+	return false
+
 # --------------------------------------------
 # Utility Functions
 # --------------------------------------------
