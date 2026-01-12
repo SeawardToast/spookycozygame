@@ -11,7 +11,7 @@ config_version=5
 [application]
 
 config/name="Spooky hotel"
-run/main_scene="uid://c06hilbjokcwu"
+run/main_scene="uid://bk75qublhtooq"
 config/features=PackedStringArray("4.5", "Forward Plus")
 config/icon="res://icon.svg"
 
@@ -27,7 +27,6 @@ DayAndNightCycleManager="*res://scripts/globals/day_and_night_cycle_manager.gd"
 SaveGameManager="*res://scripts/globals/save_game_manager.gd"
 DialogueManager="*res://addons/dialogue_manager/dialogue_manager.gd"
 GameDialogueManager="*res://scripts/globals/game_dialogue_manager.gd"
-SceneManager="*res://scripts/globals/scene_manager.gd"
 GameManager="*res://scripts/globals/game_manager.gd"
 JsonDataManager="*res://scripts/globals/json_data_manager.gd"
 ZoneManager="*res://scripts/globals/zone_manager.gd"

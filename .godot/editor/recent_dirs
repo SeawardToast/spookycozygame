@@ -1,3 +1,4 @@
+res://scenes
 res://scripts/globals
 res://assets/game/objects
 res://scenes/objects/interactable_items
@@ -16,7 +17,6 @@ res://audio/sfx
 res://scenes/components
 res://audio/music
 res://audio
-res://scenes
 res://scenes/levels
 res://scenes/objects/chest
 res://assets/ui
