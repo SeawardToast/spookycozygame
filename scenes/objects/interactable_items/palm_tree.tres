@@ -9,6 +9,6 @@ id = 2
 display_name = "Palm Tree"
 description = "a palm tree"
 icon = ExtResource("1_54bnh")
-max_stack_size = 1
+max_stack_size = 2
 is_stackable = false
 metadata/_custom_type_script = "uid://cc4itcgfmstki"

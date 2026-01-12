@@ -10,6 +10,7 @@ var holding_item: InventoryItem = null
 var holding_source_slot_index: int = -1
 var holding_from_hotbar: bool = false
 var drag_ghost: TextureRect = null
+var drag_ghost_label: Label = null
 var current_hotbar_index: int = 0
 
 const INVENTORY_ITEM_SCENE = preload("res://scenes/ui/inventory_item.tscn")
@@ -190,11 +191,34 @@ func _create_drag_ghost(texture: Texture2D) -> void:
 	drag_ghost.scale = Vector2(1.2, 1.2)
 	drag_preview_layer.add_child(drag_ghost)
 	drag_ghost.global_position = get_global_mouse_position() - drag_ghost.size * 0.5
+	
+	# Add quantity label if holding more than 1 item
+	if holding_item and holding_item.item_quantity > 1:
+		drag_ghost_label = Label.new()
+		drag_ghost_label.text = str(holding_item.item_quantity)
+		drag_ghost_label.add_theme_font_size_override("font_size", 14)
+		drag_ghost_label.add_theme_color_override("font_color", Color.WHITE)
+		drag_ghost_label.add_theme_color_override("font_outline_color", Color.BLACK)
+		drag_ghost_label.add_theme_constant_override("outline_size", 2)
+		drag_ghost_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+		drag_ghost_label.vertical_alignment = VERTICAL_ALIGNMENT_BOTTOM
+		drag_ghost_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		drag_ghost_label.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_RIGHT)
+		drag_ghost.add_child(drag_ghost_label)
+
+func _update_drag_ghost_label() -> void:
+	if drag_ghost_label and holding_item:
+		if holding_item.item_quantity > 1:
+			drag_ghost_label.text = str(holding_item.item_quantity)
+			drag_ghost_label.show()
+		else:
+			drag_ghost_label.hide()
 
 func _destroy_drag_ghost() -> void:
 	if drag_ghost:
 		drag_ghost.queue_free()
 		drag_ghost = null
+		drag_ghost_label = null
 
 func _handle_drop_single(slot: InventorySlot, slot_index: int) -> void:
 	var is_hotbar := slot.is_in_group("hotbar_slot")
@@ -224,6 +248,7 @@ func _handle_drop_single(slot: InventorySlot, slot_index: int) -> void:
 		_cleanup_holding()
 	else:
 		holding_item.set_quantity(holding_item.item_quantity - 1)
+		_update_drag_ghost_label()
 
 func _handle_drop(slot: InventorySlot, slot_index: int) -> void:
 	var is_hotbar := slot.is_in_group("hotbar_slot")
@@ -249,6 +274,7 @@ func _handle_drop(slot: InventorySlot, slot_index: int) -> void:
 		if leftover > 0:
 			# Keep holding the leftover
 			holding_item.set_quantity(leftover)
+			_update_drag_ghost_label()
 		else:
 			_cleanup_holding()
 		
@@ -278,6 +304,7 @@ func _handle_drop(slot: InventorySlot, slot_index: int) -> void:
 		if leftover > 0:
 			# Keep holding the leftover
 			holding_item.set_quantity(leftover)
+			_update_drag_ghost_label()
 		else:
 			_cleanup_holding()
 		return
