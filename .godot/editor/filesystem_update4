@@ -16,3 +16,7 @@ res://scenes/ui/inventory_item.tscn
 res://scenes/ui/inventory_item.gd
 res://scenes/ui/inventory.gd
 res://scripts/globals/inventory_manager.gd
+res://scripts/globals/save_game_manager.gd
+res://scripts/globals/day_and_night_cycle_manager.gd
+res://scripts/globals/npc_simulation_manager.gd
+res://scripts/npc/npc_state.gd

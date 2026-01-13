@@ -3,6 +3,8 @@ extends Node
 var simulated_npcs: Dictionary[String, NPCSimulationState] = {}
 var npc_id_counter: int = 0
 
+const SAVE_PATH: String = "user://npc_simulation_save.json"
+
 signal npc_spawned(npc_id: String, npc_type: String, position: Vector2)
 signal npc_despawned(npc_id: String)
 signal npc_state_changed(npc_id: String, old_state: int, new_state: int)
@@ -12,6 +14,8 @@ signal npc_action_started(npc_id: String, action: NPCAction)
 signal npc_action_completed(npc_id: String, action: NPCAction, success: bool)
 signal npc_action_progress(npc_id: String, action: NPCAction, progress: float)
 signal npc_started_traveling(npc_id: String, from_pos: Vector2, to_pos: Vector2, destination: String)
+signal npcs_loaded()
+signal npcs_saved()
 
 # -----------------------------
 # NPC Simulation State Class
@@ -59,6 +63,72 @@ class NPCSimulationState:
 	func is_busy() -> bool:
 		return state.is_busy()
 	
+	func to_dict() -> Dictionary:
+		"""Serialize NPC state to dictionary for saving"""
+		var schedule_data: Array = []
+		for entry in schedule:
+			schedule_data.append(entry.to_dict() if entry.has_method("to_dict") else {})
+		
+		var active_entry_id: String = ""
+		if active_entry and active_entry.has_method("get_id"):
+			active_entry_id = active_entry.id if active_entry.id else ""
+		
+		var current_action_data: Dictionary = {}
+		if current_action and current_action.has_method("to_dict"):
+			current_action_data = current_action.to_dict()
+		
+		return {
+			"npc_id": npc_id,
+			"npc_type": npc_type,
+			"npc_name": npc_name,
+			"current_floor": current_floor,
+			"current_position": {"x": current_position.x, "y": current_position.y},
+			"target_position": {"x": target_position.x, "y": target_position.y},
+			"speed": speed,
+			"last_waypoint_position": {"x": last_waypoint_position.x, "y": last_waypoint_position.y},
+			"is_moving_to_waypoint": is_moving_to_waypoint,
+			"state_type": state.type,
+			"state_data": state.context,
+			"navigation_cooldown": navigation_cooldown,
+			"schedule": schedule_data,
+			"active_entry_id": active_entry_id,
+			"current_action_index": current_action_index,
+			"current_action": current_action_data,
+			"travel_start_time": travel_start_time,
+			"travel_duration": travel_duration,
+			"behavior_data": behavior_data
+		}
+	
+	func from_dict(data: Dictionary) -> void:
+		"""Deserialize NPC state from dictionary"""
+		npc_id = data.get("npc_id", npc_id)
+		npc_type = data.get("npc_type", npc_type)
+		npc_name = data.get("npc_name", npc_name)
+		current_floor = data.get("current_floor", 1)
+		
+		var pos_data: Dictionary = data.get("current_position", {})
+		current_position = Vector2(pos_data.get("x", 0.0), pos_data.get("y", 0.0))
+		
+		var target_pos_data: Dictionary = data.get("target_position", {})
+		target_position = Vector2(target_pos_data.get("x", 0.0), target_pos_data.get("y", 0.0))
+		
+		speed = data.get("speed", speed)
+		
+		var waypoint_pos_data: Dictionary = data.get("last_waypoint_position", {})
+		last_waypoint_position = Vector2(waypoint_pos_data.get("x", 0.0), waypoint_pos_data.get("y", 0.0))
+		
+		is_moving_to_waypoint = data.get("is_moving_to_waypoint", false)
+		navigation_cooldown = data.get("navigation_cooldown", 0.0)
+		current_action_index = data.get("current_action_index", 0)
+		travel_start_time = data.get("travel_start_time", 0.0)
+		travel_duration = data.get("travel_duration", 0.0)
+		behavior_data = data.get("behavior_data", {})
+		
+		# Restore state
+		var state_type: int = data.get("state_type", NPCState.Type.IDLE)
+		var state_data: Dictionary = data.get("state_data", {})
+		state.change_to(state_type, state_data)
+	
 	func debug_info() -> String:
 		var action_info: String = "None"
 		if current_action:
@@ -97,11 +167,178 @@ func _ready() -> void:
 	if DayAndNightCycleManager:
 		DayAndNightCycleManager.time_tick.connect(_on_time_tick)
 	
-	# Wait for all floors to be ready before spawning NPCs
+	# Wait for all floors to be ready
 	if FloorManager:
 		await FloorManager.wait_for_all_floors_ready()
-		print("NPCSimulationManager: All floors ready, can now spawn NPCs safely")
+		print("NPCSimulationManager: All floors ready")
+	
+	# Try to load saved NPCs
+	if not load_npcs():
+		print("No saved NPCs found, starting fresh")
 
+
+# --------------------------------------------
+# Save/Load System
+# --------------------------------------------
+
+func save_npcs() -> bool:
+	var npcs_data: Array = []
+	
+	for npc_id: String in simulated_npcs:
+		var npc: NPCSimulationState = simulated_npcs[npc_id]
+		npcs_data.append(npc.to_dict())
+	
+	var save_data: Dictionary = {
+		"npc_id_counter": npc_id_counter,
+		"npcs": npcs_data,
+		"version": "1.0"
+	}
+	
+	var json_string: String = JSON.stringify(save_data, "\t")
+	var file: FileAccess = FileAccess.open(SAVE_PATH, FileAccess.WRITE)
+	
+	if file == null:
+		push_error("Failed to open NPC save file for writing: " + SAVE_PATH)
+		return false
+	
+	file.store_string(json_string)
+	file.close()
+	
+	print("NPCs saved to: ", SAVE_PATH, " (", npcs_data.size(), " NPCs)")
+	npcs_saved.emit()
+	return true
+
+func load_npcs() -> bool:
+	if not FileAccess.file_exists(SAVE_PATH):
+		print("No NPC save file found at: ", SAVE_PATH)
+		return false
+	
+	var file: FileAccess = FileAccess.open(SAVE_PATH, FileAccess.READ)
+	
+	if file == null:
+		push_error("Failed to open NPC save file for reading: " + SAVE_PATH)
+		return false
+	
+	var json_string: String = file.get_as_text()
+	file.close()
+	
+	var json: JSON = JSON.new()
+	var parse_result: Error = json.parse(json_string)
+	
+	if parse_result != OK:
+		push_error("Failed to parse NPC JSON: " + json.get_error_message())
+		return false
+	
+	var save_data: Dictionary = json.data
+	
+	if not save_data.has("npcs"):
+		push_error("Invalid NPC save data structure")
+		return false
+	
+	# Clear existing NPCs
+	simulated_npcs.clear()
+	
+	# Restore ID counter
+	npc_id_counter = save_data.get("npc_id_counter", 0)
+	
+	# Restore NPCs
+	var npcs_data: Array = save_data["npcs"]
+	for npc_data: Variant in npcs_data:
+		_restore_npc_from_dict(npc_data)
+	
+	print("NPCs loaded from: ", SAVE_PATH, " (", simulated_npcs.size(), " NPCs)")
+	npcs_loaded.emit()
+	return true
+
+func _restore_npc_from_dict(data: Dictionary) -> void:
+	"""Restore an NPC from saved data"""
+	var npc_id: String = data.get("npc_id", "")
+	var npc_type: String = data.get("npc_type", "")
+	var npc_name: String = data.get("npc_name", "")
+	
+	var pos_data: Dictionary = data.get("current_position", {})
+	var position: Vector2 = Vector2(pos_data.get("x", 0.0), pos_data.get("y", 0.0))
+	
+	var speed: float = data.get("speed", 100.0)
+	
+	# Create NPC state
+	var state: NPCSimulationState = NPCSimulationState.new(
+		npc_id,
+		npc_type,
+		npc_name,
+		position,
+		speed
+	)
+	
+	# Restore full state from saved data
+	state.from_dict(data)
+	
+	# Get NPC definition to restore schedule
+	var npc_definition: Variant = NPCTypeRegistry.create_npc_definition(npc_type)
+	if npc_definition:
+		state.behavior_data["definition"] = npc_definition
+		state.schedule = npc_definition.get_schedule()
+		
+		# Restore active schedule entry reference
+		var active_entry_id: String = data.get("active_entry_id", "")
+		if active_entry_id != "":
+			for entry in state.schedule:
+				if entry.has_method("get_id") and entry.id == active_entry_id:
+					state.active_entry = entry
+					break
+		
+		# Restore current action if it exists
+		var action_data: Dictionary = data.get("current_action", {})
+		if not action_data.is_empty() and state.active_entry:
+			# Find the matching action in the schedule
+			if state.current_action_index < state.active_entry.actions.size():
+				var action: NPCAction = state.active_entry.actions[state.current_action_index]
+				# Restore action progress
+				if action.has_method("restore_from_dict"):
+					action.restore_from_dict(action_data)
+				state.current_action = action
+	
+	# Connect signals
+	state.state.state_changed.connect(
+		func(old_state: int, new_state: int) -> void:
+			_on_npc_state_changed(npc_id, old_state, new_state)
+	)
+	
+	simulated_npcs[npc_id] = state
+	
+	print("Restored NPC: %s (%s) at floor %d, position %s - State: %s" % [
+		npc_name,
+		npc_type,
+		state.current_floor,
+		state.current_position,
+		NPCState.Type.keys()[state.state.type]
+	])
+
+func delete_save() -> bool:
+	if FileAccess.file_exists(SAVE_PATH):
+		var dir: DirAccess = DirAccess.open("user://")
+		var error: Error = dir.remove(SAVE_PATH)
+		if error == OK:
+			print("NPC save file deleted: ", SAVE_PATH)
+			return true
+		else:
+			push_error("Failed to delete NPC save file")
+			return false
+	return false
+
+func reset_npcs() -> void:
+	"""Clear all NPCs and reset to initial state"""
+	for npc_id: String in simulated_npcs.keys():
+		despawn_npc(npc_id)
+	
+	simulated_npcs.clear()
+	npc_id_counter = 0
+	save_npcs()
+	print("All NPCs reset")
+
+# --------------------------------------------
+# NPC Management
+# --------------------------------------------
 
 func _generate_npc_id(npc_type: String) -> String:
 	npc_id_counter += 1
@@ -464,3 +701,8 @@ func debug_all_npcs() -> void:
 			npc.current_floor,
 			action_text
 		])
+
+# Auto-save on important events
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_WM_CLOSE_REQUEST:
+		save_npcs()
