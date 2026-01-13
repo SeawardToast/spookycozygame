@@ -7,6 +7,13 @@ extends CharacterBody2D
 @export var navigation_agent_2d: NavigationAgent2D
 @export var use_navigation: bool = true
 
+# FIX #17: Extract magic numbers to named constants
+const WAYPOINT_ARRIVAL_DISTANCE: float = 6.0
+const VELOCITY_LERP_SPEED: float = 10.0
+const IDLE_POSITION_SYNC_SPEED: float = 3.0
+const ACTION_ANIMATION_FADE_SPEED: float = 2.0
+const PERFORMING_ACTIONS_POSITION_SYNC_SPEED: float = 5.0
+
 var simulation_state: Variant = null
 var is_synced: bool = false
 var current_animation: String = ""
@@ -118,6 +125,10 @@ func _sync_to_simulation_state() -> void:
 	
 	global_position = simulation_state.current_position
 	_update_animation_for_state(simulation_state.state.type)
+	
+	# FIX #8: Restore action animation state when loading
+	if simulation_state.state.type == NPCState.Type.PERFORMING_ACTIONS and simulation_state.current_action:
+		_play_action_animation(simulation_state.current_action)
 	
 	if simulation_state.state.type == NPCState.Type.NAVIGATING:
 		if navigation_agent_2d and use_navigation:
@@ -399,7 +410,8 @@ func _update_navigation(delta: float) -> void:
 	else:
 		var distance: float = global_position.distance_to(simulation_state.target_position)
 		
-		if distance <= 4.0:
+		# FIX #10: Use standardized arrival distance
+		if distance <= WAYPOINT_ARRIVAL_DISTANCE:
 			velocity = Vector2.ZERO
 			return
 		
@@ -415,15 +427,18 @@ func _update_navigation(delta: float) -> void:
 
 
 func _update_idle(delta: float) -> void:
-	velocity = velocity.lerp(Vector2.ZERO, delta * 10.0)
+	# FIX #17: Use named constant
+	velocity = velocity.lerp(Vector2.ZERO, delta * VELOCITY_LERP_SPEED)
 	
 	var dist: float = global_position.distance_to(simulation_state.current_position)
 	if dist > 1.0:
-		global_position = global_position.lerp(simulation_state.current_position, delta * 3.0)
+		# FIX #17: Use named constant
+		global_position = global_position.lerp(simulation_state.current_position, delta * IDLE_POSITION_SYNC_SPEED)
 	
 	# Reset action animation modulations when idle
 	if animated_sprite_2d and animated_sprite_2d.modulate.a != 1.0:
-		animated_sprite_2d.modulate.a = lerp(animated_sprite_2d.modulate.a, 1.0, delta * 2.0)
+		# FIX #17: Use named constant
+		animated_sprite_2d.modulate.a = lerp(animated_sprite_2d.modulate.a, 1.0, delta * ACTION_ANIMATION_FADE_SPEED)
 
 
 func _update_performing_actions(delta: float) -> void:
@@ -433,7 +448,8 @@ func _update_performing_actions(delta: float) -> void:
 	# Sync position to simulation state in case of drift
 	var dist: float = global_position.distance_to(simulation_state.current_position)
 	if dist > 1.0:
-		global_position = global_position.lerp(simulation_state.current_position, delta * 5.0)
+		# FIX #17: Use named constant
+		global_position = global_position.lerp(simulation_state.current_position, delta * PERFORMING_ACTIONS_POSITION_SYNC_SPEED)
 
 
 func _on_navigation_velocity_computed(safe_velocity: Vector2) -> void:

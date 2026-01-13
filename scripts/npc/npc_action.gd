@@ -10,7 +10,8 @@ var duration: float = 0.0  # Duration in game minutes
 var metadata: Dictionary = {}  # Additional data
 
 # Internal tracking for time-based actions
-var _start_game_time: float = 0.0
+var _start_game_day: int = 0
+var _start_game_minute: int = 0  # Minutes from midnight (0-1439)
 var _is_executing: bool = false
 var _execution_result: Dictionary = {}
 
@@ -35,14 +36,16 @@ func execute() -> Dictionary:
 		result.reason = "Invalid callback"
 		return result
 	
-	# Start execution using game time
+	# FIX #2: Store day AND minute separately for proper day rollover handling
 	_is_executing = true
 	if DayAndNightCycleManager:
 		var current_time: Dictionary = DayAndNightCycleManager.get_current_time()
-		_start_game_time = current_time.day * 1440.0 + current_time.hour * 60.0 + current_time.minute
+		_start_game_day = current_time.day
+		_start_game_minute = current_time.hour * 60 + current_time.minute
 	else:
 		# Fallback if manager not available
-		_start_game_time = 0.0
+		_start_game_day = 0
+		_start_game_minute = 0
 	
 	var callback_result: Variant = callback.call()
 	
@@ -64,7 +67,7 @@ func execute() -> Dictionary:
 	_execution_result = result
 	return result
 
-## Check if action duration has elapsed (in game time)
+## FIX #2: Check if action duration has elapsed with proper day rollover handling
 func is_duration_complete() -> bool:
 	if duration <= 0.0:
 		return true  # Instant actions are always complete
@@ -76,10 +79,33 @@ func is_duration_complete() -> bool:
 		return true  # Can't track time, assume complete
 	
 	var current_time: Dictionary = DayAndNightCycleManager.get_current_time()
-	var current_game_time: float = current_time.day * 1440.0 + current_time.hour * 60.0 + current_time.minute
-	var elapsed: float = current_game_time - _start_game_time
+	var current_day: int = current_time.day
+	var current_minute: int = current_time.hour * 60 + current_time.minute
+	
+	# Calculate elapsed minutes handling day rollover
+	var elapsed: float = _calculate_elapsed_minutes(
+		_start_game_day, 
+		_start_game_minute, 
+		current_day, 
+		current_minute
+	)
 	
 	return elapsed >= duration
+
+## FIX #2: Helper to calculate elapsed minutes with day rollover
+func _calculate_elapsed_minutes(start_day: int, start_minute: int, current_day: int, current_minute: int) -> float:
+	const MINUTES_PER_DAY: int = 1440
+	
+	# Same day - simple subtraction
+	if current_day == start_day:
+		return float(current_minute - start_minute)
+	
+	# Different days - account for day rollover
+	var days_passed: int = current_day - start_day
+	var minutes_in_full_days: float = float(days_passed) * float(MINUTES_PER_DAY)
+	var minutes_in_partial_days: float = float(current_minute - start_minute)
+	
+	return minutes_in_full_days + minutes_in_partial_days
 
 ## Get how much time is remaining (in game minutes)
 func get_remaining_duration() -> float:
@@ -93,8 +119,15 @@ func get_remaining_duration() -> float:
 		return 0.0
 	
 	var current_time: Dictionary = DayAndNightCycleManager.get_current_time()
-	var current_game_time: float = current_time.day * 1440.0 + current_time.hour * 60.0 + current_time.minute
-	var elapsed: float = current_game_time - _start_game_time
+	var current_day: int = current_time.day
+	var current_minute: int = current_time.hour * 60 + current_time.minute
+	
+	var elapsed: float = _calculate_elapsed_minutes(
+		_start_game_day, 
+		_start_game_minute, 
+		current_day, 
+		current_minute
+	)
 	
 	return max(0.0, duration - elapsed)
 
@@ -110,21 +143,56 @@ func get_progress() -> float:
 		return 1.0
 	
 	var current_time: Dictionary = DayAndNightCycleManager.get_current_time()
-	var current_game_time: float = current_time.day * 1440.0 + current_time.hour * 60.0 + current_time.minute
-	var elapsed: float = current_game_time - _start_game_time
+	var current_day: int = current_time.day
+	var current_minute: int = current_time.hour * 60 + current_time.minute
+	
+	var elapsed: float = _calculate_elapsed_minutes(
+		_start_game_day, 
+		_start_game_minute, 
+		current_day, 
+		current_minute
+	)
 	
 	return clamp(elapsed / duration, 0.0, 1.0)
 
 ## Mark action as complete and reset state
 func complete() -> void:
 	_is_executing = false
-	_start_game_time = 0.0
+	_start_game_day = 0
+	_start_game_minute = 0
 
 ## Reset action state (for reuse)
 func reset() -> void:
 	_is_executing = false
-	_start_game_time = 0.0
+	_start_game_day = 0
+	_start_game_minute = 0
 	_execution_result.clear()
+
+## FIX #6: Serialization support for action state
+func to_dict() -> Dictionary:
+	return {
+		"action_id": action_id,
+		"display_name": display_name,
+		"duration": duration,
+		"metadata": metadata,
+		"_start_game_day": _start_game_day,
+		"_start_game_minute": _start_game_minute,
+		"_is_executing": _is_executing,
+		"_execution_result": _execution_result
+	}
+
+## FIX #6: Deserialization support for action state
+func restore_from_dict(data: Dictionary) -> void:
+	# Note: action_id, display_name, callback are already set from schedule
+	# We only restore the execution state
+	_start_game_day = data.get("_start_game_day", 0)
+	_start_game_minute = data.get("_start_game_minute", 0)
+	_is_executing = data.get("_is_executing", false)
+	_execution_result = data.get("_execution_result", {})
+	
+	# Optional: restore duration if it was modified
+	if data.has("duration"):
+		duration = data.get("duration", duration)
 
 ## Static helper to create actions easily
 static func create(id: String, name: String, fn: Callable, dur: float = 0.0) -> NPCAction:
@@ -141,6 +209,14 @@ static func create_timed(id: String, name: String, fn: Callable, minutes: float)
 ## String representation for debugging
 func toString() -> String:
 	if duration > 0.0:
-		return "%s (%s) - Duration: %.1f game minutes" % [display_name, action_id, duration]
+		if _is_executing:
+			return "%s (%s) - Duration: %.1f game minutes (%.0f%% complete)" % [
+				display_name, 
+				action_id, 
+				duration,
+				get_progress() * 100.0
+			]
+		else:
+			return "%s (%s) - Duration: %.1f game minutes" % [display_name, action_id, duration]
 	else:
 		return "%s (%s) - Instant" % [display_name, action_id]

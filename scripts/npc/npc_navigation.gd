@@ -26,6 +26,22 @@ class NavWaypoint:
 		type = waypoint_type
 		floor = on_floor
 		metadata = meta
+	
+	# FIX #5: Serialization support
+	func to_dict() -> Dictionary:
+		return {
+			"position": {"x": position.x, "y": position.y},
+			"type": type,
+			"floor": floor,
+			"metadata": metadata
+		}
+	
+	func from_dict(data: Dictionary) -> void:
+		var pos_data: Dictionary = data.get("position", {})
+		position = Vector2(pos_data.get("x", 0.0), pos_data.get("y", 0.0))
+		type = data.get("type", "")
+		floor = data.get("floor", 1)
+		metadata = data.get("metadata", {})
 
 
 func _init(npc: NPCSimulationManager.NPCSimulationState = null) -> void:
@@ -204,3 +220,45 @@ func clear_path() -> void:
 
 func get_waypoint_count() -> int:
 	return path.size()
+
+
+##
+## FIX #4, #5: Serialization support for navigation state
+##
+func to_dict() -> Dictionary:
+	var waypoints_data: Array = []
+	for waypoint in path:
+		waypoints_data.append(waypoint.to_dict())
+	
+	return {
+		"path": waypoints_data,
+		"current_waypoint_index": current_waypoint_index
+	}
+
+
+func from_dict(data: Dictionary) -> void:
+	clear_path()
+	
+	var waypoints_data: Array = data.get("path", [])
+	for waypoint_data: Variant in waypoints_data:
+		var waypoint: NavWaypoint = NavWaypoint.new()
+		waypoint.from_dict(waypoint_data)
+		path.append(waypoint)
+	
+	current_waypoint_index = data.get("current_waypoint_index", 0)
+
+
+func toString() -> String:
+	if path.is_empty():
+		return "No path"
+	
+	var current_wp: NavWaypoint = get_current_waypoint()
+	if current_wp:
+		return "Waypoint %d/%d (%s on floor %d)" % [
+			current_waypoint_index + 1,
+			path.size(),
+			current_wp.type,
+			current_wp.floor
+		]
+	else:
+		return "Path complete (%d waypoints)" % path.size()
