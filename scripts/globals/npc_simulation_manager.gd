@@ -185,6 +185,7 @@ class NPCSimulationState:
 func _ready() -> void:
 	if DayAndNightCycleManager:
 		DayAndNightCycleManager.time_tick.connect(_on_time_tick)
+		DayAndNightCycleManager.time_tick_day.connect(reset_daily_schedules)
 	
 	# Wait for all floors to be ready
 	if FloorManager:
@@ -775,7 +776,12 @@ func _update_actions(npc: NPCSimulationState, delta: float) -> void:
 	
 	else:
 		# All actions complete
-		npc.active_entry.mark_complete()
+		var current_day: int = -1
+		if DayAndNightCycleManager:
+			var current_time: Dictionary = DayAndNightCycleManager.get_current_time()
+			current_day = current_time.day
+		
+		npc.active_entry.mark_complete(current_day)
 		npc.active_entry = null
 		npc.current_action_index = 0
 		npc.current_action = null
@@ -801,21 +807,63 @@ func _is_action_callback_valid(action: NPCAction) -> bool:
 func _on_time_tick(day: int, hour: int, minute: int) -> void:
 	var total_minute: int = hour * 60 + minute
 	
+	# Debug: Log time ticks for schedule debugging
+	if minute == 0:  # Log once per hour
+		print("[Schedule] Day %d, %02d:%02d - Checking schedules for %d NPCs" % [
+			day, hour, minute, simulated_npcs.size()
+		])
+	
 	for npc_id: String in simulated_npcs:
-		_check_schedule(simulated_npcs[npc_id], total_minute)
+		_check_schedule(simulated_npcs[npc_id], total_minute, day)
 
 
-func _check_schedule(npc: NPCSimulationState, current_minute: int) -> void:
+func _check_schedule(npc: NPCSimulationState, current_minute: int, current_day: int = -1) -> void:
 	# FIX #1: Removed is_busy() check - now checks schedules even when idle
 	# This allows NPCs to pick up new schedule entries when they become idle
 	
 	for entry: ScheduleEntry in npc.schedule:
-		if entry.is_active(current_minute):
+		if entry.is_active(current_minute, current_day):
 			if npc.active_entry != entry:
 				# Only activate if not already busy with something else
 				if not npc.is_busy() or npc.active_entry == null:
+					print("[Schedule] %s: Activating entry '%s' at minute %d (day %d)" % [
+						npc.npc_name,
+						entry.id,
+						current_minute,
+						current_day
+					])
 					_activate_schedule_entry(npc, entry)
 			return
+	
+	# Debug: Log if NPC is idle with no active schedule
+	if npc.is_idle() and npc.active_entry == null:
+		var next_entry: ScheduleEntry = _find_next_schedule_entry(npc, current_minute, current_day)
+		if next_entry and (current_minute % 60) == 0:  # Log once per hour
+			print("[Schedule] %s: Idle, next schedule '%s' at %s" % [
+				npc.npc_name,
+				next_entry.id,
+				next_entry.get_time_range()
+			])
+
+
+func _find_next_schedule_entry(npc: NPCSimulationState, current_minute: int, current_day: int = -1) -> ScheduleEntry:
+	"""Find the next upcoming schedule entry for debugging purposes"""
+	var next_entry: ScheduleEntry = null
+	var smallest_diff: int = 9999
+	
+	for entry: ScheduleEntry in npc.schedule:
+		# Check if entry can become active (not completed or completed on different day)
+		var can_activate: bool = not entry.completed_today
+		if entry.completed_today and current_day != -1 and entry.completion_day != -1:
+			can_activate = current_day > entry.completion_day
+		
+		if can_activate:
+			var diff: int = entry.start_minute - current_minute
+			if diff > 0 and diff < smallest_diff:
+				smallest_diff = diff
+				next_entry = entry
+	
+	return next_entry
 
 
 func _activate_schedule_entry(npc: NPCSimulationState, entry: ScheduleEntry) -> void:
@@ -867,16 +915,61 @@ func _get_zone_floor(zone_name: String, npc: NPCSimulationState) -> int:
 
 
 func reset_daily_schedules() -> void:
+	"""
+	Reset schedule completion flags for a new day.
+	IMPORTANT: Does NOT interrupt active schedules or actions.
+	Only resets entries that have finished or haven't started.
+	"""
+	print("[Schedule Reset] ===== RESETTING SCHEDULE FLAGS FOR NEW DAY =====")
+	
 	for npc_id: String in simulated_npcs:
 		var npc: NPCSimulationState = simulated_npcs[npc_id]
+		
+		print("[Schedule Reset] %s: Processing %d schedule entries" % [
+			npc.npc_name,
+			npc.schedule.size()
+		])
+		
 		for entry: ScheduleEntry in npc.schedule:
+			# CRITICAL: Don't reset if this is the currently active entry
+			# Let overnight/multi-day actions continue
+			if npc.active_entry == entry:
+				print("  - KEEPING '%s' - currently active (overnight/in-progress)" % entry.id)
+				continue
+			
+			var was_completed: bool = entry.completed_today
 			entry.reset()
-		npc.active_entry = null
-		npc.current_action_index = 0
-		npc.current_action = null
-		npc.state.change_to(NPCState.Type.IDLE)
+			
+			if was_completed:
+				print("  - Reset '%s' (%s)" % [entry.id, entry.get_time_range()])
+			else:
+				print("  - '%s' already reset" % entry.id)
+		
+		# DO NOT clear active_entry, current_action_index, or current_action
+		# DO NOT force state change to IDLE
+		# Let ongoing work continue naturally
+		
+		print("[Schedule Reset] %s: Current state: %s, Active entry: %s" % [
+			npc.npc_name,
+			npc.state.get_name(),
+			npc.active_entry.id if npc.active_entry else "None"
+		])
 	
-	print("Reset all NPC schedules")
+	print("[Schedule Reset] ===== RESET COMPLETE (Active schedules preserved) =====")
+	
+	# Force immediate schedule check for idle NPCs only
+	if DayAndNightCycleManager:
+		var current_time: Dictionary = DayAndNightCycleManager.get_current_time()
+		var total_minute: int = current_time.hour * 60 + current_time.minute
+		var current_day: int = current_time.day
+		
+		print("[Schedule Reset] Checking schedules for idle NPCs at minute %d (day %d)" % [total_minute, current_day])
+		
+		for npc_id: String in simulated_npcs:
+			var npc: NPCSimulationState = simulated_npcs[npc_id]
+			# Only check schedule if NPC is actually idle and available
+			if npc.is_idle() and npc.active_entry == null:
+				_check_schedule(npc, total_minute, current_day)
 
 
 func debug_npc(npc_id: String) -> void:
