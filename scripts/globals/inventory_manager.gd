@@ -8,16 +8,23 @@ var hotbar_slots: Array[Dictionary] = []     # [{item_id: int, quantity: int}]
 
 const MAX_INVENTORY_SIZE: int = 25
 const MAX_HOTBAR_SIZE: int = 5
+const SAVE_PATH: String = "user://inventory_save.json"
 
 var selected_item_id: int = -1
 var selected_hotbar_slot_index: int = 0
 
 signal hotbar_item_selected(item: Item)
+signal inventory_loaded()
+signal inventory_saved()
 
 func _ready() -> void:
 	_load_item_definitions()
 	_initialize_slots()
-	_setup_starting_items()
+	
+	# Try to load saved inventory, otherwise use starting items
+	if not load_inventory():
+		_setup_starting_items()
+		save_inventory()  # Save the starting state
 
 func _initialize_slots() -> void:
 	inventory_slots.resize(MAX_INVENTORY_SIZE)
@@ -55,6 +62,108 @@ func _load_item_definitions() -> void:
 		dir.list_dir_end()
 	else:
 		push_error("Failed to open items directory: " + items_path)
+
+# --------------------------------------------
+# Save/Load System
+# --------------------------------------------
+
+func save_inventory() -> bool:
+	var save_data: Dictionary = {
+		"inventory_slots": _slots_to_array(inventory_slots),
+		"hotbar_slots": _slots_to_array(hotbar_slots),
+		"selected_item_id": selected_item_id,
+		"selected_hotbar_slot_index": selected_hotbar_slot_index,
+		"version": "1.0"
+	}
+	
+	var json_string: String = JSON.stringify(save_data, "\t")
+	var file: FileAccess = FileAccess.open(SAVE_PATH, FileAccess.WRITE)
+	
+	if file == null:
+		push_error("Failed to open save file for writing: " + SAVE_PATH)
+		return false
+	
+	file.store_string(json_string)
+	file.close()
+	
+	print("Inventory saved to: ", SAVE_PATH)
+	inventory_saved.emit()
+	return true
+
+func load_inventory() -> bool:
+	if not FileAccess.file_exists(SAVE_PATH):
+		print("No save file found at: ", SAVE_PATH)
+		return false
+	
+	var file: FileAccess = FileAccess.open(SAVE_PATH, FileAccess.READ)
+	
+	if file == null:
+		push_error("Failed to open save file for reading: " + SAVE_PATH)
+		return false
+	
+	var json_string: String = file.get_as_text()
+	file.close()
+	
+	var json: JSON = JSON.new()
+	var parse_result: Error = json.parse(json_string)
+	
+	if parse_result != OK:
+		push_error("Failed to parse JSON: " + json.get_error_message())
+		return false
+	
+	var save_data: Dictionary = json.data
+	
+	# Validate save data structure
+	if not save_data.has("inventory_slots") or not save_data.has("hotbar_slots"):
+		push_error("Invalid save data structure")
+		return false
+	
+	# Load inventory data
+	_array_to_slots(save_data["inventory_slots"], inventory_slots)
+	_array_to_slots(save_data["hotbar_slots"], hotbar_slots)
+	
+	selected_item_id = save_data.get("selected_item_id", -1)
+	selected_hotbar_slot_index = save_data.get("selected_hotbar_slot_index", 0)
+	
+	print("Inventory loaded from: ", SAVE_PATH)
+	inventory_loaded.emit()
+	return true
+
+func delete_save() -> bool:
+	if FileAccess.file_exists(SAVE_PATH):
+		var dir: DirAccess = DirAccess.open("user://")
+		var error: Error = dir.remove(SAVE_PATH)
+		if error == OK:
+			print("Save file deleted: ", SAVE_PATH)
+			return true
+		else:
+			push_error("Failed to delete save file")
+			return false
+	return false
+
+func reset_inventory() -> void:
+	"""Reset inventory to starting state and save"""
+	_initialize_slots()
+	_setup_starting_items()
+	save_inventory()
+	print("Inventory reset to default state")
+
+# Helper functions for serialization
+func _slots_to_array(slots: Array[Dictionary]) -> Array:
+	var result: Array = []
+	for slot in slots:
+		result.append({
+			"item_id": slot.item_id,
+			"quantity": slot.quantity
+		})
+	return result
+
+func _array_to_slots(data: Array, target_slots: Array[Dictionary]) -> void:
+	for i in range(min(data.size(), target_slots.size())):
+		target_slots[i] = {
+			item_id = data[i].get("item_id", -1),
+			quantity = data[i].get("quantity", 0)
+		}
 
 # --------------------------------------------
 # Slot Access
@@ -202,3 +311,8 @@ func _unhandled_input(event: InputEvent) -> void:
 		var selected_item: Item = get_item(selected_item_id)
 		if selected_item:
 			selected_item.use()
+
+# Auto-save on important actions
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_WM_CLOSE_REQUEST:
+		save_inventory()

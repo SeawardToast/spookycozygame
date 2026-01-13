@@ -15,3 +15,4 @@ res://scripts/npc/main_hotel_scene_manager.gd
 res://scenes/ui/inventory_item.tscn
 res://scenes/ui/inventory_item.gd
 res://scenes/ui/inventory.gd
+res://scripts/globals/inventory_manager.gd
