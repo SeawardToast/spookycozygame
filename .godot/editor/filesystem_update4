@@ -20,3 +20,5 @@ res://scripts/globals/save_game_manager.gd
 res://scripts/globals/day_and_night_cycle_manager.gd
 res://scripts/globals/npc_simulation_manager.gd
 res://scripts/npc/npc_state.gd
+res://scenes/characters/player/player.gd
+res://scenes/components/save_data_component.tscn

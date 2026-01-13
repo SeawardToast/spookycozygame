@@ -20,11 +20,6 @@ signal inventory_saved()
 func _ready() -> void:
 	_load_item_definitions()
 	_initialize_slots()
-	
-	# Try to load saved inventory, otherwise use starting items
-	if not load_inventory():
-		_setup_starting_items()
-		save_inventory()  # Save the starting state
 
 func _initialize_slots() -> void:
 	inventory_slots.resize(MAX_INVENTORY_SIZE)

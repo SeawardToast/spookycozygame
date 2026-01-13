@@ -171,11 +171,6 @@ func _ready() -> void:
 	if FloorManager:
 		await FloorManager.wait_for_all_floors_ready()
 		print("NPCSimulationManager: All floors ready")
-	
-	# Try to load saved NPCs
-	if not load_npcs():
-		print("No saved NPCs found, starting fresh")
-
 
 # --------------------------------------------
 # Save/Load System
@@ -236,15 +231,21 @@ func load_npcs() -> bool:
 		return false
 	
 	# Clear existing NPCs
+	for npc_id: String in simulated_npcs.keys():
+		despawn_npc(npc_id)
 	simulated_npcs.clear()
 	
 	# Restore ID counter
 	npc_id_counter = save_data.get("npc_id_counter", 0)
 	
+	# Wait for floors to be ready before restoring NPCs
+	if FloorManager:
+		await FloorManager.wait_for_all_floors_ready()
+	
 	# Restore NPCs
 	var npcs_data: Array = save_data["npcs"]
 	for npc_data: Variant in npcs_data:
-		_restore_npc_from_dict(npc_data)
+		await _restore_npc_from_dict(npc_data)
 	
 	print("NPCs loaded from: ", SAVE_PATH, " (", simulated_npcs.size(), " NPCs)")
 	npcs_loaded.emit()
@@ -283,7 +284,7 @@ func _restore_npc_from_dict(data: Dictionary) -> void:
 		var active_entry_id: String = data.get("active_entry_id", "")
 		if active_entry_id != "":
 			for entry in state.schedule:
-				if entry.has_method("get_id") and entry.id == active_entry_id:
+				if entry.id == active_entry_id:
 					state.active_entry = entry
 					break
 		
@@ -305,6 +306,9 @@ func _restore_npc_from_dict(data: Dictionary) -> void:
 	)
 	
 	simulated_npcs[npc_id] = state
+	
+	# CRITICAL: Spawn the visual NPC instance in the world
+	await _spawn_npc_instance(state)
 	
 	print("Restored NPC: %s (%s) at floor %d, position %s - State: %s" % [
 		npc_name,
@@ -344,7 +348,6 @@ func _generate_npc_id(npc_type: String) -> String:
 	npc_id_counter += 1
 	return "%s_%d" % [npc_type, npc_id_counter]
 
-
 func spawn_npc(npc_type: String, spawn_position: Vector2 = Vector2.ZERO) -> String:
 	var npc_definition: Variant = NPCTypeRegistry.create_npc_definition(npc_type)
 	if npc_definition == null:
@@ -375,6 +378,62 @@ func spawn_npc(npc_type: String, spawn_position: Vector2 = Vector2.ZERO) -> Stri
 	
 	print("Spawned NPC: %s (%s) at %s" % [state.npc_name, npc_type, start_pos])
 	return npc_id
+	
+func _spawn_npc_instance(npc: NPCSimulationState) -> void:
+	"""Spawn the visual instance of an NPC in the world"""
+	if npc.npc_instance != null:
+		return  # Already has an instance
+	
+	var npc_definition: Variant = npc.behavior_data.get("definition")
+	if not npc_definition:
+		push_error("Cannot spawn NPC instance: missing definition for " + npc.npc_name)
+		return
+	
+	if not "npc_scene_path" in npc_definition or npc_definition.npc_scene_path == "":
+		push_error("Cannot spawn NPC instance: missing scene path for " + npc.npc_name)
+		return
+	
+	# Wait for the NPC's floor to be ready
+	if FloorManager and not FloorManager.is_floor_navigation_ready(npc.current_floor):
+		await FloorManager.wait_for_floor_ready(npc.current_floor)
+	
+	# Load and instantiate the NPC scene
+	var npc_scene: Resource = load(npc_definition.npc_scene_path)
+	if not npc_scene:
+		push_error("Failed to load NPC scene: " + npc_definition.npc_scene_path)
+		return
+	
+	var instance: Node = npc_scene.instantiate()
+	if not instance:
+		push_error("Failed to instantiate NPC scene")
+		return
+	
+	# Set position and floor
+	instance.global_position = npc.current_position
+	
+	# Get the floor's NPC container
+	var floor_container: Node2D = FloorManager.get_floor_npc_container(npc.current_floor)
+	if not floor_container:
+		push_error("No NPC container found for floor " + str(npc.current_floor))
+		instance.queue_free()
+		return
+	
+	# Add to scene
+	floor_container.add_child(instance)
+	
+	# Configure navigation if available
+	if instance.has_node("NavigationAgent2D"):
+		var nav_agent: NavigationAgent2D = instance.get_node("NavigationAgent2D")
+		nav_agent.set_navigation_layer_value(npc.current_floor, true)
+	
+	# Store reference
+	npc.npc_instance = instance
+	
+	print("Spawned visual instance for: %s at %s on floor %d" % [
+		npc.npc_name,
+		npc.current_position,
+		npc.current_floor
+	])
 
 
 func despawn_npc(npc_id: String) -> void:

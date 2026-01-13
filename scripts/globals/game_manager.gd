@@ -37,14 +37,11 @@ func _unhandled_input(event: InputEvent) -> void:
 
 func start_game() -> void:
 	"""Called from menu Start Game button - initializes and starts the game"""
-	# If game already started, just resume (unpause)
+	#SaveGameManager.reset_game()
 	if game_started:
 		print("GameManager: Resuming game")
 		get_tree().paused = false
 		return
-	
-	# Load save data
-	SaveGameManager.load_game()
 	
 	# Get references from main scene
 	var main_scene: Node = get_tree().root.get_node_or_null(main_scene_root_path)
@@ -61,7 +58,7 @@ func start_game() -> void:
 		return
 	
 	# Initialize the game
-	_initialize_game(level_root_ref, player_ref, camera_ref, 1)
+	await _initialize_game(level_root_ref, player_ref, camera_ref, 1)
 
 func exit_game() -> void:
 	get_tree().quit()
@@ -102,18 +99,29 @@ func _initialize_game(level_root_ref: Node2D, player_ref: Node, camera_ref: Came
 	# Load additional floors
 	load_floor(2, true)
 	
+	# Wait for all floors to be ready before loading save data
+	await FloorManager.wait_for_all_floors_ready()
+	print("GameManager: All floors ready, loading save data...")
+	
+	# NOW load save data (including NPCs)
+	#SaveGameManager.load_game()
+	
+	# starter inventory items
+	InventoryManager._setup_starting_items()
+	
 	# Mark game as started and enable saving
 	game_started = true
 	SaveGameManager.allow_save_game = true
 	
 	game_initialized.emit()
 	
-	# Spawn initial NPCs
-	call_deferred("_spawn_initial_npcs")
+	# Spawn initial NPCs if no save data existed
+	if NPCSimulationManager.get_npc_count() == 0:
+		call_deferred("_spawn_initial_npcs")
 
 func initialize_game(level_root_ref: Node2D, player_ref: Node, camera_ref: Camera2D, starting_floor: int = 1) -> void:
 	"""Public method for development/testing - directly initializes the game"""
-	_initialize_game(level_root_ref, player_ref, camera_ref, starting_floor)
+	await _initialize_game(level_root_ref, player_ref, camera_ref, starting_floor)
 
 func _spawn_initial_npcs() -> void:
 	"""Spawn starting NPCs for the game"""

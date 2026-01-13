@@ -12,7 +12,7 @@ const SAVE_PATH: String = "user://daytime_save.json"
 
 var game_speed: float = 5.0
 var initial_day: int = 1
-var initial_hour: int = 12
+var initial_hour: int = 1
 var initial_minute: int = 30
 var time: float = 0.0
 var current_minute: int = -1
@@ -26,9 +26,10 @@ signal time_saved()
 
 func _ready() -> void:
 	# Try to load saved time, otherwise use initial time
-	if not load_time():
-		set_initial_time()
-		save_time()  # Save the starting state
+	#if not load_time():
+
+		#save_time()  # Save the starting state
+	set_initial_time()
 
 func _process(delta: float) -> void:
 	time += delta * game_speed * GAME_MINUTE_DURATION
