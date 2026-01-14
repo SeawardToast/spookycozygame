@@ -1,15 +1,17 @@
-# Floor data structure
-class_name FloorData
-	
-var floor_number: int
-var floor_node: Node2D  # The actual instantiated floor scene
-var scene_path: String  # Path to the floor scene file
-var zones: Array[int]  # Zone IDs on this floor (from ZoneManager)
-var is_loaded: bool = false
-var is_active: bool = false  # Currently visible/active floor
-var disabled_nav_tiles: Array[Vector2i] = []
+# Stores data about a single floor
 
-func _init(num: int, path: String = "") -> void:
-	floor_number = num
+class_name FloorData
+extends RefCounted
+
+var floor_number: int
+var scene_path: String
+var floor_node: Node2D = null
+var is_loaded: bool = false
+var is_active: bool = false
+var nav_tilemap: TileMapLayer = null  # Reference tilemap for coordinate conversion
+var zones: Array[int] = []
+
+
+func _init(number: int, path: String = "") -> void:
+	floor_number = number
 	scene_path = path
-	zones = []

@@ -73,9 +73,9 @@ folder_colors={
 navigation_polygon_source_geometry_group=""
 player=""
 door=""
-walkable=""
 navigation_obstacles=""
 floor_scene=""
+navigable=""
 
 [input]
 

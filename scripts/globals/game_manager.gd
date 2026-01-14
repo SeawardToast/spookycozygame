@@ -37,7 +37,6 @@ func _unhandled_input(event: InputEvent) -> void:
 
 func start_game() -> void:
 	"""Called from menu Start Game button - initializes and starts the game"""
-	#SaveGameManager.reset_game()
 	if game_started:
 		print("GameManager: Resuming game")
 		get_tree().paused = false
@@ -93,15 +92,13 @@ func _initialize_game(level_root_ref: Node2D, player_ref: Node, camera_ref: Came
 	FloorManager.floor_changed.connect(_on_floor_changed)
 	FloorManager.floor_loaded.connect(_on_floor_loaded)
 	
-	# Load and activate starting floor
-	change_floor(starting_floor, true)
-	
-	# Load additional floors
-	load_floor(2, true)
-	
-	# Wait for all floors to be ready before loading save data
+	# Wait for all floors to be ready FIRST
 	await FloorManager.wait_for_all_floors_ready()
-	print("GameManager: All floors ready, loading save data...")
+	print("GameManager: All floors ready")
+	
+	# NOW activate starting floor (force=true for initial setup)
+	FloorManager.set_active_floor(starting_floor, true)
+	print("GameManager: Now on floor %d" % starting_floor)
 	
 	# NOW load save data (including NPCs)
 	#SaveGameManager.load_game()
@@ -115,9 +112,12 @@ func _initialize_game(level_root_ref: Node2D, player_ref: Node, camera_ref: Came
 	
 	game_initialized.emit()
 	
+	# Wait a frame to ensure any loaded NPCs are registered
+	await get_tree().process_frame
+	
 	# Spawn initial NPCs if no save data existed
 	if NPCSimulationManager.get_npc_count() == 0:
-		call_deferred("_spawn_initial_npcs")
+		_spawn_initial_npcs()
 
 func initialize_game(level_root_ref: Node2D, player_ref: Node, camera_ref: Camera2D, starting_floor: int = 1) -> void:
 	"""Public method for development/testing - directly initializes the game"""
@@ -136,22 +136,14 @@ func _spawn_initial_npcs() -> void:
 # Floor Management
 # --------------------------------------------
 
-func change_floor(new_floor: int, initializing: bool = false) -> void:
+func change_floor(new_floor: int) -> void:
 	"""Change to a different floor"""
 	if new_floor not in FloorManager.get_all_floors():
 		push_warning("Floor %d does not exist" % new_floor)
 		return
 	
-	FloorManager.set_active_floor(new_floor, initializing)
+	FloorManager.set_active_floor(new_floor)
 	print("GameManager: Now on floor %d" % new_floor)
-
-func load_floor(floor: int, initializing: bool = false) -> void:
-	"""Load a floor without changing to it"""
-	if floor not in FloorManager.get_all_floors():
-		push_warning("Floor %d does not exist" % floor)
-		return
-	
-	FloorManager.load_floor(floor)
 
 func _on_floor_changed(old_floor: int, new_floor: int) -> void:
 	"""Handle floor changes"""
