@@ -4,7 +4,7 @@ var simulated_npcs: Dictionary[String, NPCSimulationState] = {}
 var npc_id_counter: int = 0
 
 const SAVE_PATH: String = "user://npc_simulation_save.json"
-const WAYPOINT_ARRIVAL_DISTANCE: float = 6.0
+const WAYPOINT_ARRIVAL_DISTANCE: float = 10.0
 const NAVIGATION_RETRY_DELAY: float = 5.0
 const MAX_PATHFINDING_RETRIES: int = 3
 
