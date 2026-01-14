@@ -15,3 +15,5 @@ res://scripts/npc/npc_navigation.gd
 res://scripts/globals/npc_simulation_manager.gd
 res://scripts/npc/schedule_entry.gd
 res://scripts/globals/day_and_night_cycle_manager.gd
+res://scripts/globals/game_manager.gd
+res://scripts/globals/floor_manager.gd

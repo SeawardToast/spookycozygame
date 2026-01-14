@@ -36,6 +36,12 @@ class NPCSimulationState:
 	var last_waypoint_position: Vector2 = Vector2.ZERO
 	var is_moving_to_waypoint: bool = false
 	
+	# A* simulation path data
+	var path: Array[Vector2] = []
+	var path_index: int = 0
+	var has_path: bool = false
+	var path_target: Vector2 = Vector2.ZERO  # Track what target the path was computed for
+	
 	var state: NPCState
 	var navigation: NPCNavigation
 	var navigation_cooldown: float = 0.0
@@ -69,6 +75,13 @@ class NPCSimulationState:
 	func is_busy() -> bool:
 		return state.is_busy()
 	
+	func clear_path() -> void:
+		"""Clear the current A* path - call when target changes"""
+		path.clear()
+		path_index = 0
+		has_path = false
+		path_target = Vector2.ZERO
+	
 	func to_dict() -> Dictionary:
 		"""Serialize NPC state to dictionary for saving"""
 		var schedule_data: Array = []
@@ -86,6 +99,11 @@ class NPCSimulationState:
 		# Serialize navigation path
 		var navigation_data: Dictionary = navigation.to_dict()
 		
+		# Serialize A* path as array of {x, y} dictionaries
+		var path_data: Array = []
+		for point in path:
+			path_data.append({"x": point.x, "y": point.y})
+		
 		return {
 			"npc_id": npc_id,
 			"npc_type": npc_type,
@@ -96,6 +114,12 @@ class NPCSimulationState:
 			"speed": speed,
 			"last_waypoint_position": {"x": last_waypoint_position.x, "y": last_waypoint_position.y},
 			"is_moving_to_waypoint": is_moving_to_waypoint,
+			# A* path serialization
+			"path": path_data,
+			"path_index": path_index,
+			"has_path": has_path,
+			"path_target": {"x": path_target.x, "y": path_target.y},
+			# State and navigation
 			"state_type": state.type,
 			"state_data": state.context,
 			"navigation_cooldown": navigation_cooldown,
@@ -138,6 +162,18 @@ class NPCSimulationState:
 		travel_duration = data.get("travel_duration", 0.0)
 		behavior_data = data.get("behavior_data", {})
 		
+		# Restore A* path
+		var path_data: Array = data.get("path", [])
+		path.clear()
+		for point_data: Variant in path_data:
+			if point_data is Dictionary:
+				path.append(Vector2(point_data.get("x", 0.0), point_data.get("y", 0.0)))
+		path_index = data.get("path_index", 0)
+		has_path = data.get("has_path", false)
+		
+		var path_target_data: Dictionary = data.get("path_target", {})
+		path_target = Vector2(path_target_data.get("x", 0.0), path_target_data.get("y", 0.0))
+		
 		# Restore navigation path
 		var navigation_data: Dictionary = data.get("navigation_data", {})
 		if not navigation_data.is_empty():
@@ -157,25 +193,33 @@ class NPCSimulationState:
 				current_action.get_remaining_duration()
 			]
 		
+		var path_info: String = "No path"
+		if has_path:
+			path_info = "Path: %d/%d points, target: %s" % [path_index, path.size(), path_target]
+		
 		return """
 		NPC: %s (%s)
 		State: %s
 		Floor: %d
 		Position: %s
+		Target: %s
 		Schedule Entry: %s
 		Current Action: %s
 		Actions: %d/%d
 		Navigation: %s
+		A* Path: %s
 		""" % [
 			npc_name, npc_id,
 			state.get_name(),
 			current_floor,
 			current_position,
+			target_position,
 			active_entry.id if active_entry else "None",
 			action_info,
 			current_action_index,
 			active_entry.actions.size() if active_entry else 0,
-			navigation.to_string()
+			navigation.to_string(),
+			path_info
 		]
 
 
@@ -401,6 +445,7 @@ func spawn_npc(npc_type: String, spawn_position: Vector2 = Vector2.ZERO) -> Stri
 	)
 	
 	simulated_npcs[npc_id] = state
+	
 	emit_signal("npc_spawned", npc_id, npc_type, start_pos)
 	
 	print("Spawned NPC: %s (%s) at %s" % [state.npc_name, npc_type, start_pos])
@@ -574,6 +619,7 @@ func _retry_pathfinding(npc: NPCSimulationState) -> void:
 		npc.active_entry = null
 		npc.failed_destination = ""
 		npc.pathfinding_retry_count = 0
+		npc.clear_path()
 		npc.state.change_to(NPCState.Type.IDLE)
 		return
 	
@@ -590,6 +636,7 @@ func _retry_pathfinding(npc: NPCSimulationState) -> void:
 		# Success! Clear failure state
 		npc.failed_destination = ""
 		npc.pathfinding_retry_count = 0
+		npc.clear_path()
 		
 		npc.state.change_to(NPCState.Type.NAVIGATING, {
 			"destination": npc.active_entry.zone_name,
@@ -605,23 +652,125 @@ func _retry_pathfinding(npc: NPCSimulationState) -> void:
 
 
 func _update_navigation(npc: NPCSimulationState, delta: float) -> void:
+	# === VISUAL INSTANCE NAVIGATION (uses NavigationAgent2D) ===
 	if npc.npc_instance != null and npc.npc_instance.navigation_agent_2d != null:
+		# Sync simulation position from visual instance
 		npc.current_position = npc.npc_instance.global_position
+		
 		var distance_to_target: float = npc.current_position.distance_to(npc.target_position)
 		if npc.npc_instance.navigation_agent_2d.is_navigation_finished() and distance_to_target <= WAYPOINT_ARRIVAL_DISTANCE and npc.is_moving_to_waypoint:
 			_handle_waypoint_arrival(npc)
 		return
 	
-	var distance: float = npc.current_position.distance_to(npc.target_position)
-	if distance <= WAYPOINT_ARRIVAL_DISTANCE and npc.is_moving_to_waypoint:
+	# === SIMULATION-ONLY A* PATHFINDING (no visual instance or no nav agent) ===
+	
+	# Check if we need a new path (target changed or no path exists)
+	if not npc.has_path or npc.path_target.distance_to(npc.target_position) > 1.0:
+		_request_navigation_path(npc)
+	
+	# If still no path, use straight-line fallback
+	if not npc.has_path or npc.path.is_empty():
+		_update_straight_line_movement(npc, delta)
+		return
+	
+	# Follow the A* path
+	_update_astar_movement(npc, delta)
+
+
+func _request_navigation_path(npc: NPCSimulationState) -> void:
+	"""Request a new A* path from FloorManager"""
+	npc.clear_path()
+	
+	var new_path: Array[Vector2] = FloorManager.get_navigation_path(
+		npc.current_floor,
+		npc.current_position,
+		npc.target_position
+	)
+	
+	if new_path.is_empty():
+		print("[A* Nav] %s: No path found from %s to %s on floor %d" % [
+			npc.npc_name,
+			npc.current_position,
+			npc.target_position,
+			npc.current_floor
+		])
+		npc.has_path = false
+		return
+	
+	npc.path = new_path
+	npc.path_index = 0
+	npc.has_path = true
+	npc.path_target = npc.target_position
+	
+	print("[A* Nav] %s: Path found with %d points" % [npc.npc_name, npc.path.size()])
+
+
+func _update_astar_movement(npc: NPCSimulationState, delta: float) -> void:
+	"""Move NPC along the A* path"""
+	
+	# Check if we've completed the path
+	if npc.path_index >= npc.path.size():
+		# Path complete - check if we're close enough to the actual target
+		var distance_to_target: float = npc.current_position.distance_to(npc.target_position)
+		if distance_to_target <= WAYPOINT_ARRIVAL_DISTANCE and npc.is_moving_to_waypoint:
+			_handle_waypoint_arrival(npc)
+		elif distance_to_target > WAYPOINT_ARRIVAL_DISTANCE:
+			# Path ended but we're not at target - move directly to target
+			_move_toward_position(npc, npc.target_position, delta)
+		return
+	
+	var next_point: Vector2 = npc.path[npc.path_index]
+	var distance_to_next: float = npc.current_position.distance_to(next_point)
+	
+	# Move toward the next path point
+	var move_amount: float = npc.speed * delta
+	
+	if move_amount >= distance_to_next:
+		# Reached this path point, advance to next
+		npc.current_position = next_point
+		npc.path_index += 1
+		
+		# Recursively handle remaining movement this frame
+		var remaining_delta: float = (move_amount - distance_to_next) / npc.speed
+		if remaining_delta > 0.001 and npc.path_index < npc.path.size():
+			_update_astar_movement(npc, remaining_delta)
+	else:
+		# Move toward next point
+		var direction: Vector2 = (next_point - npc.current_position).normalized()
+		npc.current_position += direction * move_amount
+	
+	# Sync visual instance if it exists but has no nav agent
+	if npc.npc_instance != null:
+		npc.npc_instance.global_position = npc.current_position
+
+
+func _update_straight_line_movement(npc: NPCSimulationState, delta: float) -> void:
+	"""Fallback: move in straight line when no A* path available"""
+	var distance_to_target: float = npc.current_position.distance_to(npc.target_position)
+	
+	if distance_to_target <= WAYPOINT_ARRIVAL_DISTANCE and npc.is_moving_to_waypoint:
 		_handle_waypoint_arrival(npc)
 		return
 	
-	var direction: Vector2 = (npc.target_position - npc.current_position).normalized()
+	_move_toward_position(npc, npc.target_position, delta)
+	
+	# Sync visual instance if it exists
+	if npc.npc_instance != null:
+		npc.npc_instance.global_position = npc.current_position
+
+
+func _move_toward_position(npc: NPCSimulationState, target: Vector2, delta: float) -> void:
+	"""Helper: move NPC toward a specific position"""
+	var distance: float = npc.current_position.distance_to(target)
+	if distance < 0.1:
+		npc.current_position = target
+		return
+	
+	var direction: Vector2 = (target - npc.current_position).normalized()
 	var move_amount: float = npc.speed * delta
 	
 	if move_amount >= distance:
-		npc.current_position = npc.target_position
+		npc.current_position = target
 	else:
 		npc.current_position += direction * move_amount
 
@@ -633,6 +782,7 @@ func _handle_waypoint_arrival(npc: NPCSimulationState) -> void:
 	
 	emit_signal("npc_waypoint_reached", npc.npc_id, waypoint.type, npc.current_position)
 	npc.is_moving_to_waypoint = false
+	npc.clear_path()  # Clear path when arriving at waypoint
 	
 	if waypoint.type in ["stairs_up", "stairs_down"]:
 		var target_floor: int = waypoint.metadata.get("target_floor", npc.current_floor)
@@ -662,6 +812,11 @@ func _start_travel_to_waypoint(npc: NPCSimulationState, waypoint: NPCNavigation.
 	npc.travel_start_time = Time.get_ticks_msec() / 1000.0
 	npc.target_position = waypoint.position
 	npc.last_waypoint_position = waypoint.position
+	
+	# Clear old path and request new one for the new target
+	npc.clear_path()
+	_request_navigation_path(npc)
+	
 	npc.is_moving_to_waypoint = true
 	var destination: String = waypoint.metadata.get("zone_name", waypoint.type)
 	emit_signal("npc_started_traveling", npc.npc_id, npc.current_position, waypoint.position, destination)
@@ -871,6 +1026,7 @@ func _activate_schedule_entry(npc: NPCSimulationState, entry: ScheduleEntry) -> 
 	npc.current_action_index = 0
 	npc.current_action = null
 	npc.is_moving_to_waypoint = false
+	npc.clear_path()  # Clear any existing path when starting new schedule
 	
 	print("%s activating schedule: %s" % [npc.npc_name, entry.to_string()])
 	
@@ -991,11 +1147,15 @@ func debug_all_npcs() -> void:
 				npc.current_action.display_name,
 				npc.current_action.get_progress() * 100.0
 			]
-		print("%s - %s - Floor %d%s" % [
+		var path_text: String = ""
+		if npc.has_path:
+			path_text = " [A* path: %d/%d]" % [npc.path_index, npc.path.size()]
+		print("%s - %s - Floor %d%s%s" % [
 			npc.npc_name,
 			npc.state.get_name(),
 			npc.current_floor,
-			action_text
+			action_text,
+			path_text
 		])
 
 # Auto-save on important events
