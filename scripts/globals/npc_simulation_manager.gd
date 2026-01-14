@@ -676,7 +676,6 @@ func _update_navigation(npc: NPCSimulationState, delta: float) -> void:
 	# Follow the A* path
 	_update_astar_movement(npc, delta)
 
-
 func _request_navigation_path(npc: NPCSimulationState) -> void:
 	"""Request a new A* path from FloorManager"""
 	npc.clear_path()
