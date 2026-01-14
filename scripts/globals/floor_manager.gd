@@ -544,6 +544,7 @@ func set_active_floor(floor_number: int, initializing: bool = false) -> void:
 		print("Enabled new floor %d (collisions and navigation on)" % floor_number)
 
 	floors[floor_number].is_active = true
+	NPCSimulationManager.sync_all_npcs_on_floor(floor_number)
 	current_floor = floor_number
 	
 	emit_signal("floor_changed", old_floor, floor_number)

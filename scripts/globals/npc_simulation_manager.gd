@@ -603,6 +603,35 @@ func _update_idle_position_sync(npc: NPCSimulationState, delta: float) -> void:
 		)
 
 
+func sync_npc_visual_to_simulation(npc: NPCSimulationState) -> void:
+	"""
+	Immediately sync an NPC's visual instance position to match simulation.
+	Call this when returning to an NPC's floor after it has been simulated off-screen.
+	"""
+	if npc.npc_instance == null:
+		return
+	
+	npc.npc_instance.global_position = npc.current_position
+	
+	# Also update the navigation agent's target if navigating
+	if npc.state.type == NPCState.Type.NAVIGATING and npc.is_moving_to_waypoint:
+		if "navigation_agent_2d" in npc.npc_instance and npc.npc_instance.navigation_agent_2d != null:
+			npc.npc_instance.navigation_agent_2d.target_position = npc.target_position
+
+
+func sync_all_npcs_on_floor(floor_number: int) -> void:
+	"""
+	Sync all NPC visual instances on a specific floor to their simulation positions.
+	Call this when the player changes to a floor.
+	"""
+	for npc_id: String in simulated_npcs:
+		var npc: NPCSimulationState = simulated_npcs[npc_id]
+		if npc.current_floor == floor_number:
+			sync_npc_visual_to_simulation(npc)
+	
+	print("Synced NPC visuals on floor %d to simulation positions" % floor_number)
+
+
 func _retry_pathfinding(npc: NPCSimulationState) -> void:
 	"""Retry failed pathfinding after cooldown"""
 	if npc.failed_destination == "" or npc.active_entry == null:
@@ -652,8 +681,11 @@ func _retry_pathfinding(npc: NPCSimulationState) -> void:
 
 
 func _update_navigation(npc: NPCSimulationState, delta: float) -> void:
+	# Check if NPC has an active visual instance that can handle its own navigation
+	var use_visual_navigation: bool = _should_use_visual_navigation(npc)
+	
 	# === VISUAL INSTANCE NAVIGATION (uses NavigationAgent2D) ===
-	if npc.npc_instance != null and npc.npc_instance.navigation_agent_2d != null:
+	if use_visual_navigation:
 		# Sync simulation position from visual instance
 		npc.current_position = npc.npc_instance.global_position
 		
@@ -662,7 +694,8 @@ func _update_navigation(npc: NPCSimulationState, delta: float) -> void:
 			_handle_waypoint_arrival(npc)
 		return
 	
-	# === SIMULATION-ONLY A* PATHFINDING (no visual instance or no nav agent) ===
+	# === SIMULATION-ONLY A* PATHFINDING ===
+	# Used when: no visual instance, no nav agent, instance disabled, or NPC on different floor
 	
 	# Check if we need a new path (target changed or no path exists)
 	if not npc.has_path or npc.path_target.distance_to(npc.target_position) > 1.0:
@@ -675,6 +708,35 @@ func _update_navigation(npc: NPCSimulationState, delta: float) -> void:
 	
 	# Follow the A* path
 	_update_astar_movement(npc, delta)
+
+
+func _should_use_visual_navigation(npc: NPCSimulationState) -> bool:
+	"""
+	Determine if we should use the visual instance's NavigationAgent2D for pathfinding.
+	Returns false if the instance is disabled, on a different floor, or doesn't exist.
+	"""
+	# No instance at all
+	if npc.npc_instance == null:
+		return false
+	
+	# No navigation agent
+	if not "navigation_agent_2d" in npc.npc_instance or npc.npc_instance.navigation_agent_2d == null:
+		return false
+	
+	# Instance is not processing (floor is disabled)
+	if not npc.npc_instance.is_processing():
+		return false
+	
+	# Instance is not visible (floor hidden)
+	if not npc.npc_instance.is_visible_in_tree():
+		return false
+	
+	# NPC is on a different floor than the currently active floor
+	if FloorManager and npc.current_floor != FloorManager.get_current_floor():
+		return false
+	
+	return true
+
 
 func _request_navigation_path(npc: NPCSimulationState) -> void:
 	"""Request a new A* path from FloorManager"""
@@ -738,9 +800,8 @@ func _update_astar_movement(npc: NPCSimulationState, delta: float) -> void:
 		var direction: Vector2 = (next_point - npc.current_position).normalized()
 		npc.current_position += direction * move_amount
 	
-	# Sync visual instance if it exists but has no nav agent
-	if npc.npc_instance != null:
-		npc.npc_instance.global_position = npc.current_position
+	# Sync visual instance only if it exists AND is on the active floor
+	_sync_visual_if_active(npc)
 
 
 func _update_straight_line_movement(npc: NPCSimulationState, delta: float) -> void:
@@ -753,9 +814,19 @@ func _update_straight_line_movement(npc: NPCSimulationState, delta: float) -> vo
 	
 	_move_toward_position(npc, npc.target_position, delta)
 	
-	# Sync visual instance if it exists
-	if npc.npc_instance != null:
-		npc.npc_instance.global_position = npc.current_position
+	# Sync visual instance only if it exists AND is on the active floor
+	_sync_visual_if_active(npc)
+
+
+func _sync_visual_if_active(npc: NPCSimulationState) -> void:
+	"""Sync the visual instance position only if the NPC is on the currently active floor"""
+	if npc.npc_instance == null:
+		return
+	
+	# Only sync if on active floor and instance is actually visible/processing
+	if FloorManager and npc.current_floor == FloorManager.get_current_floor():
+		if npc.npc_instance.is_visible_in_tree():
+			npc.npc_instance.global_position = npc.current_position
 
 
 func _move_toward_position(npc: NPCSimulationState, target: Vector2, delta: float) -> void:
