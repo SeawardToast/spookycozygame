@@ -519,15 +519,29 @@ func despawn_npc(npc_id: String) -> void:
 	simulated_npcs.erase(npc_id)
 	emit_signal("npc_despawned", npc_id)
 	print("Despawned NPC: %s" % npc_id)
+	
+func hide_npc(npc_id: String) -> void:
+	var state: NPCSimulationState = simulated_npcs.get(npc_id)
+	if state == null:
+		return
+	state.npc_instance.visible = false
+	emit_signal("npc_hidden", npc_id)
+	print("Hidden NPC: %s" % npc_id)
 
-
+func show_npc(npc_id: String) -> void:
+	var state: NPCSimulationState = simulated_npcs.get(npc_id)
+	if state == null:
+		return
+	state.npc_instance.visible = true
+	emit_signal("npc_showing", npc_id)
+	print("Showing NPC: %s" % npc_id)
+	
 func get_npc_state(npc_id: String) -> NPCSimulationState:
 	return simulated_npcs.get(npc_id)
 
 
 func get_all_npc_states() -> Dictionary[String, NPCSimulationState]:
 	return simulated_npcs
-
 
 func get_npcs_by_type(npc_type: String) -> Array[NPCSimulationState]:
 	var npcs: Array[NPCSimulationState] = []
@@ -536,7 +550,6 @@ func get_npcs_by_type(npc_type: String) -> Array[NPCSimulationState]:
 		if state.npc_type == npc_type:
 			npcs.append(state)
 	return npcs
-
 
 func get_npc_count() -> int:
 	return simulated_npcs.size()
@@ -602,36 +615,6 @@ func _update_idle_position_sync(npc: NPCSimulationState, delta: float) -> void:
 			delta * IDLE_POSITION_SYNC_SPEED
 		)
 
-
-func sync_npc_visual_to_simulation(npc: NPCSimulationState) -> void:
-	"""
-	Immediately sync an NPC's visual instance position to match simulation.
-	Call this when returning to an NPC's floor after it has been simulated off-screen.
-	"""
-	if npc.npc_instance == null:
-		return
-	
-	npc.npc_instance.global_position = npc.current_position
-	
-	# Also update the navigation agent's target if navigating
-	if npc.state.type == NPCState.Type.NAVIGATING and npc.is_moving_to_waypoint:
-		if "navigation_agent_2d" in npc.npc_instance and npc.npc_instance.navigation_agent_2d != null:
-			npc.npc_instance.navigation_agent_2d.target_position = npc.target_position
-
-
-func sync_all_npcs_on_floor(floor_number: int) -> void:
-	"""
-	Sync all NPC visual instances on a specific floor to their simulation positions.
-	Call this when the player changes to a floor.
-	"""
-	for npc_id: String in simulated_npcs:
-		var npc: NPCSimulationState = simulated_npcs[npc_id]
-		if npc.current_floor == floor_number:
-			sync_npc_visual_to_simulation(npc)
-	
-	print("Synced NPC visuals on floor %d to simulation positions" % floor_number)
-
-
 func _retry_pathfinding(npc: NPCSimulationState) -> void:
 	"""Retry failed pathfinding after cooldown"""
 	if npc.failed_destination == "" or npc.active_entry == null:
@@ -681,141 +664,15 @@ func _retry_pathfinding(npc: NPCSimulationState) -> void:
 
 
 func _update_navigation(npc: NPCSimulationState, delta: float) -> void:
-	# Check if NPC has an active visual instance that can handle its own navigation
-	var use_visual_navigation: bool = _should_use_visual_navigation(npc)
-	
+	# Check if NPC has an active visual instance that can handle its own navigation	
 	# === VISUAL INSTANCE NAVIGATION (uses NavigationAgent2D) ===
-	if use_visual_navigation:
-		# Sync simulation position from visual instance
-		npc.current_position = npc.npc_instance.global_position
-		
-		var distance_to_target: float = npc.current_position.distance_to(npc.target_position)
-		if npc.npc_instance.navigation_agent_2d.is_navigation_finished() and distance_to_target <= WAYPOINT_ARRIVAL_DISTANCE and npc.is_moving_to_waypoint:
-			_handle_waypoint_arrival(npc)
-		return
+	# Sync simulation position from visual instance
+	npc.current_position = npc.npc_instance.global_position
 	
-	# === SIMULATION-ONLY A* PATHFINDING ===
-	# Used when: no visual instance, no nav agent, instance disabled, or NPC on different floor
-	
-	# Check if we need a new path (target changed or no path exists)
-	if not npc.has_path or npc.path_target.distance_to(npc.target_position) > 1.0:
-		_request_navigation_path(npc)
-	
-	# If still no path, use straight-line fallback
-	if not npc.has_path or npc.path.is_empty():
-		_update_straight_line_movement(npc, delta)
-		return
-	
-	# Follow the A* path
-	_update_astar_movement(npc, delta)
-
-
-func _should_use_visual_navigation(npc: NPCSimulationState) -> bool:
-	"""
-	Determine if we should use the visual instance's NavigationAgent2D for pathfinding.
-	Returns false if the instance is disabled, on a different floor, or doesn't exist.
-	"""
-	# No instance at all
-	if npc.npc_instance == null:
-		return false
-	
-	# No navigation agent
-	if not "navigation_agent_2d" in npc.npc_instance or npc.npc_instance.navigation_agent_2d == null:
-		return false
-	
-	# Instance is not processing (floor is disabled)
-	if not npc.npc_instance.is_processing():
-		return false
-	
-	# Instance is not visible (floor hidden)
-	if not npc.npc_instance.is_visible_in_tree():
-		return false
-	
-	# NPC is on a different floor than the currently active floor
-	if FloorManager and npc.current_floor != FloorManager.get_current_floor():
-		return false
-	
-	return true
-
-
-func _request_navigation_path(npc: NPCSimulationState) -> void:
-	"""Request a new A* path from FloorManager"""
-	npc.clear_path()
-	
-	var new_path: Array[Vector2] = FloorManager.get_navigation_path(
-		npc.current_floor,
-		npc.current_position,
-		npc.target_position
-	)
-	
-	if new_path.is_empty():
-		print("[A* Nav] %s: No path found from %s to %s on floor %d" % [
-			npc.npc_name,
-			npc.current_position,
-			npc.target_position,
-			npc.current_floor
-		])
-		npc.has_path = false
-		return
-	
-	npc.path = new_path
-	npc.path_index = 0
-	npc.has_path = true
-	npc.path_target = npc.target_position
-	
-	print("[A* Nav] %s: Path found with %d points" % [npc.npc_name, npc.path.size()])
-
-
-func _update_astar_movement(npc: NPCSimulationState, delta: float) -> void:
-	"""Move NPC along the A* path"""
-	
-	# Check if we've completed the path
-	if npc.path_index >= npc.path.size():
-		# Path complete - check if we're close enough to the actual target
-		var distance_to_target: float = npc.current_position.distance_to(npc.target_position)
-		if distance_to_target <= WAYPOINT_ARRIVAL_DISTANCE and npc.is_moving_to_waypoint:
-			_handle_waypoint_arrival(npc)
-		elif distance_to_target > WAYPOINT_ARRIVAL_DISTANCE:
-			# Path ended but we're not at target - move directly to target
-			_move_toward_position(npc, npc.target_position, delta)
-		return
-	
-	var next_point: Vector2 = npc.path[npc.path_index]
-	var distance_to_next: float = npc.current_position.distance_to(next_point)
-	
-	# Move toward the next path point
-	var move_amount: float = npc.speed * delta
-	
-	if move_amount >= distance_to_next:
-		# Reached this path point, advance to next
-		npc.current_position = next_point
-		npc.path_index += 1
-		
-		# Recursively handle remaining movement this frame
-		var remaining_delta: float = (move_amount - distance_to_next) / npc.speed
-		if remaining_delta > 0.001 and npc.path_index < npc.path.size():
-			_update_astar_movement(npc, remaining_delta)
-	else:
-		# Move toward next point
-		var direction: Vector2 = (next_point - npc.current_position).normalized()
-		npc.current_position += direction * move_amount
-	
-	# Sync visual instance only if it exists AND is on the active floor
-	_sync_visual_if_active(npc)
-
-
-func _update_straight_line_movement(npc: NPCSimulationState, delta: float) -> void:
-	"""Fallback: move in straight line when no A* path available"""
 	var distance_to_target: float = npc.current_position.distance_to(npc.target_position)
-	
-	if distance_to_target <= WAYPOINT_ARRIVAL_DISTANCE and npc.is_moving_to_waypoint:
+	if npc.npc_instance.navigation_agent_2d.is_navigation_finished() and distance_to_target <= WAYPOINT_ARRIVAL_DISTANCE and npc.is_moving_to_waypoint:
 		_handle_waypoint_arrival(npc)
-		return
-	
-	_move_toward_position(npc, npc.target_position, delta)
-	
-	# Sync visual instance only if it exists AND is on the active floor
-	_sync_visual_if_active(npc)
+	return
 
 
 func _sync_visual_if_active(npc: NPCSimulationState) -> void:
@@ -882,11 +739,6 @@ func _start_travel_to_waypoint(npc: NPCSimulationState, waypoint: NPCNavigation.
 	npc.travel_start_time = Time.get_ticks_msec() / 1000.0
 	npc.target_position = waypoint.position
 	npc.last_waypoint_position = waypoint.position
-	
-	# Clear old path and request new one for the new target
-	npc.clear_path()
-	_request_navigation_path(npc)
-	
 	npc.is_moving_to_waypoint = true
 	var destination: String = waypoint.metadata.get("zone_name", waypoint.type)
 	emit_signal("npc_started_traveling", npc.npc_id, npc.current_position, waypoint.position, destination)

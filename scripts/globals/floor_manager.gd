@@ -501,6 +501,43 @@ func unload_floor(floor_number: int) -> void:
 	
 	emit_signal("floor_unloaded", floor_number)
 	print("FloorManager: Unloaded floor %d" % floor_number)
+	
+func hide_floor(floor_number: int) -> void:
+	"""Hide a floor scene while keeping it in the scene tree"""
+	if floor_number not in floors:
+		return
+	
+	var floor_data: FloorData = floors[floor_number]
+	if not floor_data.is_loaded:
+		return
+
+	
+	print("FloorManager: Hiding floor %d" % floor_number)
+	
+	floor_data.floor_node.visible = false
+	#floor_data.instance.set_process(false)  # Optional: pause processing
+	#floor_data.instance.set_physics_process(false)  # Optional: pause physics
+	
+	emit_signal("floor_hidden", floor_number)
+	print("FloorManager: Hidden floor %d" % floor_number)
+	
+func show_floor(floor_number: int) -> void:
+	"""Show a previously hidden floor"""
+	if floor_number not in floors:
+		return
+	
+	var floor_data: FloorData = floors[floor_number]
+	if not floor_data.is_loaded:
+		return
+	
+	print("FloorManager: Showing floor %d" % floor_number)
+	
+	floor_data.floor_node.visible = true
+	#floor_data.instance.set_process(true)
+	#floor_data.instance.set_physics_process(true)
+	
+	emit_signal("floor_shown", floor_number)
+	print("FloorManager: Shown floor %d" % floor_number)
 
 func set_active_floor(floor_number: int, initializing: bool = false) -> void:
 	"""Set which floor is currently active (visible and processing)"""
@@ -517,11 +554,8 @@ func set_active_floor(floor_number: int, initializing: bool = false) -> void:
 	if old_floor in floors and floors[old_floor].is_loaded:
 		var old_floor_node: Node = floors[old_floor].floor_node
 		if old_floor_node:
-			old_floor_node.visible = false
-			old_floor_node.process_mode = Node.PROCESS_MODE_DISABLED
-			_set_floor_collisions(old_floor_node, false)
-			_disable_floor_navigation(old_floor)
-			print("Disabled old floor %d (collisions and navigation off)" % old_floor)
+			hide_floor(old_floor)
+			print("Hidden old floor %d (collisions and navigation still on)" % old_floor)
 		floors[old_floor].is_active = false
 	
 	# Load new floor if not loaded (shouldn't happen with preloading, but safety check)
@@ -531,20 +565,15 @@ func set_active_floor(floor_number: int, initializing: bool = false) -> void:
 	# Show and enable new floor
 	var new_floor_node: Node = floors[floor_number].floor_node
 	if new_floor_node:
-		new_floor_node.visible = true
-		new_floor_node.process_mode = Node.PROCESS_MODE_INHERIT
-		_set_floor_collisions(new_floor_node, true)
+		show_floor(floor_number)
 		
 		# Setup navigation if not already mapped (shouldn't happen with preloading)
 		if not floor_nav_regions.has(floor_number):
 			await setup_floor_navigation(new_floor_node, floor_number)
 		
-		# Enable navigation for this floor
-		_enable_floor_navigation(floor_number)
-		print("Enabled new floor %d (collisions and navigation on)" % floor_number)
+		print("Showing new floor %d " % floor_number)
 
 	floors[floor_number].is_active = true
-	NPCSimulationManager.sync_all_npcs_on_floor(floor_number)
 	current_floor = floor_number
 	
 	emit_signal("floor_changed", old_floor, floor_number)

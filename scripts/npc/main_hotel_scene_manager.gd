@@ -16,19 +16,6 @@ var spawned_visuals: Dictionary = {}  # Dictionary[String, Node2D]
 func _ready() -> void:
 	# Initialize game directly for testing
 	GameManager.initialize_game(level_root, player, camera_2d, starting_floor)
-	
-	# Connect to GameManager signals for dev monitoring
-	GameManager.game_initialized.connect(_on_game_initialized)
-	GameManager.player_floor_changed.connect(_on_dev_floor_changed)
-
-func _on_game_initialized() -> void:
-	"""Called after game initialization completes"""
-	print("[DEV] Game initialized and ready")
-
-func _on_dev_floor_changed(new_floor: int) -> void:
-	"""Development callback for floor changes"""
-	print("[DEV] Player is now on floor %d" % new_floor)
-
 # --------------------------------------------
 # Debug Controls - Remove for production
 # --------------------------------------------

@@ -33,9 +33,9 @@ func _process(_delta: float) -> void:
 		var is_currently_visible: bool = spawned_visuals.has(npc_id)
 
 		if should_be_visible and not is_currently_visible:
-			spawn_visual_npc(npc_id)
+			show_visual_npc(npc_id)
 		elif not should_be_visible and is_currently_visible:
-			despawn_visual_npc(npc_id)
+			hide_visual_npc(npc_id)
 
 
 func _should_npc_be_visible(npc_state: NPCSimulationManager.NPCSimulationState) -> bool:
@@ -84,6 +84,20 @@ func despawn_visual_npc(npc_id: String) -> void:
 		visual_npc.queue_free()
 		print("Despawned visual for: %s" % npc_id)
 
+func show_visual_npc(npc_id: String) -> void:
+	if not spawned_visuals.has(npc_id):
+		return
+	
+	var visual_npc: Node2D = spawned_visuals[npc_id]
+	visual_npc.visible = true
+
+
+func hide_visual_npc(npc_id: String) -> void:
+	if not spawned_visuals.has(npc_id):
+		return
+	
+	var visual_npc: Node2D = spawned_visuals[npc_id]
+	visual_npc.visible = false
 
 func _spawn_all_npcs_on_floor(floor: int) -> void:
 	for npc_id: String in NPCSimulationManager.get_all_npc_states():
@@ -92,11 +106,19 @@ func _spawn_all_npcs_on_floor(floor: int) -> void:
 		if npc_state and npc_state.current_floor == floor:
 			if _should_npc_be_visible(npc_state):
 				spawn_visual_npc(npc_id)
+				
+func _show_all_npcs_on_floor(floor: int) -> void:
+	for npc_id: String in NPCSimulationManager.get_all_npc_states():
+		var npc_state: NPCSimulationManager.NPCSimulationState = NPCSimulationManager.get_npc_state(npc_id)
+
+		if npc_state and npc_state.current_floor == floor:
+			if _should_npc_be_visible(npc_state):
+				show_visual_npc(npc_id)
 
 
-func despawn_all_visuals() -> void:
+func hide_all_visuals() -> void:
 	for npc_id: String in spawned_visuals.keys():
-		despawn_visual_npc(npc_id)
+		hide_visual_npc(npc_id)
 
 
 func _on_player_floor_change(old_floor: int, new_floor: int) -> void:
@@ -107,11 +129,11 @@ func _on_player_floor_change(old_floor: int, new_floor: int) -> void:
 
 	print("Changing floor from %d to %d" % [current_floor, new_floor])
 
-	despawn_all_visuals()
+	hide_all_visuals()
 
 	current_floor = new_floor
 
-	_spawn_all_npcs_on_floor(current_floor)
+	_show_all_npcs_on_floor(current_floor)
 
 
 func _on_npc_spawned_in_simulation(npc_id: String, npc_type: String, position: Vector2) -> void:
