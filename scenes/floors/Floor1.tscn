@@ -50,12 +50,12 @@ tile_map_data = PackedByteArray("AAAKAP3/BwAEAAAAAAAKAP7/BwAEAAEAAAAKAP//BwAEAAI
 tile_set = ExtResource("3_qfkr7")
 script = ExtResource("4_vfwqc")
 
-[node name="Stairs" parent="GameTileMap" instance=ExtResource("2_sv8ea")]
+[node name="TomatoHarvest" parent="." instance=ExtResource("6_vfwqc")]
+position = Vector2(318, 246)
+
+[node name="Stairs" parent="." instance=ExtResource("2_sv8ea")]
 y_sort_enabled = true
 position = Vector2(233, 215)
 
 [node name="Door" parent="." instance=ExtResource("5_c1aho")]
 position = Vector2(872, 105)
-
-[node name="TomatoHarvest" parent="." instance=ExtResource("6_vfwqc")]
-position = Vector2(392, 217)

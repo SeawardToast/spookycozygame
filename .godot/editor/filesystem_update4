@@ -1,4 +1,4 @@
-res://scenes/test/report_board/test_scene_report_board.tscn
+res://scenes/objects/plants/tomato_harvest.tscn
 res://scenes/ui/game_ui_theme.tres
 res://tilesets/large_house_tile_set.tres
 res://scenes/objects/tree/tree_shake.gdshader
@@ -8,15 +8,5 @@ res://assets/game/characters/sprites/vampires/vampire_1/vampire_1.tres
 res://scenes/objects/interactable_items/tomato_seed.tres
 res://scenes/objects/rocks/rock_shake.gdshader
 res://scenes/characters/guide/replace_color.gdshader
-res://scenes/characters/base_npc/visual_npc.gd
-res://scenes/characters/base_npc/visual_npc.tscn
-res://scripts/definitions/floor_data.gd
-res://scripts/globals/floor_manager.gd
-res://scripts/globals/game_manager.gd
-res://scripts/globals/npc_simulation_manager.gd
-res://scripts/npc/npc_navigation.gd
-res://scenes/floors/Floor2.tscn
+res://scenes/test/report_board/test_scene_report_board.tscn
 res://scenes/floors/Floor1.tscn
-res://scripts/npc/npc_simulation_state_definition.gd
-res://scripts/npc/visual_npc_spawner.gd
-res://scripts/npc/main_hotel_scene_manager.gd
