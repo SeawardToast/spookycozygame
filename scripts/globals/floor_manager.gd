@@ -477,7 +477,6 @@ func load_floor(floor_number: int) -> Node2D:
 
 	# Hide by default
 	floor_data.floor_node.visible = false
-	floor_data.floor_node.process_mode = Node.PROCESS_MODE_DISABLED
 	_set_floor_collisions(floor_data.floor_node, false)
 	floor_data.is_loaded = true
 	
@@ -515,6 +514,7 @@ func hide_floor(floor_number: int) -> void:
 	print("FloorManager: Hiding floor %d" % floor_number)
 	
 	floor_data.floor_node.visible = false
+	_set_floor_collisions(floor_data.floor_node, false)
 	#floor_data.instance.set_process(false)  # Optional: pause processing
 	#floor_data.instance.set_physics_process(false)  # Optional: pause physics
 	
@@ -533,9 +533,7 @@ func show_floor(floor_number: int) -> void:
 	print("FloorManager: Showing floor %d" % floor_number)
 	
 	floor_data.floor_node.visible = true
-	#floor_data.instance.set_process(true)
-	#floor_data.instance.set_physics_process(true)
-	
+	_set_floor_collisions(floor_data.floor_node, true)
 	emit_signal("floor_shown", floor_number)
 	print("FloorManager: Shown floor %d" % floor_number)
 

@@ -1,4 +1,4 @@
-[gd_scene load_steps=7 format=4 uid="uid://bie46hf1mi1bf"]
+[gd_scene load_steps=8 format=4 uid="uid://bie46hf1mi1bf"]
 
 [ext_resource type="Script" uid="uid://b6s08yav4lhwr" path="res://scripts/scene_helpers/zone_auto_register.gd" id="2_2d04r"]
 [ext_resource type="PackedScene" uid="uid://d3wa7u06ykxxl" path="res://scenes/objects/movement/stairs.tscn" id="2_sv8ea"]
@@ -6,6 +6,7 @@
 [ext_resource type="Script" uid="uid://4nd2sutmq5tu" path="res://scripts/navigation/tilemap_layer_navigation_helper.gd" id="4_vfwqc"]
 [ext_resource type="PackedScene" uid="uid://b8rmgeoryatiu" path="res://scenes/objects/door/door.tscn" id="5_c1aho"]
 [ext_resource type="PackedScene" uid="uid://bwmqnnkbbflat" path="res://scenes/objects/plants/tomato_harvest.tscn" id="6_vfwqc"]
+[ext_resource type="PackedScene" uid="uid://ud77ow383wlk" path="res://scenes/objects/plants/corn_harvest.tscn" id="7_13n10"]
 
 [node name="Floor1" type="Node2D" groups=["floor_scene"]]
 metadata/_edit_group_ = true
@@ -50,12 +51,15 @@ tile_map_data = PackedByteArray("AAAKAP3/BwAEAAAAAAAKAP7/BwAEAAEAAAAKAP//BwAEAAI
 tile_set = ExtResource("3_qfkr7")
 script = ExtResource("4_vfwqc")
 
-[node name="TomatoHarvest" parent="." instance=ExtResource("6_vfwqc")]
-position = Vector2(318, 246)
-
 [node name="Stairs" parent="." instance=ExtResource("2_sv8ea")]
 y_sort_enabled = true
 position = Vector2(233, 215)
 
 [node name="Door" parent="." instance=ExtResource("5_c1aho")]
 position = Vector2(872, 105)
+
+[node name="TomatoHarvest" parent="." instance=ExtResource("6_vfwqc")]
+position = Vector2(345, 325)
+
+[node name="CornHarvest" parent="." instance=ExtResource("7_13n10")]
+position = Vector2(381, 327)
