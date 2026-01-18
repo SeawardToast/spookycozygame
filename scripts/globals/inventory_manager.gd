@@ -14,6 +14,7 @@ var selected_item_id: int = -1
 var selected_hotbar_slot_index: int = 0
 
 signal hotbar_item_selected(item: Item)
+signal inventory_intialized()
 signal inventory_loaded()
 signal inventory_saved()
 
@@ -37,6 +38,7 @@ func _setup_starting_items() -> void:
 	set_hotbar_slot(0, 3, 3)     # Tomato seed
 	set_hotbar_slot(1, 1, 5)     # Slime potion
 	set_hotbar_slot(2, 4, 1)     # Watering can
+	inventory_intialized.emit()
 
 func _load_item_definitions() -> void:
 	var items_path: String = "res://scenes/objects/interactable_items/"

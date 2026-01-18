@@ -36,12 +36,6 @@ class NPCSimulationState:
 	var last_waypoint_position: Vector2 = Vector2.ZERO
 	var is_moving_to_waypoint: bool = false
 	
-	# A* simulation path data
-	var path: Array[Vector2] = []
-	var path_index: int = 0
-	var has_path: bool = false
-	var path_target: Vector2 = Vector2.ZERO  # Track what target the path was computed for
-	
 	var state: NPCState
 	var navigation: NPCNavigation
 	var navigation_cooldown: float = 0.0
@@ -75,13 +69,6 @@ class NPCSimulationState:
 	func is_busy() -> bool:
 		return state.is_busy()
 	
-	func clear_path() -> void:
-		"""Clear the current A* path - call when target changes"""
-		path.clear()
-		path_index = 0
-		has_path = false
-		path_target = Vector2.ZERO
-	
 	func to_dict() -> Dictionary:
 		"""Serialize NPC state to dictionary for saving"""
 		var schedule_data: Array = []
@@ -99,11 +86,6 @@ class NPCSimulationState:
 		# Serialize navigation path
 		var navigation_data: Dictionary = navigation.to_dict()
 		
-		# Serialize A* path as array of {x, y} dictionaries
-		var path_data: Array = []
-		for point in path:
-			path_data.append({"x": point.x, "y": point.y})
-		
 		return {
 			"npc_id": npc_id,
 			"npc_type": npc_type,
@@ -114,11 +96,6 @@ class NPCSimulationState:
 			"speed": speed,
 			"last_waypoint_position": {"x": last_waypoint_position.x, "y": last_waypoint_position.y},
 			"is_moving_to_waypoint": is_moving_to_waypoint,
-			# A* path serialization
-			"path": path_data,
-			"path_index": path_index,
-			"has_path": has_path,
-			"path_target": {"x": path_target.x, "y": path_target.y},
 			# State and navigation
 			"state_type": state.type,
 			"state_data": state.context,
@@ -162,18 +139,6 @@ class NPCSimulationState:
 		travel_duration = data.get("travel_duration", 0.0)
 		behavior_data = data.get("behavior_data", {})
 		
-		# Restore A* path
-		var path_data: Array = data.get("path", [])
-		path.clear()
-		for point_data: Variant in path_data:
-			if point_data is Dictionary:
-				path.append(Vector2(point_data.get("x", 0.0), point_data.get("y", 0.0)))
-		path_index = data.get("path_index", 0)
-		has_path = data.get("has_path", false)
-		
-		var path_target_data: Dictionary = data.get("path_target", {})
-		path_target = Vector2(path_target_data.get("x", 0.0), path_target_data.get("y", 0.0))
-		
 		# Restore navigation path
 		var navigation_data: Dictionary = data.get("navigation_data", {})
 		if not navigation_data.is_empty():
@@ -192,10 +157,6 @@ class NPCSimulationState:
 				current_action.get_progress() * 100.0,
 				current_action.get_remaining_duration()
 			]
-		
-		var path_info: String = "No path"
-		if has_path:
-			path_info = "Path: %d/%d points, target: %s" % [path_index, path.size(), path_target]
 		
 		return """
 		NPC: %s (%s)
@@ -219,7 +180,6 @@ class NPCSimulationState:
 			current_action_index,
 			active_entry.actions.size() if active_entry else 0,
 			navigation.to_string(),
-			path_info
 		]
 
 
@@ -709,13 +669,15 @@ func _handle_waypoint_arrival(npc: NPCSimulationState) -> void:
 	
 	emit_signal("npc_waypoint_reached", npc.npc_id, waypoint.type, npc.current_position)
 	npc.is_moving_to_waypoint = false
-	npc.clear_path()  # Clear path when arriving at waypoint
 	
 	if waypoint.type in ["stairs_up", "stairs_down"]:
 		var target_floor: int = waypoint.metadata.get("target_floor", npc.current_floor)
-		npc.current_floor = target_floor
 		if npc.npc_instance != null and npc.npc_instance.navigation_agent_2d != null:
+			# turn on new floor nav layer and turn off old floor nav layer
 			npc.npc_instance.navigation_agent_2d.set_navigation_layer_value(target_floor, true)
+			npc.npc_instance.navigation_agent_2d.set_navigation_layer_value(npc.current_floor, false)
+		npc.current_floor = target_floor
+
 		print("%s changed to floor %d" % [npc.npc_name, npc.current_floor])
 	
 	var next_waypoint: bool = npc.navigation.advance_waypoint()
@@ -948,7 +910,6 @@ func _activate_schedule_entry(npc: NPCSimulationState, entry: ScheduleEntry) -> 
 	npc.current_action_index = 0
 	npc.current_action = null
 	npc.is_moving_to_waypoint = false
-	npc.clear_path()  # Clear any existing path when starting new schedule
 	
 	print("%s activating schedule: %s" % [npc.npc_name, entry.to_string()])
 	

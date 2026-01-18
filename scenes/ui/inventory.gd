@@ -27,6 +27,10 @@ func _ready() -> void:
 	
 	# Connect to world item pickups to update UI
 	SignalBus.item_picked_up.connect(_on_item_picked_up)
+	
+	# connect to starting items intialized in inventorymanager
+	InventoryManager.inventory_intialized.connect(_render_all_slots)
+
 
 # --------------------------------------------
 # Setup

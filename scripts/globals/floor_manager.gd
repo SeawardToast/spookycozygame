@@ -779,9 +779,8 @@ func _preload_all_floors() -> void:
 		var floor_node: Node2D = get_floor_node(floor_number)
 		if floor_node and not floors_nav_ready.get(floor_number, false):
 			await setup_floor_navigation(floor_node, floor_number)
-	
-	# Now enable only the current floor's navigation
-	_enable_floor_navigation(current_floor)
+			await _enable_floor_navigation(floor_number)
+
 	
 	print("FloorManager: All %d floors preloaded and navigation initialized" % floor_numbers.size())
 	print("FloorManager: Only floor %d navigation is active" % current_floor)
