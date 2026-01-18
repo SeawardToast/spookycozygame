@@ -13,3 +13,4 @@ res://scripts/globals/floor_manager.gd
 res://scenes/characters/base_npc/visual_npc.tscn
 res://scenes/characters/base_npc/visual_npc.gd
 res://scripts/globals/npc_simulation_manager.gd
+res://scenes/floors/Floor1.tscn

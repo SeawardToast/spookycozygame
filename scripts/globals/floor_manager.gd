@@ -143,8 +143,8 @@ func map_tilemap_navigation_regions(tilemap: TileMapLayer, floor_number: int) ->
 			NavigationServer2D.region_set_navigation_layers(matching_rid, nav_bitmask)
 			# Store the mapping
 			floor_nav_regions[floor_number][cell_coords] = matching_rid
-	
 	print("Mapped %d navigation tiles for floor %d" % [floor_nav_regions[floor_number].size(), floor_number])
+	debug_navigation_state(floor_number)
 
 func find_nav_region_at_position(regions: Array[RID], target_pos: Vector2, max_distance: float) -> RID:
 	var closest_rid: RID = RID()
