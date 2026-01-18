@@ -12,7 +12,6 @@ var floors: Dictionary = {}  # floor_number -> FloorData
 var current_floor: int = 1
 var main_scene_container: Node2D = null  # Reference to where floors are added
 var floor_nav_regions: Dictionary = {}  # floor_number: { tile_coords: RID }
-var floor_astars: Dictionary = {}  # floor_number -> AStarGrid2D
 var floors_nav_ready: Dictionary = {}  # floor_number -> bool (tracks which floors have navigation ready)
 var all_floors_initialized: bool = false
 
@@ -23,8 +22,18 @@ signal floor_unloaded(floor_number: int)
 signal floor_navigation_ready(floor_number: int, floor_node: Node)
 signal all_floors_ready()
 
+func _floor_to_nav_bitmask(floor_number: int) -> int:
+	"""Convert floor number (1-based) to navigation layer bitmask"""
+	# Floor 1: 1 << 0 = 1  (0001)
+	# Floor 2: 1 << 1 = 2  (0010)
+	# Floor 3: 1 << 2 = 4  (0100)
+	# Floor 4: 1 << 3 = 8  (1000)
+	return 1 << (floor_number - 1)
+
 func _ready() -> void:
 	_setup_hotel_floors()
+	debug_navigation_state(1)
+	debug_navigation_state(2)
 
 func _setup_hotel_floors() -> void:
 	"""Define hotel structure with scene paths"""
@@ -63,8 +72,6 @@ func set_main_container(container: Node2D) -> void:
 	main_scene_container = container
 	print("FloorManager: Main container set: %s" % container.name)
 	
-	# Preload all floors and their navigation
-	await _preload_all_floors()
 	all_floors_initialized = true
 	all_floors_ready.emit()
 	print("FloorManager: All floors preloaded and navigation ready!")
@@ -86,99 +93,17 @@ func setup_floor_navigation(floor_node: Node, floor_number: int) -> void:
 	floor_nav_regions[floor_number] = {}
 	for tilemap in tilemaps:
 		map_tilemap_navigation_regions(tilemap, floor_number)
+		
+		# be careful of this when using shared tileset resources
 		tilemap.tile_set.set_navigation_layer_layer_value(0, floor_number, true)
 	
 	# Process obstacle tilemaps to disable navigation under them
 	_process_obstacle_tilemaps(floor_node, floor_number)
 	
-	# build a star map for unrendered navigation
-	_build_floor_astar(floor_number)
 	# Mark this floor's navigation as ready
 	floors_nav_ready[floor_number] = true
 	floor_navigation_ready.emit(floor_number, floor_node)
-	print("Navigation ready for floor %d" % floor_number)
-	
-func _build_floor_astar(floor_number: int) -> void:
-	var astar: AStarGrid2D = AStarGrid2D.new()
-	astar.diagonal_mode = AStarGrid2D.DIAGONAL_MODE_ONLY_IF_NO_OBSTACLES
-	astar.default_compute_heuristic = AStarGrid2D.HEURISTIC_MANHATTAN
-	astar.default_estimate_heuristic = AStarGrid2D.HEURISTIC_MANHATTAN
-
-	# Get all navigable tiles
-	var tiles: Array = floor_nav_regions[floor_number].keys()
-	if tiles.is_empty():
-		return
-
-	# Determine bounds
-	var min_x: float = INF
-	var min_y: float = INF
-	var max_x: float = -INF
-	var max_y: float = -INF
-
-	for t: Vector2i in tiles:
-		min_x = min(min_x, t.x)
-		min_y = min(min_y, t.y)
-		max_x = max(max_x, t.x)
-		max_y = max(max_y, t.y)
-
-	astar.region = Rect2i(
-		Vector2i(min_x, min_y),
-		Vector2i(max_x - min_x + 1, max_y - min_y + 1)
-	)
-
-	astar.cell_size = Vector2.ONE
-	astar.update()
-
-	# Enable navigable tiles
-	for tile: Vector2i in tiles:
-		astar.set_point_solid(tile, false)
-
-	# Disable blocked tiles
-	for blocked: Variant in floors[floor_number].disabled_nav_tiles:
-		astar.set_point_solid(blocked, true)
-
-	floor_astars[floor_number] = astar
-
-func get_navigation_path(
-	floor_number: int,
-	start_world_pos: Vector2,
-	end_world_pos: Vector2,
-) -> Array[Vector2]:
-
-	if not floor_astars.has(floor_number):
-		push_error("Navigation not ready for floor %d" % floor_number)
-		return []
-
-	var floor_node: Node2D = get_floor_node(floor_number)
-	if not floor_node:
-		return []
-
-	# Convert world → tile
-	var tilemap: TileMapLayer = _get_primary_navigation_tilemap(floor_node)
-	if not tilemap:
-		return []
-
-	var start_tile: Vector2i = tilemap.local_to_map(
-		tilemap.to_local(start_world_pos)
-	)
-	var end_tile: Vector2i = tilemap.local_to_map(
-		tilemap.to_local(end_world_pos)
-	)
-
-	var astar: AStarGrid2D = floor_astars[floor_number]
-
-	if astar.is_point_solid(start_tile) or astar.is_point_solid(end_tile):
-		return []
-
-	var tile_path: Array[Vector2i] = astar.get_id_path(start_tile, end_tile)
-
-	# Convert back to world positions
-	var world_path: Array[Vector2] = []
-	for tile in tile_path:
-		var local: Vector2 = tilemap.map_to_local(tile)
-		world_path.append(tilemap.to_global(local))
-
-	return world_path
+	print("Navigation ready for floor %d (bitmask: %d)" % [floor_number, _floor_to_nav_bitmask(floor_number)])
 	
 func _get_primary_navigation_tilemap(floor_node: Node) -> TileMapLayer:
 	var tilemaps: Array[TileMapLayer] = []
@@ -191,7 +116,9 @@ func map_tilemap_navigation_regions(tilemap: TileMapLayer, floor_number: int) ->
 	var all_regions: Array[RID] = NavigationServer2D.map_get_regions(nav_map)
 	var used_cells: Array[Vector2i] = tilemap.get_used_cells()
 	
-	print("Mapping navigation for tilemap: %s on floor %d" % [tilemap.name, floor_number])
+	var nav_bitmask: int = _floor_to_nav_bitmask(floor_number)
+	
+	print("Mapping navigation for tilemap: %s on floor %d (bitmask: %d)" % [tilemap.name, floor_number, nav_bitmask])
 	print("Used cells: %d, Total nav regions: %d" % [used_cells.size(), all_regions.size()])
 	
 	var tile_size: float = tilemap.tile_set.tile_size.x
@@ -212,14 +139,12 @@ func map_tilemap_navigation_regions(tilemap: TileMapLayer, floor_number: int) ->
 		var matching_rid: RID = find_nav_region_at_position(all_regions, cell_world_pos, max_distance)
 		
 		if matching_rid != RID():
-			# Set the navigation layer to the floor number
-			NavigationServer2D.region_set_navigation_layers(matching_rid, floor_number)
+			# Set the navigation layer using proper bitmask
+			NavigationServer2D.region_set_navigation_layers(matching_rid, nav_bitmask)
 			# Store the mapping
 			floor_nav_regions[floor_number][cell_coords] = matching_rid
-			# IMPORTANT: Disable by default - will be enabled when floor becomes active
-			NavigationServer2D.region_set_enabled(matching_rid, false)
 	
-	print("Mapped %d navigation tiles for floor %d (all disabled by default)" % [floor_nav_regions[floor_number].size(), floor_number])
+	print("Mapped %d navigation tiles for floor %d" % [floor_nav_regions[floor_number].size(), floor_number])
 
 func find_nav_region_at_position(regions: Array[RID], target_pos: Vector2, max_distance: float) -> RID:
 	var closest_rid: RID = RID()
@@ -375,14 +300,12 @@ func disable_navigation_at_tile(floor_number: int, tile_coords: Vector2i) -> voi
 	var current_floor_nav_region: Variant = floor_nav_regions[floor_number]
 	if current_floor_nav_region.has(tile_coords):
 		var rid: RID = floor_nav_regions[floor_number][tile_coords]
-		NavigationServer2D.region_set_navigation_layers(rid, 0)
+		NavigationServer2D.region_set_navigation_layers(rid, 0)  # 0 bitmask = no layers
 		NavigationServer2D.region_set_enabled(rid, false)
 		
 		# Track this tile as disabled in the floor data
 		if tile_coords not in floors[floor_number].disabled_nav_tiles:
 			floors[floor_number].disabled_nav_tiles.append(tile_coords)
-			if floor_astars.has(floor_number):
-				floor_astars[floor_number].set_point_solid(tile_coords, true)
 
 func enable_navigation_at_tile(floor_number: int, tile_coords: Vector2i) -> void:
 	if not floor_nav_regions.has(floor_number):
@@ -390,10 +313,9 @@ func enable_navigation_at_tile(floor_number: int, tile_coords: Vector2i) -> void
 	
 	if floor_nav_regions[floor_number].has(tile_coords):
 		var rid: RID = floor_nav_regions[floor_number][tile_coords]
-		NavigationServer2D.region_set_navigation_layers(rid, floor_number)
+		var nav_bitmask: int = _floor_to_nav_bitmask(floor_number)
+		NavigationServer2D.region_set_navigation_layers(rid, nav_bitmask)
 		NavigationServer2D.region_set_enabled(rid, true)
-		if floor_astars.has(floor_number):
-			floor_astars[floor_number].set_point_solid(tile_coords, false)
 		# Remove this tile from the disabled list
 		if floors[floor_number].disabled_nav_tiles:
 			var disabled_tiles: Array = floors[floor_number].disabled_nav_tiles
@@ -410,6 +332,7 @@ func _disable_floor_navigation(floor_number: int) -> void:
 	for tile_coords: Vector2i in floor_nav_regions[floor_number]:
 		var rid: RID = floor_nav_regions[floor_number][tile_coords]
 		NavigationServer2D.region_set_enabled(rid, false)
+		NavigationServer2D.region_set_navigation_layers(rid, 0)
 	
 	print("Disabled %d navigation regions for floor %d" % [floor_nav_regions[floor_number].size(), floor_number])
 
@@ -418,11 +341,11 @@ func _enable_floor_navigation(floor_number: int) -> void:
 	if not floor_nav_regions.has(floor_number):
 		return
 	
-	print("Enabling navigation for floor %d" % floor_number)
+	var nav_bitmask: int = _floor_to_nav_bitmask(floor_number)
+	print("Enabling navigation for floor %d (bitmask: %d)" % [floor_number, nav_bitmask])
 	
 	# Get the list of tiles that should remain disabled
-	var disabled_tiles: Array = []
-	disabled_tiles = floors[floor_number].disabled_nav_tiles
+	var disabled_tiles: Array = floors[floor_number].disabled_nav_tiles
 	
 	for tile_coords: Vector2i in floor_nav_regions[floor_number]:
 		var rid: RID = floor_nav_regions[floor_number][tile_coords]
@@ -433,9 +356,13 @@ func _enable_floor_navigation(floor_number: int) -> void:
 			NavigationServer2D.region_set_navigation_layers(rid, 0)
 		else:
 			NavigationServer2D.region_set_enabled(rid, true)
-			NavigationServer2D.region_set_navigation_layers(rid, floor_number)
+			NavigationServer2D.region_set_navigation_layers(rid, nav_bitmask)
 	
-	print("Enabled %d navigation regions for floor %d (%d tiles remain disabled)" % [floor_nav_regions[floor_number].size(), floor_number, disabled_tiles.size()])
+	print("Enabled %d navigation regions for floor %d (%d tiles remain disabled)" % [
+		floor_nav_regions[floor_number].size(), 
+		floor_number, 
+		disabled_tiles.size()
+	])
 
 func load_floor(floor_number: int) -> Node2D:
 	#"""Load a floor scene and add it to the main scene tree"""
@@ -459,22 +386,12 @@ func load_floor(floor_number: int) -> Node2D:
 		var floor_scene: Resource = load(floor_data.scene_path)
 		floor_data.floor_node = floor_scene.instantiate()
 		floor_data.floor_node.name = "Floor%d" % floor_number
-	else:
-		# **Create a Node2D if no scene exists**
-		floor_data.floor_node = Node2D.new()
-		floor_data.floor_node.name = "Floor%d_Fallback" % floor_number
-		print("FloorManager: Created Node2D fallback for floor %d" % floor_number)
-
-		# Optional: create a Zones container inside
-		var zones: Node2D = Node2D.new()
-		zones.name = "Zones"
-		floor_data.floor_node.add_child(zones)
 
 	# Add floor node to main container
 	main_scene_container.add_child(floor_data.floor_node)
 
 	_setup_floor_metadata(floor_data.floor_node, floor_number)
-
+	setup_floor_navigation(floor_data.floor_node, floor_number)
 	# Hide by default
 	floor_data.floor_node.visible = false
 	_set_floor_collisions(floor_data.floor_node, false)
@@ -484,7 +401,45 @@ func load_floor(floor_number: int) -> Node2D:
 	print("FloorManager: Loaded floor %d" % floor_number)
 
 	return floor_data.floor_node
-
+	
+func debug_navigation_state(floor_number: int) -> void:
+	"""Print debug info about navigation state for a floor"""
+	var expected_bitmask: int = _floor_to_nav_bitmask(floor_number)
+	print("=== Navigation Debug for Floor %d (expected bitmask: %d) ===" % [floor_number, expected_bitmask])
+	
+	if not floor_nav_regions.has(floor_number):
+		print("  No navigation regions mapped!")
+		return
+	
+	var total: int = floor_nav_regions[floor_number].size()
+	var enabled_count: int = 0
+	var disabled_count: int = 0
+	var correct_layer_count: int = 0
+	var layer_counts: Dictionary = {}
+	
+	for tile_coords: Vector2i in floor_nav_regions[floor_number]:
+		var rid: RID = floor_nav_regions[floor_number][tile_coords]
+		var is_enabled: bool = NavigationServer2D.region_get_enabled(rid)
+		var layers: int = NavigationServer2D.region_get_navigation_layers(rid)
+		
+		if is_enabled:
+			enabled_count += 1
+		else:
+			disabled_count += 1
+		
+		if layers == expected_bitmask:
+			correct_layer_count += 1
+		
+		if not layer_counts.has(layers):
+			layer_counts[layers] = 0
+		layer_counts[layers] += 1
+	
+	print("  Total regions: %d" % total)
+	print("  Enabled: %d, Disabled: %d" % [enabled_count, disabled_count])
+	print("  Correct bitmask (%d): %d/%d" % [expected_bitmask, correct_layer_count, total])
+	print("  Layer distribution: %s" % layer_counts)
+	print("=====================================")
+	
 func unload_floor(floor_number: int) -> void:
 	"""Unload a floor scene and remove it from the scene tree"""
 	if floor_number not in floors:
@@ -755,35 +710,6 @@ func enable_navigation_at_world_pos(floor_number: int, world_pos: Vector2) -> vo
 	if nav_tile_coords != Vector2i(-99999, -99999):
 		enable_navigation_at_tile(floor_number, nav_tile_coords)
 
-# =============================================
-# PRELOADING & INITIALIZATION
-# =============================================
-
-func _preload_all_floors() -> void:
-	"""
-	Load all registered floors and set up their navigation regions.
-	This ensures NPCs can path to any floor immediately.
-	"""
-	print("FloorManager: Preloading all floors...")
-	
-	var floor_numbers: Array = floors.keys()
-	
-	# Load all floors first
-	for floor_number: int in floor_numbers:
-		if not floors[floor_number].is_loaded:
-			load_floor(floor_number)
-			await get_tree().process_frame
-	
-	# Set up navigation for all floors (they'll be disabled by default in map_tilemap_navigation_regions)
-	for floor_number: int in floor_numbers:
-		var floor_node: Node2D = get_floor_node(floor_number)
-		if floor_node and not floors_nav_ready.get(floor_number, false):
-			await setup_floor_navigation(floor_node, floor_number)
-			await _enable_floor_navigation(floor_number)
-
-	
-	print("FloorManager: All %d floors preloaded and navigation initialized" % floor_numbers.size())
-	print("FloorManager: Only floor %d navigation is active" % current_floor)
 
 func is_floor_navigation_ready(floor_number: int) -> bool:
 	"""Check if a specific floor's navigation is ready for pathfinding"""

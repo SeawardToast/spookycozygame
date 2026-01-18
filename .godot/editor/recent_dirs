@@ -1,8 +1,8 @@
+res://assets/game/tilesets
 res://scenes
 res://scripts/globals
 res://assets/game/objects
 res://scenes/objects/interactable_items
-res://assets/game/tilesets
 res://assets/game/tilesets/dungeon2
 res://assets/game/tilesets/dungeon
 res://assets/game/characters/sprites/vampires/vampire_1

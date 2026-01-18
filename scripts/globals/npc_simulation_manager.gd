@@ -670,15 +670,26 @@ func _handle_waypoint_arrival(npc: NPCSimulationState) -> void:
 	emit_signal("npc_waypoint_reached", npc.npc_id, waypoint.type, npc.current_position)
 	npc.is_moving_to_waypoint = false
 	
+	# Handle floor transitions
 	if waypoint.type in ["stairs_up", "stairs_down"]:
 		var target_floor: int = waypoint.metadata.get("target_floor", npc.current_floor)
+		var old_floor: int = npc.current_floor
+		
 		if npc.npc_instance != null and npc.npc_instance.navigation_agent_2d != null:
-			# turn on new floor nav layer and turn off old floor nav layer
-			npc.npc_instance.navigation_agent_2d.set_navigation_layer_value(target_floor, true)
-			npc.npc_instance.navigation_agent_2d.set_navigation_layer_value(npc.current_floor, false)
+			var nav_agent: NavigationAgent2D = npc.npc_instance.navigation_agent_2d
+			
+			# Turn on new floor nav layer and turn off old floor nav layer
+			nav_agent.set_navigation_layer_value(target_floor, true)
+			nav_agent.set_navigation_layer_value(old_floor, false)
+			
+			print("%s: Switching nav layers %d -> %d" % [npc.npc_name, old_floor, target_floor])
+		
 		npc.current_floor = target_floor
-
 		print("%s changed to floor %d" % [npc.npc_name, npc.current_floor])
+		FloorManager.debug_navigation_state(npc.current_floor)
+		
+		# CRITICAL: Wait for navigation to update after layer change
+		await _wait_for_navigation_update(npc)
 	
 	var next_waypoint: bool = npc.navigation.advance_waypoint()
 	
@@ -695,6 +706,21 @@ func _handle_waypoint_arrival(npc: NPCSimulationState) -> void:
 		npc.current_action_index = 0
 
 
+func _wait_for_navigation_update(npc: NPCSimulationState) -> void:
+	"""Wait for navigation agent to update after layer changes"""
+	# Wait for physics frames to allow NavigationServer to process changes
+	await get_tree().physics_frame
+	await get_tree().physics_frame
+	
+	# Force the navigation agent to clear its cached path
+	if npc.npc_instance != null and npc.npc_instance.navigation_agent_2d != null:
+		var nav_agent: NavigationAgent2D = npc.npc_instance.navigation_agent_2d
+		# Setting target position to current position forces path recalculation
+		nav_agent.target_position = npc.npc_instance.global_position
+		await get_tree().physics_frame
+	
+	print("%s: Navigation updated for floor %d" % [npc.npc_name, npc.current_floor])
+
 func _start_travel_to_waypoint(npc: NPCSimulationState, waypoint: NPCNavigation.NavWaypoint) -> void:
 	var distance: float = npc.current_position.distance_to(waypoint.position)
 	npc.travel_duration = (distance / npc.speed) + 10.0 if npc.speed > 0 else 0.1
@@ -702,6 +728,11 @@ func _start_travel_to_waypoint(npc: NPCSimulationState, waypoint: NPCNavigation.
 	npc.target_position = waypoint.position
 	npc.last_waypoint_position = waypoint.position
 	npc.is_moving_to_waypoint = true
+	
+	# Ensure the visual instance's navigation agent gets the new target
+	if npc.npc_instance != null and npc.npc_instance.navigation_agent_2d != null:
+		npc.npc_instance.navigation_agent_2d.target_position = waypoint.position
+	
 	var destination: String = waypoint.metadata.get("zone_name", waypoint.type)
 	emit_signal("npc_started_traveling", npc.npc_id, npc.current_position, waypoint.position, destination)
 

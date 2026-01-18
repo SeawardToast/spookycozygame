@@ -167,14 +167,46 @@ func _on_npc_started_traveling(id: String, from_pos: Vector2, to_pos: Vector2, d
 	if id != npc_id:
 		return
 	
-	print("Visual %s: Starting travel to %s" % [simulation_state.npc_name, destination])
+	print("Visual %s: Starting travel to %s (floor %d)" % [
+		simulation_state.npc_name, 
+		destination,
+		simulation_state.current_floor
+	])
 	
 	if navigation_agent_2d and use_navigation:
+		# Ensure we're on the correct navigation layer
+		_sync_navigation_layer()
+		
 		navigation_agent_2d.target_position = to_pos
-		# Force the navigation agent to recalculate path
-		await get_tree().process_frame
+		
+		# Wait for path to be computed
+		await get_tree().physics_frame
+		
+		if not navigation_agent_2d.is_target_reachable():
+			push_warning("Visual %s: Target %s not reachable on floor %d!" % [
+				simulation_state.npc_name,
+				to_pos,
+				simulation_state.current_floor
+			])
 	
 	_play_animation("walk")
+
+
+func _sync_navigation_layer() -> void:
+	"""Ensure navigation agent layer matches current floor"""
+	if navigation_agent_2d == null or simulation_state == null:
+		return
+	
+	var current_floor: int = simulation_state.current_floor
+	
+	# Disable all layers first
+	for i in range(1, 33):
+		navigation_agent_2d.set_navigation_layer_value(i, false)
+	
+	# Enable only current floor
+	navigation_agent_2d.set_navigation_layer_value(current_floor, true)
+	
+	print("Visual %s: Nav layer synced to floor %d" % [simulation_state.npc_name, current_floor])
 
 
 func _on_npc_arrived_at_zone(id: String, zone_name: String, position: Vector2) -> void:
