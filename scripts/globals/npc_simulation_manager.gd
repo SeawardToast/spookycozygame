@@ -1,16 +1,23 @@
+# =============================================
+# NPCSimulationManager.gd (REFACTORED)
+# =============================================
+# Manages NPC simulation state with proper navigation map switching per floor
+
 extends Node
 
 var simulated_npcs: Dictionary[String, NPCSimulationState] = {}
 var npc_id_counter: int = 0
 
 const SAVE_PATH: String = "user://npc_simulation_save.json"
-const WAYPOINT_ARRIVAL_DISTANCE: float = 6.0  # Standardized arrival distance
+const WAYPOINT_ARRIVAL_DISTANCE: float = 6.0
 const IDLE_POSITION_SYNC_SPEED: float = 3.0
 const NAVIGATION_RETRY_DELAY: float = 5.0
 const MAX_PATHFINDING_RETRIES: int = 3
 
 signal npc_spawned(npc_id: String, npc_type: String, position: Vector2)
 signal npc_despawned(npc_id: String)
+signal npc_hidden(npc_id: String)
+signal npc_showing(npc_id: String)
 signal npc_state_changed(npc_id: String, old_state: int, new_state: int)
 signal npc_arrived_at_zone(npc_id: String, zone_name: String, position: Vector2)
 signal npc_waypoint_reached(npc_id: String, waypoint_type: String, position: Vector2)
@@ -18,8 +25,10 @@ signal npc_action_started(npc_id: String, action: NPCAction)
 signal npc_action_completed(npc_id: String, action: NPCAction, success: bool)
 signal npc_action_progress(npc_id: String, action: NPCAction, progress: float)
 signal npc_started_traveling(npc_id: String, from_pos: Vector2, to_pos: Vector2, destination: String)
+signal npc_floor_changed(npc_id: String, old_floor: int, new_floor: int)
 signal npcs_loaded()
 signal npcs_saved()
+
 
 # -----------------------------
 # NPC Simulation State Class
@@ -70,7 +79,6 @@ class NPCSimulationState:
 		return state.is_busy()
 	
 	func to_dict() -> Dictionary:
-		"""Serialize NPC state to dictionary for saving"""
 		var schedule_data: Array = []
 		for entry in schedule:
 			schedule_data.append(entry.to_dict() if entry.has_method("to_dict") else {})
@@ -83,7 +91,6 @@ class NPCSimulationState:
 		if current_action and current_action.has_method("to_dict"):
 			current_action_data = current_action.to_dict()
 		
-		# Serialize navigation path
 		var navigation_data: Dictionary = navigation.to_dict()
 		
 		return {
@@ -96,7 +103,6 @@ class NPCSimulationState:
 			"speed": speed,
 			"last_waypoint_position": {"x": last_waypoint_position.x, "y": last_waypoint_position.y},
 			"is_moving_to_waypoint": is_moving_to_waypoint,
-			# State and navigation
 			"state_type": state.type,
 			"state_data": state.context,
 			"navigation_cooldown": navigation_cooldown,
@@ -113,7 +119,6 @@ class NPCSimulationState:
 		}
 	
 	func from_dict(data: Dictionary) -> void:
-		"""Deserialize NPC state from dictionary"""
 		npc_id = data.get("npc_id", npc_id)
 		npc_type = data.get("npc_type", npc_type)
 		npc_name = data.get("npc_name", npc_name)
@@ -139,12 +144,10 @@ class NPCSimulationState:
 		travel_duration = data.get("travel_duration", 0.0)
 		behavior_data = data.get("behavior_data", {})
 		
-		# Restore navigation path
 		var navigation_data: Dictionary = data.get("navigation_data", {})
 		if not navigation_data.is_empty():
 			navigation.from_dict(navigation_data)
 		
-		# Restore state
 		var state_type: int = data.get("state_type", NPCState.Type.IDLE)
 		var state_data: Dictionary = data.get("state_data", {})
 		state.change_to(state_type, state_data)
@@ -168,7 +171,6 @@ class NPCSimulationState:
 		Current Action: %s
 		Actions: %d/%d
 		Navigation: %s
-		A* Path: %s
 		""" % [
 			npc_name, npc_id,
 			state.get_name(),
@@ -191,10 +193,10 @@ func _ready() -> void:
 		DayAndNightCycleManager.time_tick.connect(_on_time_tick)
 		DayAndNightCycleManager.time_tick_day.connect(reset_daily_schedules)
 	
-	# Wait for all floors to be ready
 	if FloorManager:
 		await FloorManager.wait_for_all_floors_ready()
 		print("NPCSimulationManager: All floors ready")
+
 
 # --------------------------------------------
 # Save/Load System
@@ -227,6 +229,7 @@ func save_npcs() -> bool:
 	npcs_saved.emit()
 	return true
 
+
 func load_npcs() -> bool:
 	if not FileAccess.file_exists(SAVE_PATH):
 		print("No NPC save file found at: ", SAVE_PATH)
@@ -254,19 +257,15 @@ func load_npcs() -> bool:
 		push_error("Invalid NPC save data structure")
 		return false
 	
-	# Clear existing NPCs
 	for npc_id: String in simulated_npcs.keys():
 		despawn_npc(npc_id)
 	simulated_npcs.clear()
 	
-	# Restore ID counter
 	npc_id_counter = save_data.get("npc_id_counter", 0)
 	
-	# Wait for floors to be ready before restoring NPCs
 	if FloorManager:
 		await FloorManager.wait_for_all_floors_ready()
 	
-	# Restore NPCs - collect them first, then spawn sequentially
 	var npcs_data: Array = save_data["npcs"]
 	
 	for npc_data: Variant in npcs_data:
@@ -274,20 +273,18 @@ func load_npcs() -> bool:
 		if npc_state:
 			simulated_npcs[npc_state.npc_id] = npc_state
 	
-	# Spawn all visual instances (can happen in parallel via deferred calls)
 	for npc_id: String in simulated_npcs:
 		var npc_state: NPCSimulationState = simulated_npcs[npc_id]
 		_spawn_npc_instance.call_deferred(npc_state)
 	
-	# Wait one frame to ensure all deferred spawns are queued
 	await get_tree().process_frame
 	
 	print("NPCs loaded from: ", SAVE_PATH, " (", simulated_npcs.size(), " NPCs)")
 	npcs_loaded.emit()
 	return true
 
+
 func _create_npc_state_from_dict(data: Dictionary) -> NPCSimulationState:
-	"""Create and configure NPC state from saved data without spawning"""
 	var npc_id: String = data.get("npc_id", "")
 	var npc_type: String = data.get("npc_type", "")
 	var npc_name: String = data.get("npc_name", "")
@@ -297,7 +294,6 @@ func _create_npc_state_from_dict(data: Dictionary) -> NPCSimulationState:
 	
 	var speed: float = data.get("speed", 100.0)
 	
-	# Create NPC state
 	var state: NPCSimulationState = NPCSimulationState.new(
 		npc_id,
 		npc_type,
@@ -306,16 +302,13 @@ func _create_npc_state_from_dict(data: Dictionary) -> NPCSimulationState:
 		speed
 	)
 	
-	# Restore full state from saved data
 	state.from_dict(data)
 	
-	# Get NPC definition to restore schedule
 	var npc_definition: Variant = NPCTypeRegistry.create_npc_definition(npc_type)
 	if npc_definition:
 		state.behavior_data["definition"] = npc_definition
 		state.schedule = npc_definition.get_schedule()
 		
-		# Restore active schedule entry reference
 		var active_entry_id: String = data.get("active_entry_id", "")
 		if active_entry_id != "":
 			for entry in state.schedule:
@@ -323,17 +316,13 @@ func _create_npc_state_from_dict(data: Dictionary) -> NPCSimulationState:
 					state.active_entry = entry
 					break
 		
-		# Restore current action if it exists
 		var action_data: Dictionary = data.get("current_action", {})
 		if not action_data.is_empty() and state.active_entry:
-			# Find the matching action in the schedule
 			if state.current_action_index < state.active_entry.actions.size():
 				var action: NPCAction = state.active_entry.actions[state.current_action_index]
-				# Restore action progress
 				action.restore_from_dict(action_data)
 				state.current_action = action
 	
-	# Connect signals
 	state.state.state_changed.connect(
 		func(old_state: int, new_state: int) -> void:
 			_on_npc_state_changed(npc_id, old_state, new_state)
@@ -349,6 +338,7 @@ func _create_npc_state_from_dict(data: Dictionary) -> NPCSimulationState:
 	
 	return state
 
+
 func delete_save() -> bool:
 	if FileAccess.file_exists(SAVE_PATH):
 		var dir: DirAccess = DirAccess.open("user://")
@@ -361,8 +351,8 @@ func delete_save() -> bool:
 			return false
 	return false
 
+
 func reset_npcs() -> void:
-	"""Clear all NPCs and reset to initial state"""
 	for npc_id: String in simulated_npcs.keys():
 		despawn_npc(npc_id)
 	
@@ -371,6 +361,7 @@ func reset_npcs() -> void:
 	save_npcs()
 	print("All NPCs reset")
 
+
 # --------------------------------------------
 # NPC Management
 # --------------------------------------------
@@ -378,6 +369,7 @@ func reset_npcs() -> void:
 func _generate_npc_id(npc_type: String) -> String:
 	npc_id_counter += 1
 	return "%s_%d" % [npc_type, npc_id_counter]
+
 
 func spawn_npc(npc_type: String, spawn_position: Vector2 = Vector2.ZERO) -> String:
 	var npc_definition: Variant = NPCTypeRegistry.create_npc_definition(npc_type)
@@ -410,11 +402,12 @@ func spawn_npc(npc_type: String, spawn_position: Vector2 = Vector2.ZERO) -> Stri
 	
 	print("Spawned NPC: %s (%s) at %s" % [state.npc_name, npc_type, start_pos])
 	return npc_id
-	
+
+
 func _spawn_npc_instance(npc: NPCSimulationState) -> void:
 	"""Spawn the visual instance of an NPC in the world"""
 	if npc.npc_instance != null:
-		return  # Already has an instance
+		return
 	
 	var npc_definition: Variant = npc.behavior_data.get("definition")
 	if not npc_definition:
@@ -425,11 +418,9 @@ func _spawn_npc_instance(npc: NPCSimulationState) -> void:
 		push_error("Cannot spawn NPC instance: missing scene path for " + npc.npc_name)
 		return
 	
-	# Wait for the NPC's floor to be ready
 	if FloorManager and not FloorManager.is_floor_navigation_ready(npc.current_floor):
 		await FloorManager.wait_for_floor_ready(npc.current_floor)
 	
-	# Load and instantiate the NPC scene
 	var npc_scene: Resource = load(npc_definition.npc_scene_path)
 	if not npc_scene:
 		push_error("Failed to load NPC scene: " + npc_definition.npc_scene_path)
@@ -440,25 +431,24 @@ func _spawn_npc_instance(npc: NPCSimulationState) -> void:
 		push_error("Failed to instantiate NPC scene")
 		return
 	
-	# Set position and floor
 	instance.global_position = npc.current_position
 	
-	# Get the floor's NPC container
 	var floor_container: Node2D = FloorManager.get_floor_npc_container(npc.current_floor)
 	if not floor_container:
 		push_error("No NPC container found for floor " + str(npc.current_floor))
 		instance.queue_free()
 		return
 	
-	# Add to scene
 	floor_container.add_child(instance)
 	
-	# Configure navigation if available
+	# REFACTORED: Set the navigation agent to use the floor's dedicated map
 	if instance.has_node("NavigationAgent2D"):
 		var nav_agent: NavigationAgent2D = instance.get_node("NavigationAgent2D")
-		nav_agent.set_navigation_layer_value(npc.current_floor, true)
+		var floor_map_rid: RID = FloorManager.get_navigation_map_for_floor(npc.current_floor)
+		if floor_map_rid != RID():
+			nav_agent.set_navigation_map(floor_map_rid)
+			print("%s: Navigation agent set to floor %d map" % [npc.npc_name, npc.current_floor])
 	
-	# Store reference
 	npc.npc_instance = instance
 	
 	print("Spawned visual instance for: %s at %s on floor %d" % [
@@ -479,7 +469,8 @@ func despawn_npc(npc_id: String) -> void:
 	simulated_npcs.erase(npc_id)
 	emit_signal("npc_despawned", npc_id)
 	print("Despawned NPC: %s" % npc_id)
-	
+
+
 func hide_npc(npc_id: String) -> void:
 	var state: NPCSimulationState = simulated_npcs.get(npc_id)
 	if state == null:
@@ -488,6 +479,7 @@ func hide_npc(npc_id: String) -> void:
 	emit_signal("npc_hidden", npc_id)
 	print("Hidden NPC: %s" % npc_id)
 
+
 func show_npc(npc_id: String) -> void:
 	var state: NPCSimulationState = simulated_npcs.get(npc_id)
 	if state == null:
@@ -495,13 +487,15 @@ func show_npc(npc_id: String) -> void:
 	state.npc_instance.visible = true
 	emit_signal("npc_showing", npc_id)
 	print("Showing NPC: %s" % npc_id)
-	
+
+
 func get_npc_state(npc_id: String) -> NPCSimulationState:
 	return simulated_npcs.get(npc_id)
 
 
 func get_all_npc_states() -> Dictionary[String, NPCSimulationState]:
 	return simulated_npcs
+
 
 func get_npcs_by_type(npc_type: String) -> Array[NPCSimulationState]:
 	var npcs: Array[NPCSimulationState] = []
@@ -510,6 +504,7 @@ func get_npcs_by_type(npc_type: String) -> Array[NPCSimulationState]:
 		if state.npc_type == npc_type:
 			npcs.append(state)
 	return npcs
+
 
 func get_npc_count() -> int:
 	return simulated_npcs.size()
@@ -530,7 +525,6 @@ func _on_npc_state_changed(npc_id: String, old_state: int, new_state: int) -> vo
 			NPCState.Type.keys()[new_state]
 		])
 		
-		# FIX #1: Check schedules when transitioning to IDLE
 		if new_state == NPCState.Type.IDLE:
 			if DayAndNightCycleManager:
 				var current_time: Dictionary = DayAndNightCycleManager.get_current_time()
@@ -548,7 +542,6 @@ func _update_npc(npc: NPCSimulationState, delta: float) -> void:
 	if npc.navigation_cooldown > 0:
 		npc.navigation_cooldown -= delta
 		
-		# Retry pathfinding if cooldown expired
 		if npc.navigation_cooldown <= 0 and npc.failed_destination != "":
 			_retry_pathfinding(npc)
 		
@@ -564,7 +557,6 @@ func _update_npc(npc: NPCSimulationState, delta: float) -> void:
 
 
 func _update_idle_position_sync(npc: NPCSimulationState, delta: float) -> void:
-	"""Sync visual position to simulation position when idle"""
 	if npc.npc_instance == null:
 		return
 	
@@ -575,8 +567,8 @@ func _update_idle_position_sync(npc: NPCSimulationState, delta: float) -> void:
 			delta * IDLE_POSITION_SYNC_SPEED
 		)
 
+
 func _retry_pathfinding(npc: NPCSimulationState) -> void:
-	"""Retry failed pathfinding after cooldown"""
 	if npc.failed_destination == "" or npc.active_entry == null:
 		return
 	
@@ -591,7 +583,6 @@ func _retry_pathfinding(npc: NPCSimulationState) -> void:
 		npc.active_entry = null
 		npc.failed_destination = ""
 		npc.pathfinding_retry_count = 0
-		npc.clear_path()
 		npc.state.change_to(NPCState.Type.IDLE)
 		return
 	
@@ -605,10 +596,8 @@ func _retry_pathfinding(npc: NPCSimulationState) -> void:
 	var target_floor: int = _get_zone_floor(npc.failed_destination, npc)
 	
 	if npc.navigation.set_destination(npc.failed_destination, target_floor, ZoneManager):
-		# Success! Clear failure state
 		npc.failed_destination = ""
 		npc.pathfinding_retry_count = 0
-		npc.clear_path()
 		
 		npc.state.change_to(NPCState.Type.NAVIGATING, {
 			"destination": npc.active_entry.zone_name,
@@ -619,47 +608,16 @@ func _retry_pathfinding(npc: NPCSimulationState) -> void:
 		if first_waypoint:
 			_start_travel_to_waypoint(npc, first_waypoint)
 	else:
-		# Still failing, set cooldown for next retry
 		npc.navigation_cooldown = NAVIGATION_RETRY_DELAY
 
 
 func _update_navigation(npc: NPCSimulationState, delta: float) -> void:
-	# Check if NPC has an active visual instance that can handle its own navigation	
-	# === VISUAL INSTANCE NAVIGATION (uses NavigationAgent2D) ===
-	# Sync simulation position from visual instance
 	npc.current_position = npc.npc_instance.global_position
 	
 	var distance_to_target: float = npc.current_position.distance_to(npc.target_position)
 	if npc.npc_instance.navigation_agent_2d.is_navigation_finished() and distance_to_target <= WAYPOINT_ARRIVAL_DISTANCE and npc.is_moving_to_waypoint:
 		_handle_waypoint_arrival(npc)
 	return
-
-
-func _sync_visual_if_active(npc: NPCSimulationState) -> void:
-	"""Sync the visual instance position only if the NPC is on the currently active floor"""
-	if npc.npc_instance == null:
-		return
-	
-	# Only sync if on active floor and instance is actually visible/processing
-	if FloorManager and npc.current_floor == FloorManager.get_current_floor():
-		if npc.npc_instance.is_visible_in_tree():
-			npc.npc_instance.global_position = npc.current_position
-
-
-func _move_toward_position(npc: NPCSimulationState, target: Vector2, delta: float) -> void:
-	"""Helper: move NPC toward a specific position"""
-	var distance: float = npc.current_position.distance_to(target)
-	if distance < 0.1:
-		npc.current_position = target
-		return
-	
-	var direction: Vector2 = (target - npc.current_position).normalized()
-	var move_amount: float = npc.speed * delta
-	
-	if move_amount >= distance:
-		npc.current_position = target
-	else:
-		npc.current_position += direction * move_amount
 
 
 func _handle_waypoint_arrival(npc: NPCSimulationState) -> void:
@@ -675,21 +633,11 @@ func _handle_waypoint_arrival(npc: NPCSimulationState) -> void:
 		var target_floor: int = waypoint.metadata.get("target_floor", npc.current_floor)
 		var old_floor: int = npc.current_floor
 		
-		if npc.npc_instance != null and npc.npc_instance.navigation_agent_2d != null:
-			var nav_agent: NavigationAgent2D = npc.npc_instance.navigation_agent_2d
-			
-			# Turn on new floor nav layer and turn off old floor nav layer
-			nav_agent.set_navigation_layer_value(target_floor, true)
-			nav_agent.set_navigation_layer_value(old_floor, false)
-			
-			print("%s: Switching nav layers %d -> %d" % [npc.npc_name, old_floor, target_floor])
+		# REFACTORED: Switch to the new floor's navigation map
+		await _switch_npc_to_floor(npc, target_floor)
 		
-		npc.current_floor = target_floor
 		print("%s changed to floor %d" % [npc.npc_name, npc.current_floor])
-		FloorManager.debug_navigation_state(npc.current_floor)
-		
-		# CRITICAL: Wait for navigation to update after layer change
-		await _wait_for_navigation_update(npc)
+		emit_signal("npc_floor_changed", npc.npc_id, old_floor, target_floor)
 	
 	var next_waypoint: bool = npc.navigation.advance_waypoint()
 	
@@ -706,20 +654,49 @@ func _handle_waypoint_arrival(npc: NPCSimulationState) -> void:
 		npc.current_action_index = 0
 
 
+func _switch_npc_to_floor(npc: NPCSimulationState, target_floor: int) -> void:
+	"""
+	REFACTORED: Switch an NPC to a new floor's navigation map.
+	This is the core of the multi-map approach.
+	"""
+	var old_floor: int = npc.current_floor
+	
+	if npc.npc_instance != null and npc.npc_instance.navigation_agent_2d != null:
+		var nav_agent: NavigationAgent2D = npc.npc_instance.navigation_agent_2d
+		
+		# Get the new floor's navigation map
+		var new_map_rid: RID = FloorManager.get_navigation_map_for_floor(target_floor)
+		
+		if new_map_rid != RID():
+			# Switch the navigation agent to the new map
+			nav_agent.set_navigation_map(new_map_rid)
+			print("%s: Switched navigation map from floor %d to floor %d (map: %s)" % [
+				npc.npc_name, 
+				old_floor, 
+				target_floor,
+				new_map_rid
+			])
+		else:
+			push_error("%s: Failed to get navigation map for floor %d" % [npc.npc_name, target_floor])
+	
+	npc.current_floor = target_floor
+	
+	# Wait for navigation to update after map change
+	await _wait_for_navigation_update(npc)
+
+
 func _wait_for_navigation_update(npc: NPCSimulationState) -> void:
-	"""Wait for navigation agent to update after layer changes"""
-	# Wait for physics frames to allow NavigationServer to process changes
+	"""Wait for navigation agent to update after map changes"""
 	await get_tree().physics_frame
 	await get_tree().physics_frame
 	
-	# Force the navigation agent to clear its cached path
 	if npc.npc_instance != null and npc.npc_instance.navigation_agent_2d != null:
 		var nav_agent: NavigationAgent2D = npc.npc_instance.navigation_agent_2d
-		# Setting target position to current position forces path recalculation
 		nav_agent.target_position = npc.npc_instance.global_position
 		await get_tree().physics_frame
 	
 	print("%s: Navigation updated for floor %d" % [npc.npc_name, npc.current_floor])
+
 
 func _start_travel_to_waypoint(npc: NPCSimulationState, waypoint: NPCNavigation.NavWaypoint) -> void:
 	var distance: float = npc.current_position.distance_to(waypoint.position)
@@ -729,7 +706,6 @@ func _start_travel_to_waypoint(npc: NPCSimulationState, waypoint: NPCNavigation.
 	npc.last_waypoint_position = waypoint.position
 	npc.is_moving_to_waypoint = true
 	
-	# Ensure the visual instance's navigation agent gets the new target
 	if npc.npc_instance != null and npc.npc_instance.navigation_agent_2d != null:
 		npc.npc_instance.navigation_agent_2d.target_position = waypoint.position
 	
@@ -742,14 +718,10 @@ func _update_actions(npc: NPCSimulationState, delta: float) -> void:
 		npc.state.change_to(NPCState.Type.IDLE)
 		return
 	
-	# If we have a current action, check if it's still in progress
 	if npc.current_action != null:
-		# Emit progress signal for UI updates
 		emit_signal("npc_action_progress", npc.npc_id, npc.current_action, npc.current_action.get_progress())
 		
-		# Check if action duration is complete
 		if npc.current_action.is_duration_complete():
-			# Action finished!
 			npc.current_action.complete()
 			emit_signal("npc_action_completed", npc.npc_id, npc.current_action, true)
 			
@@ -770,14 +742,11 @@ func _update_actions(npc: NPCSimulationState, delta: float) -> void:
 			npc.current_action = null
 			npc.current_action_index += 1
 		else:
-			# Still waiting for action to complete
 			return
 	
-	# Start next action if available
 	if npc.current_action_index < npc.active_entry.actions.size():
 		var action: NPCAction = npc.active_entry.actions[npc.current_action_index]
 		
-		# FIX #9: Validate callback before executing
 		if not _is_action_callback_valid(action):
 			push_error("%s: Action callback invalid for '%s' - skipping" % [
 				npc.npc_name,
@@ -796,7 +765,6 @@ func _update_actions(npc: NPCSimulationState, delta: float) -> void:
 			npc.current_action_index += 1
 			return
 		
-		# Execute the action (this runs the callback and starts the timer)
 		var result: Dictionary = action.execute()
 		
 		if result.success:
@@ -810,7 +778,6 @@ func _update_actions(npc: NPCSimulationState, delta: float) -> void:
 					action.duration
 				])
 			else:
-				# Instant action - mark complete immediately
 				action.complete()
 				emit_signal("npc_action_completed", npc.npc_id, action, true)
 				print("%s completed instantly: %s" % [npc.npc_name, action.display_name])
@@ -826,7 +793,6 @@ func _update_actions(npc: NPCSimulationState, delta: float) -> void:
 				npc.current_action = null
 				npc.current_action_index += 1
 		else:
-			# Action failed to start
 			print("%s failed to start: %s (%s)" % [
 				npc.npc_name,
 				action.display_name,
@@ -845,7 +811,6 @@ func _update_actions(npc: NPCSimulationState, delta: float) -> void:
 			npc.current_action_index += 1
 	
 	else:
-		# All actions complete
 		var current_day: int = -1
 		if DayAndNightCycleManager:
 			var current_time: Dictionary = DayAndNightCycleManager.get_current_time()
@@ -859,7 +824,6 @@ func _update_actions(npc: NPCSimulationState, delta: float) -> void:
 
 
 func _is_action_callback_valid(action: NPCAction) -> bool:
-	"""Validate that action callback is valid and object exists"""
 	if not action.callback.is_valid():
 		return false
 	
@@ -867,7 +831,6 @@ func _is_action_callback_valid(action: NPCAction) -> bool:
 	if callback_object == null:
 		return false
 	
-	# Check if object has been freed
 	if not is_instance_valid(callback_object):
 		return false
 	
@@ -877,8 +840,7 @@ func _is_action_callback_valid(action: NPCAction) -> bool:
 func _on_time_tick(day: int, hour: int, minute: int) -> void:
 	var total_minute: int = hour * 60 + minute
 	
-	# Debug: Log time ticks for schedule debugging
-	if minute == 0:  # Log once per hour
+	if minute == 0:
 		print("[Schedule] Day %d, %02d:%02d - Checking schedules for %d NPCs" % [
 			day, hour, minute, simulated_npcs.size()
 		])
@@ -888,13 +850,9 @@ func _on_time_tick(day: int, hour: int, minute: int) -> void:
 
 
 func _check_schedule(npc: NPCSimulationState, current_minute: int, current_day: int = -1) -> void:
-	# FIX #1: Removed is_busy() check - now checks schedules even when idle
-	# This allows NPCs to pick up new schedule entries when they become idle
-	
 	for entry: ScheduleEntry in npc.schedule:
 		if entry.is_active(current_minute, current_day):
 			if npc.active_entry != entry:
-				# Only activate if not already busy with something else
 				if not npc.is_busy() or npc.active_entry == null:
 					print("[Schedule] %s: Activating entry '%s' at minute %d (day %d)" % [
 						npc.npc_name,
@@ -905,10 +863,9 @@ func _check_schedule(npc: NPCSimulationState, current_minute: int, current_day: 
 					_activate_schedule_entry(npc, entry)
 			return
 	
-	# Debug: Log if NPC is idle with no active schedule
 	if npc.is_idle() and npc.active_entry == null:
 		var next_entry: ScheduleEntry = _find_next_schedule_entry(npc, current_minute, current_day)
-		if next_entry and (current_minute % 60) == 0:  # Log once per hour
+		if next_entry and (current_minute % 60) == 0:
 			print("[Schedule] %s: Idle, next schedule '%s' at %s" % [
 				npc.npc_name,
 				next_entry.id,
@@ -917,12 +874,10 @@ func _check_schedule(npc: NPCSimulationState, current_minute: int, current_day: 
 
 
 func _find_next_schedule_entry(npc: NPCSimulationState, current_minute: int, current_day: int = -1) -> ScheduleEntry:
-	"""Find the next upcoming schedule entry for debugging purposes"""
 	var next_entry: ScheduleEntry = null
 	var smallest_diff: int = 9999
 	
 	for entry: ScheduleEntry in npc.schedule:
-		# Check if entry can become active (not completed or completed on different day)
 		var can_activate: bool = not entry.completed_today
 		if entry.completed_today and current_day != -1 and entry.completion_day != -1:
 			can_activate = current_day > entry.completion_day
@@ -946,13 +901,11 @@ func _activate_schedule_entry(npc: NPCSimulationState, entry: ScheduleEntry) -> 
 	
 	var target_floor: int = _get_zone_floor(entry.zone_name, npc)
 	
-	# Wait for target floor to be ready
 	if FloorManager and not FloorManager.is_floor_navigation_ready(target_floor):
 		print("%s waiting for floor %d navigation..." % [npc.npc_name, target_floor])
 		await FloorManager.wait_for_floor_ready(target_floor)
 	
 	if npc.navigation.set_destination(entry.zone_name, target_floor, ZoneManager):
-		# Clear any previous failure state
 		npc.failed_destination = ""
 		npc.pathfinding_retry_count = 0
 		
@@ -965,12 +918,10 @@ func _activate_schedule_entry(npc: NPCSimulationState, entry: ScheduleEntry) -> 
 		if first_waypoint:
 			_start_travel_to_waypoint(npc, first_waypoint)
 	else:
-		# FIX #14: Handle pathfinding failure with retry logic
 		push_error("Failed to plan route for %s to %s - will retry" % [npc.npc_name, entry.zone_name])
 		npc.failed_destination = entry.zone_name
 		npc.navigation_cooldown = NAVIGATION_RETRY_DELAY
 		npc.pathfinding_retry_count = 0
-		# Don't clear active_entry - we'll retry later
 
 
 func _get_zone_floor(zone_name: String, npc: NPCSimulationState) -> int:
@@ -985,11 +936,6 @@ func _get_zone_floor(zone_name: String, npc: NPCSimulationState) -> int:
 
 
 func reset_daily_schedules() -> void:
-	"""
-	Reset schedule completion flags for a new day.
-	IMPORTANT: Does NOT interrupt active schedules or actions.
-	Only resets entries that have finished or haven't started.
-	"""
 	print("[Schedule Reset] ===== RESETTING SCHEDULE FLAGS FOR NEW DAY =====")
 	
 	for npc_id: String in simulated_npcs:
@@ -1001,8 +947,6 @@ func reset_daily_schedules() -> void:
 		])
 		
 		for entry: ScheduleEntry in npc.schedule:
-			# CRITICAL: Don't reset if this is the currently active entry
-			# Let overnight/multi-day actions continue
 			if npc.active_entry == entry:
 				print("  - KEEPING '%s' - currently active (overnight/in-progress)" % entry.id)
 				continue
@@ -1015,10 +959,6 @@ func reset_daily_schedules() -> void:
 			else:
 				print("  - '%s' already reset" % entry.id)
 		
-		# DO NOT clear active_entry, current_action_index, or current_action
-		# DO NOT force state change to IDLE
-		# Let ongoing work continue naturally
-		
 		print("[Schedule Reset] %s: Current state: %s, Active entry: %s" % [
 			npc.npc_name,
 			npc.state.get_name(),
@@ -1027,7 +967,6 @@ func reset_daily_schedules() -> void:
 	
 	print("[Schedule Reset] ===== RESET COMPLETE (Active schedules preserved) =====")
 	
-	# Force immediate schedule check for idle NPCs only
 	if DayAndNightCycleManager:
 		var current_time: Dictionary = DayAndNightCycleManager.get_current_time()
 		var total_minute: int = current_time.hour * 60 + current_time.minute
@@ -1037,7 +976,6 @@ func reset_daily_schedules() -> void:
 		
 		for npc_id: String in simulated_npcs:
 			var npc: NPCSimulationState = simulated_npcs[npc_id]
-			# Only check schedule if NPC is actually idle and available
 			if npc.is_idle() and npc.active_entry == null:
 				_check_schedule(npc, total_minute, current_day)
 
@@ -1061,18 +999,14 @@ func debug_all_npcs() -> void:
 				npc.current_action.display_name,
 				npc.current_action.get_progress() * 100.0
 			]
-		var path_text: String = ""
-		if npc.has_path:
-			path_text = " [A* path: %d/%d]" % [npc.path_index, npc.path.size()]
-		print("%s - %s - Floor %d%s%s" % [
+		print("%s - %s - Floor %d%s" % [
 			npc.npc_name,
 			npc.state.get_name(),
 			npc.current_floor,
-			action_text,
-			path_text
+			action_text
 		])
 
-# Auto-save on important events
+
 func _notification(what: int) -> void:
 	if what == NOTIFICATION_WM_CLOSE_REQUEST:
 		save_npcs()
