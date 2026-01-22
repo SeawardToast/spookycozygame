@@ -37,7 +37,6 @@ func _unhandled_input(event: InputEvent) -> void:
 
 func start_game() -> void:
 	"""Called from menu Start Game button - initializes and starts the game"""
-	#SaveGameManager.reset_game()
 	if game_started:
 		print("GameManager: Resuming game")
 		get_tree().paused = false
@@ -104,7 +103,8 @@ func _initialize_game(level_root_ref: Node2D, player_ref: Node, camera_ref: Came
 	print("GameManager: All floors ready, loading save data...")
 	
 	# NOW load save data (including NPCs)
-	#SaveGameManager.load_game()
+	#SaveGameManager.reset_game()
+	SaveGameManager.load_game()
 	
 	# starter inventory items
 	InventoryManager._setup_starting_items()

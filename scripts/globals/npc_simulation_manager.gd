@@ -236,7 +236,6 @@ func load_npcs() -> bool:
 		return false
 	
 	var file: FileAccess = FileAccess.open(SAVE_PATH, FileAccess.READ)
-	
 	if file == null:
 		push_error("Failed to open NPC save file for reading: " + SAVE_PATH)
 		return false
@@ -246,42 +245,97 @@ func load_npcs() -> bool:
 	
 	var json: JSON = JSON.new()
 	var parse_result: Error = json.parse(json_string)
-	
 	if parse_result != OK:
 		push_error("Failed to parse NPC JSON: " + json.get_error_message())
 		return false
 	
 	var save_data: Dictionary = json.data
-	
 	if not save_data.has("npcs"):
 		push_error("Invalid NPC save data structure")
 		return false
 	
+	# Clear existing NPCs
 	for npc_id: String in simulated_npcs.keys():
 		despawn_npc(npc_id)
 	simulated_npcs.clear()
 	
+	# Restore ID counter
 	npc_id_counter = save_data.get("npc_id_counter", 0)
 	
+	# Wait for floors to be ready
 	if FloorManager:
 		await FloorManager.wait_for_all_floors_ready()
 	
+	# Spawn each NPC at their saved position
 	var npcs_data: Array = save_data["npcs"]
-	
-	for npc_data: Variant in npcs_data:
-		var npc_state: NPCSimulationState = _create_npc_state_from_dict(npc_data)
-		if npc_state:
-			simulated_npcs[npc_state.npc_id] = npc_state
-	
-	for npc_id: String in simulated_npcs:
+	for npc_data: Dictionary in npcs_data:
+		var npc_type: String = npc_data.get("npc_type", "")
+		if npc_type == "":
+			push_error("NPC save data missing npc_type")
+			continue
+		
+		# Get saved position
+		var pos_data: Dictionary = npc_data.get("current_position", {})
+		var saved_position: Vector2 = Vector2(pos_data.get("x", 0.0), pos_data.get("y", 0.0))
+		
+		# Spawn NPC at saved position (this handles everything including visual instance)
+		var npc_id: String = spawn_npc(npc_type, saved_position)
+		if npc_id == "":
+			push_error("Failed to spawn NPC of type: " + npc_type)
+			continue
+		
+		# Restore additional state
 		var npc_state: NPCSimulationState = simulated_npcs[npc_id]
-		_spawn_npc_instance.call_deferred(npc_state)
-	
-	await get_tree().process_frame
+		_restore_npc_state(npc_state, npc_data)
 	
 	print("NPCs loaded from: ", SAVE_PATH, " (", simulated_npcs.size(), " NPCs)")
 	npcs_loaded.emit()
 	return true
+
+
+func _restore_npc_state(npc: NPCSimulationState, data: Dictionary) -> void:
+	# Restore floor
+	npc.current_floor = data.get("current_floor", 1)
+	
+	# Restore schedule completion flags
+	var completed_entries: Array = data.get("completed_schedule_entries", [])
+	for entry in npc.schedule:
+		if entry.id in completed_entries:
+			entry.mark_complete(-1)
+	
+	# Restore active entry
+	var active_entry_id: String = data.get("active_entry_id", "")
+	if active_entry_id != "":
+		for entry in npc.schedule:
+			if entry.id == active_entry_id:
+				npc.active_entry = entry
+				break
+	
+	npc.current_action_index = data.get("current_action_index", 0)
+	
+	# Restore action progress if mid-action
+	if npc.active_entry and npc.current_action_index < npc.active_entry.actions.size():
+		var elapsed: float = data.get("action_elapsed_time", 0.0)
+		if elapsed > 0.0:
+			npc.current_action = npc.active_entry.actions[npc.current_action_index]
+			if npc.current_action.has_method("restore_elapsed_time"):
+				npc.current_action.restore_elapsed_time(elapsed)
+	
+	# Restore navigation state
+	var nav_data: Dictionary = data.get("navigation_data", {})
+	if not nav_data.is_empty():
+		npc.navigation.from_dict(nav_data)
+	
+	npc.is_moving_to_waypoint = data.get("is_moving_to_waypoint", false)
+	
+	var target_data: Dictionary = data.get("target_position", {})
+	if not target_data.is_empty():
+		npc.target_position = Vector2(target_data.get("x", 0.0), target_data.get("y", 0.0))
+	
+	# Restore state machine (do this last so signals fire with correct data)
+	var state_type: int = data.get("state_type", NPCState.Type.IDLE)
+	var state_context: Dictionary = data.get("state_data", {})
+	npc.state.change_to(state_type, state_context)
 
 
 func _create_npc_state_from_dict(data: Dictionary) -> NPCSimulationState:
@@ -402,62 +456,7 @@ func spawn_npc(npc_type: String, spawn_position: Vector2 = Vector2.ZERO) -> Stri
 	
 	print("Spawned NPC: %s (%s) at %s" % [state.npc_name, npc_type, start_pos])
 	return npc_id
-
-
-func _spawn_npc_instance(npc: NPCSimulationState) -> void:
-	"""Spawn the visual instance of an NPC in the world"""
-	if npc.npc_instance != null:
-		return
 	
-	var npc_definition: Variant = npc.behavior_data.get("definition")
-	if not npc_definition:
-		push_error("Cannot spawn NPC instance: missing definition for " + npc.npc_name)
-		return
-	
-	if not "npc_scene_path" in npc_definition or npc_definition.npc_scene_path == "":
-		push_error("Cannot spawn NPC instance: missing scene path for " + npc.npc_name)
-		return
-	
-	if FloorManager and not FloorManager.is_floor_navigation_ready(npc.current_floor):
-		await FloorManager.wait_for_floor_ready(npc.current_floor)
-	
-	var npc_scene: Resource = load(npc_definition.npc_scene_path)
-	if not npc_scene:
-		push_error("Failed to load NPC scene: " + npc_definition.npc_scene_path)
-		return
-	
-	var instance: Node = npc_scene.instantiate()
-	if not instance:
-		push_error("Failed to instantiate NPC scene")
-		return
-	
-	instance.global_position = npc.current_position
-	
-	var floor_container: Node2D = FloorManager.get_floor_npc_container(npc.current_floor)
-	if not floor_container:
-		push_error("No NPC container found for floor " + str(npc.current_floor))
-		instance.queue_free()
-		return
-	
-	floor_container.add_child(instance)
-	
-	# REFACTORED: Set the navigation agent to use the floor's dedicated map
-	if instance.has_node("NavigationAgent2D"):
-		var nav_agent: NavigationAgent2D = instance.get_node("NavigationAgent2D")
-		var floor_map_rid: RID = FloorManager.get_navigation_map_for_floor(npc.current_floor)
-		if floor_map_rid != RID():
-			nav_agent.set_navigation_map(floor_map_rid)
-			print("%s: Navigation agent set to floor %d map" % [npc.npc_name, npc.current_floor])
-	
-	npc.npc_instance = instance
-	
-	print("Spawned visual instance for: %s at %s on floor %d" % [
-		npc.npc_name,
-		npc.current_position,
-		npc.current_floor
-	])
-
-
 func despawn_npc(npc_id: String) -> void:
 	var state: NPCSimulationState = simulated_npcs.get(npc_id)
 	if state == null:
@@ -612,6 +611,8 @@ func _retry_pathfinding(npc: NPCSimulationState) -> void:
 
 
 func _update_navigation(npc: NPCSimulationState, delta: float) -> void:
+	if npc.npc_instance == null:
+		return
 	npc.current_position = npc.npc_instance.global_position
 	
 	var distance_to_target: float = npc.current_position.distance_to(npc.target_position)

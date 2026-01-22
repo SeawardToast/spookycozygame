@@ -1,3 +1,4 @@
+res://scenes/components/save_load
 res://assets/game/tilesets
 res://scenes
 res://scripts/globals
@@ -19,4 +20,3 @@ res://audio/music
 res://audio
 res://scenes/levels
 res://scenes/objects/chest
-res://assets/ui

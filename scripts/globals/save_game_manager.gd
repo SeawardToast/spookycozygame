@@ -26,9 +26,6 @@ func load_game() -> void:
 		
 func reset_game() -> void:
 	await get_tree().process_frame
-	var save_level_data_component: SaveLevelDataComponent = get_tree().get_first_node_in_group("save_level_data_component")
 	InventoryManager.reset_inventory()
 	DayAndNightCycleManager.reset_time()
 	NPCSimulationManager.reset_npcs()
-	if save_level_data_component != null:
-		save_level_data_component.load_game()

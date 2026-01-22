@@ -1,4 +1,4 @@
-[gd_scene load_steps=11 format=3 uid="uid://cp2wdp80pp18w"]
+[gd_scene load_steps=10 format=3 uid="uid://cp2wdp80pp18w"]
 
 [ext_resource type="Script" uid="uid://yutavu8mo0bj" path="res://scenes/objects/plants/corn.gd" id="1_hgaca"]
 [ext_resource type="Texture2D" uid="uid://ces4og4p3j8lw" path="res://assets/game/objects/basic_plants.png" id="1_hm4is"]
@@ -6,9 +6,8 @@
 [ext_resource type="PackedScene" uid="uid://blmeefima2bp5" path="res://scenes/objects/plants/flowering_particles.tscn" id="2_ofjf8"]
 [ext_resource type="PackedScene" uid="uid://d35nqmh1c0xnj" path="res://scenes/objects/plants/watering_particles.tscn" id="3_aphyd"]
 [ext_resource type="PackedScene" uid="uid://kkp3h0edbpq7" path="res://scenes/objects/plants/grow_cycle_component.tscn" id="5_q3ekf"]
-[ext_resource type="PackedScene" path="res://scenes/components/save_load/save_data_component.tscn" id="7_q3ekf"]
+[ext_resource type="PackedScene" uid="uid://ch0ildoohd3bq" path="res://scenes/components/save_data_component.tscn" id="7_q3ekf"]
 [ext_resource type="Resource" uid="uid://sbybiywmb8mp" path="res://resources/scene_data_resource.tres" id="8_310os"]
-[ext_resource type="Script" uid="uid://d1yejbdh76dh" path="res://scenes/components/save_load/save_data_component.gd" id="8_g345r"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_5ucl7"]
 size = Vector2(13.5, 9)
@@ -38,5 +37,4 @@ position = Vector2(0, 3)
 shape = SubResource("RectangleShape2D_5ucl7")
 
 [node name="SaveDataComponent" parent="." instance=ExtResource("7_q3ekf")]
-script = ExtResource("8_g345r")
 save_data_resource = ExtResource("8_310os")

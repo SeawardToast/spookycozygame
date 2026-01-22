@@ -1,4 +1,4 @@
-res://scenes/test/report_board/test_scene_report_board.tscn
+res://scenes/floors/Floor2.tscn
 res://scenes/ui/game_ui_theme.tres
 res://tilesets/large_house_tile_set.tres
 res://scenes/objects/tree/tree_shake.gdshader
@@ -7,10 +7,12 @@ res://assets/game/characters/sprites/girl_ghost_1/girl_ghost_1.tres
 res://assets/game/characters/sprites/vampires/vampire_1/vampire_1.tres
 res://scenes/objects/rocks/rock_shake.gdshader
 res://scenes/characters/guide/replace_color.gdshader
-res://scenes/floors/Floor3.tscn
-res://scenes/floors/Floor2.tscn
-res://scripts/globals/floor_manager.gd
-res://scenes/characters/base_npc/visual_npc.tscn
-res://scenes/characters/base_npc/visual_npc.gd
+res://dialogue/dialogue_balloon_theme.tres
+res://scenes/components/save_load/save_level_data_component.gd
+res://scenes/components/save_load/save_data_component.gd
+res://scenes/objects/plants/corn.tscn
+res://scenes/test/report_board/test_scene_report_board.tscn
+res://scripts/npc/main_hotel_scene_manager.gd
+res://scripts/globals/save_game_manager.gd
 res://scripts/globals/npc_simulation_manager.gd
-res://scenes/floors/Floor1.tscn
+res://scripts/globals/game_manager.gd

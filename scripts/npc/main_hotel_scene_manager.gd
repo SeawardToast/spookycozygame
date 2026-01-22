@@ -16,6 +16,8 @@ var spawned_visuals: Dictionary = {}  # Dictionary[String, Node2D]
 func _ready() -> void:
 	# Initialize game directly for testing
 	GameManager.initialize_game(level_root, player, camera_2d, starting_floor)
+	#call_deferred("load_saved_data")
+
 # --------------------------------------------
 # Debug Controls - Remove for production
 # --------------------------------------------
