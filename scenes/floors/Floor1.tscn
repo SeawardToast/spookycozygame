@@ -1,7 +1,9 @@
-[gd_scene load_steps=83 format=4 uid="uid://bie46hf1mi1bf"]
+[gd_scene load_steps=85 format=4 uid="uid://bie46hf1mi1bf"]
 
+[ext_resource type="PackedScene" uid="uid://bfg465jiv33x6" path="res://scenes/components/save_load/save_level_data_component.tscn" id="1_5hhxh"]
 [ext_resource type="Script" uid="uid://b6s08yav4lhwr" path="res://scripts/scene_helpers/zone_auto_register.gd" id="2_2d04r"]
 [ext_resource type="Texture2D" uid="uid://chnvtwwtkgskb" path="res://assets/game/tilesets/Water.png" id="2_5hhxh"]
+[ext_resource type="Script" uid="uid://bik3qyb7rs4vm" path="res://scenes/components/save_load/save_level_data_component.gd" id="2_50ht3"]
 [ext_resource type="PackedScene" uid="uid://d3wa7u06ykxxl" path="res://scenes/objects/movement/stairs.tscn" id="2_sv8ea"]
 [ext_resource type="Texture2D" uid="uid://c6p4eggyakn24" path="res://assets/game/tilesets/Grass.png" id="3_50ht3"]
 [ext_resource type="Texture2D" uid="uid://dobyosbrwkl46" path="res://assets/game/tilesets/dungeon2/decorative_cracks_floor.png" id="4_plc3k"]
@@ -5163,6 +5165,9 @@ sources/9 = SubResource("TileSetAtlasSource_pbrql")
 
 [node name="Floor1" type="Node2D" groups=["floor_scene"]]
 metadata/_edit_group_ = true
+
+[node name="SaveLevelDataComponent" parent="." instance=ExtResource("1_5hhxh")]
+script = ExtResource("2_50ht3")
 
 [node name="Zones" type="Node2D" parent="."]
 
