@@ -1,6 +1,7 @@
-[gd_scene load_steps=5 format=3 uid="uid://d0dhtip02w7f6"]
+[gd_scene load_steps=6 format=3 uid="uid://d0dhtip02w7f6"]
 
 [ext_resource type="Theme" uid="uid://ljcck66th0xd" path="res://scenes/ui/game_ui_theme.tres" id="1_e2vrk"]
+[ext_resource type="PackedScene" uid="uid://2v24415fmhrn" path="res://scenes/ui/chest_ui.tscn" id="2_0kkfd"]
 [ext_resource type="PackedScene" uid="uid://8qpho0ri8727" path="res://scenes/ui/day_and_night_panel.tscn" id="4_gkbp4"]
 [ext_resource type="PackedScene" uid="uid://wmrl8n368gpj" path="res://scenes/ui/report_board/report_board.tscn" id="5_0kkfd"]
 [ext_resource type="PackedScene" uid="uid://c2px04rprr7jf" path="res://scenes/ui/inventory.tscn" id="6_nwa5a"]
@@ -14,6 +15,8 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 theme = ExtResource("1_e2vrk")
+
+[node name="ChestUI" parent="MarginContainer" instance=ExtResource("2_0kkfd")]
 
 [node name="Inventory" parent="MarginContainer" instance=ExtResource("6_nwa5a")]
 

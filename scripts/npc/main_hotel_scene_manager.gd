@@ -1,6 +1,3 @@
-# MainHotelScene.gd - DEVELOPMENT ONLY
-# This script is ONLY used when testing individual scenes in the editor
-# Remove or disable this script for production builds
 extends Node2D
 
 @onready var level_root: Node2D = $GameRoot/LevelRoot
@@ -16,8 +13,6 @@ var spawned_visuals: Dictionary = {}  # Dictionary[String, Node2D]
 func _ready() -> void:
 	# Initialize game directly for testing
 	GameManager.initialize_game(level_root, player, camera_2d, starting_floor)
-	#call_deferred("load_saved_data")
-
 # --------------------------------------------
 # Debug Controls - Remove for production
 # --------------------------------------------
