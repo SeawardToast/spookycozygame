@@ -1,4 +1,4 @@
-res://scenes/objects/storage_chest/storage_chest.tscn
+res://scenes/test/main_test_scene.tscn
 res://scenes/ui/game_ui_theme.tres
 res://tilesets/large_house_tile_set.tres
 res://scenes/objects/tree/tree_shake.gdshader
@@ -8,9 +8,4 @@ res://assets/game/characters/sprites/vampires/vampire_1/vampire_1.tres
 res://dialogue/dialogue_balloon_theme.tres
 res://scenes/objects/rocks/rock_shake.gdshader
 res://scenes/characters/guide/replace_color.gdshader
-res://scenes/ui/chest_ui.tscn
-res://scenes/objects/storage_chest/storage_chest.gd
-res://scenes/test/main_test_scene.tscn
-res://scenes/ui/chest_ui.gd
-res://scripts/npc/main_hotel_scene_manager.gd
 res://scenes/ui/game_screen.tscn
