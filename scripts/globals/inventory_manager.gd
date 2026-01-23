@@ -8,15 +8,17 @@ var player_hotbar: InventoryData = null
 
 var selected_hotbar_slot_index: int = 0
 
+signal inventories_loaded()
+signal inventories_saved()
 signal hotbar_item_selected(item: Item)
 signal inventory_registered(inventory_id: String)
 signal inventory_unregistered(inventory_id: String)
+const SAVE_PATH: String = "user://inventories.json"
 
 
 func _ready() -> void:
 	_load_item_definitions()
 	_setup_player_inventories()
-
 
 func _load_item_definitions() -> void:
 	var items_path: String = "res://scenes/objects/interactable_items/"
@@ -254,7 +256,7 @@ func _add_to_inventory(inv: InventoryData, item_id: int, quantity: int, max_stac
 		var slot := inv.get_slot(i)
 		if slot.item_id == item_id and slot.quantity < max_stack:
 			var space: int = max_stack - slot.quantity
-			var to_add := mini(remaining, space)
+			var to_add: int = mini(remaining, space)
 			inv.set_slot(i, item_id, slot.quantity + to_add)
 			remaining -= to_add
 	
@@ -290,6 +292,118 @@ func consume_player_item(item_id: int, quantity: int = 1) -> bool:
 	
 	return true
 
+
+# --------------------------------------------
+# Save / Load
+# --------------------------------------------
+
+func save_all() -> bool:
+	var save_data: Dictionary = {
+		"selected_hotbar_slot_index": selected_hotbar_slot_index,
+		"inventories": {}
+	}
+	
+	for inventory_id: String in inventories:
+		var inventory: InventoryData = inventories[inventory_id]
+		save_data["inventories"][inventory_id] = inventory.to_dict()
+	
+	var json_string := JSON.stringify(save_data, "\t")
+	var file: FileAccess = FileAccess.open(SAVE_PATH, FileAccess.WRITE)
+	
+	if not file:
+		push_error("Failed to open save file: " + SAVE_PATH)
+		return false
+	
+	file.store_string(json_string)
+	file.close()
+	
+	inventories_saved.emit()
+	return true
+
+
+func load_all() -> bool:
+	if not FileAccess.file_exists(SAVE_PATH):
+		return false
+	
+	var file: FileAccess = FileAccess.open(SAVE_PATH, FileAccess.READ)
+	if not file:
+		push_error("Failed to open save file: " + SAVE_PATH)
+		return false
+	
+	var json_string := file.get_as_text()
+	file.close()
+	
+	var json: JSON = JSON.new()
+	if json.parse(json_string) != OK:
+		push_error("Failed to parse save file: " + json.get_error_message())
+		return false
+	
+	var save_data: Dictionary = json.data
+	
+	selected_hotbar_slot_index = save_data.get("selected_hotbar_slot_index", 0)
+	
+	var saved_inventories: Dictionary = save_data.get("inventories", {})
+	for inventory_id: String in saved_inventories:
+		var inventory: InventoryData = get_inventory(inventory_id)
+		if inventory:
+			inventory.from_dict(saved_inventories[inventory_id])
+	
+	inventories_loaded.emit()
+	return true
+
+
+func save_inventory(inventory_id: String) -> bool:
+	var inventory: InventoryData = get_inventory(inventory_id)
+	if not inventory:
+		return false
+	
+	var path: String = "user://inventory_%s.json" % inventory_id
+	var json_string: String= JSON.stringify(inventory.to_dict(), "\t")
+	var file: FileAccess = FileAccess.open(path, FileAccess.WRITE)
+	
+	if not file:
+		push_error("Failed to save inventory: " + inventory_id)
+		return false
+	
+	file.store_string(json_string)
+	file.close()
+	return true
+
+
+func load_inventory(inventory_id: String) -> bool:
+	var inventory: InventoryData = get_inventory(inventory_id)
+	if not inventory:
+		return false
+	
+	var path: String = "user://inventory_%s.json" % inventory_id
+	if not FileAccess.file_exists(path):
+		return false
+	
+	var file: FileAccess = FileAccess.open(path, FileAccess.READ)
+	if not file:
+		return false
+	
+	var json_string: String = file.get_as_text()
+	file.close()
+	
+	var json: JSON = JSON.new()
+	if json.parse(json_string) != OK:
+		return false
+	
+	inventory.from_dict(json.data)
+	return true
+
+
+func delete_save() -> bool:
+	if FileAccess.file_exists(SAVE_PATH):
+		DirAccess.remove_absolute(SAVE_PATH)
+		return true
+	return false
+
+
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_WM_CLOSE_REQUEST:
+		save_all()
 
 # --------------------------------------------
 # Input

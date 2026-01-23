@@ -10,6 +10,7 @@ func save_game() -> void:
 	var save_level_data_component: SaveLevelDataComponent = get_tree().get_first_node_in_group("save_level_data_component")
 	DayAndNightCycleManager.save_time()
 	NPCSimulationManager.save_npcs()
+	InventoryManager.save_all()
 	if save_level_data_component != null:
 		save_level_data_component.save_game()
 	print("Game saved")
@@ -19,6 +20,7 @@ func load_game() -> void:
 	var save_level_data_component: SaveLevelDataComponent = get_tree().get_first_node_in_group("save_level_data_component")
 	DayAndNightCycleManager.load_time()
 	NPCSimulationManager.load_npcs()
+	InventoryManager.load_all()
 	if save_level_data_component != null:
 		save_level_data_component.load_game()
 		

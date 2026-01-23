@@ -9,3 +9,7 @@ res://dialogue/dialogue_balloon_theme.tres
 res://scenes/objects/rocks/rock_shake.gdshader
 res://scenes/characters/guide/replace_color.gdshader
 res://scenes/ui/game_screen.tscn
+res://scripts/globals/inventory_manager.gd
+res://scripts/globals/save_game_manager.gd
+res://scripts/globals/game_manager.gd
+res://scenes/floors/Floor1.tscn
