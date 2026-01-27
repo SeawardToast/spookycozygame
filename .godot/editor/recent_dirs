@@ -1,7 +1,7 @@
+res://scripts/globals
 res://scenes/components/save_load
 res://assets/game/tilesets
 res://scenes
-res://scripts/globals
 res://assets/game/objects
 res://scenes/objects/interactable_items
 res://assets/game/tilesets/dungeon2
@@ -18,5 +18,4 @@ res://audio/sfx
 res://scenes/components
 res://audio/music
 res://audio
-res://scenes/levels
 res://scenes/objects/chest

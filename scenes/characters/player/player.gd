@@ -9,7 +9,6 @@ var player_direction: Vector2
 func _ready() -> void:
 	InventoryManager.hotbar_item_selected.connect(on_hotbar_item_selected)
 	
-	
 func on_hotbar_item_selected(item: Item) -> void:
 	if item == null:
 		current_item = null

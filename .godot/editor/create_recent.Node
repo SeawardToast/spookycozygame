@@ -1,7 +1,8 @@
+Node2D
+TileMapLayer
+CanvasLayer
 Label
 Node
-TileMapLayer
-Node2D
 Sprite2D
 MarginContainer
 Area2D
@@ -11,4 +12,3 @@ HBoxContainer
 VBoxContainer
 PanelContainer
 Control
-TextureRect
