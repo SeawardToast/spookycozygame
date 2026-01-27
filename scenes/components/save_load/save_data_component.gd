@@ -8,7 +8,6 @@ extends Node
 func _ready() -> void:
 	add_to_group("save_data_component")
 
-
 func _save_data() -> Resource:
 	if parent_node == null:
 		return null

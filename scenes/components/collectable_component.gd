@@ -12,9 +12,9 @@ func _on_body_entered(body: Node2D) -> void:
 		
 	if body is Player:
 		# Try to add item to inventory
-		var slot_index: int = InventoryManager.try_add_item(item_id, 1)
+		var slot_index: bool = InventoryManager.try_add_item_to_player(item_id, 1)
 		
-		if slot_index == -1:
+		if slot_index == false:
 			print("Inventory full! Cannot pick up ", item.display_name)
 			return
 		

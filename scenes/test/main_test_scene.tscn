@@ -1,0 +1,35 @@
+[gd_scene load_steps=7 format=3 uid="uid://p6bd81axrso8"]
+
+[ext_resource type="Script" uid="uid://dgm5knshx78wa" path="res://scripts/npc/main_hotel_scene_manager.gd" id="1_6vm10"]
+[ext_resource type="PackedScene" uid="uid://d0dhtip02w7f6" path="res://scenes/ui/game_screen.tscn" id="2_0ia0t"]
+[ext_resource type="Script" uid="uid://ca5tgsogyltll" path="res://scripts/camera/camera_controller.gd" id="3_kd5dn"]
+[ext_resource type="PackedScene" uid="uid://6fa2m4vt6287" path="res://scenes/characters/player/player.tscn" id="4_27wsr"]
+[ext_resource type="Script" uid="uid://c1uamwi6562u7" path="res://scripts/npc/visual_npc_spawner.gd" id="5_xx0dc"]
+[ext_resource type="Script" uid="uid://cbao8t4xipws4" path="res://scripts/scene_helpers/placeable_item_preview.gd" id="6_xqsx0"]
+
+[node name="MainScene" type="Node2D"]
+y_sort_enabled = true
+script = ExtResource("1_6vm10")
+metadata/_edit_group_ = true
+
+[node name="GameScreen" parent="." instance=ExtResource("2_0ia0t")]
+
+[node name="GameRoot" type="Node2D" parent="."]
+
+[node name="LevelRoot" type="Node2D" parent="GameRoot"]
+
+[node name="Camera2D" type="Camera2D" parent="GameRoot" node_paths=PackedStringArray("target")]
+position = Vector2(545, 178)
+zoom = Vector2(1.2, 1.2)
+script = ExtResource("3_kd5dn")
+target = NodePath("../Player")
+
+[node name="Player" parent="GameRoot" instance=ExtResource("4_27wsr")]
+position = Vector2(545, 178)
+
+[node name="VisualNpcSpawner" type="Node2D" parent="GameRoot" node_paths=PackedStringArray("player")]
+script = ExtResource("5_xx0dc")
+player = NodePath("../Player")
+
+[node name="PlaceableItemPreview" type="Sprite2D" parent="."]
+script = ExtResource("6_xqsx0")

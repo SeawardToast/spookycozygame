@@ -1,3 +1,8 @@
+# =============================================
+# VisualNPC.gd (REFACTORED)
+# =============================================
+# Visual representation of an NPC with navigation map switching per floor
+
 extends CharacterBody2D
 
 @onready var name_label: Label = $NameLabel
@@ -7,7 +12,6 @@ extends CharacterBody2D
 @export var navigation_agent_2d: NavigationAgent2D
 @export var use_navigation: bool = true
 
-# FIX #17: Extract magic numbers to named constants
 const WAYPOINT_ARRIVAL_DISTANCE: float = 6.0
 const VELOCITY_LERP_SPEED: float = 10.0
 const IDLE_POSITION_SYNC_SPEED: float = 3.0
@@ -17,7 +21,7 @@ const PERFORMING_ACTIONS_POSITION_SYNC_SPEED: float = 5.0
 var simulation_state: Variant = null
 var is_synced: bool = false
 var current_animation: String = ""
-var current_action_animation: String = ""  # Track specific action animation
+var current_action_animation: String = ""
 
 const SPRITE_LIBRARY: Dictionary[String, Resource] = {
 	"ghost": preload("res://assets/game/characters/sprites/girl_ghost_1/girl_ghost_1.tres"),
@@ -31,7 +35,6 @@ const STATE_ANIMATIONS: Dictionary = {
 	NPCState.Type.WAITING: "idle"
 }
 
-# Action-specific animations mapping (action_id -> animation_name)
 const ACTION_ANIMATIONS: Dictionary = {
 	"eat": "eat",
 	"read": "read",
@@ -41,6 +44,7 @@ const ACTION_ANIMATIONS: Dictionary = {
 	"read_books": "read",
 	"contemplate": "sit",
 }
+
 
 # =============================================================================
 # READY
@@ -63,21 +67,64 @@ func _ready() -> void:
 	
 	global_position = simulation_state.current_position
 	
+	# REFACTORED: Set up navigation agent with the correct floor's navigation map
 	if navigation_agent_2d and use_navigation:
 		navigation_agent_2d.target_desired_distance = 1
 		navigation_agent_2d.velocity_computed.connect(_on_navigation_velocity_computed)
-		navigation_agent_2d.set_navigation_layer_value(simulation_state.current_floor, true)
+		
+		# Set the navigation map for the current floor
+		_set_navigation_map_for_floor(simulation_state.current_floor)
 	
 	_connect_signals()
 	_sync_to_simulation_state()
 	
 	is_synced = true
 	
-	print("Visual NPC spawned: %s (%s) at %s" % [
+	print("Visual NPC spawned: %s (%s) at %s on floor %d" % [
 		simulation_state.npc_name,
 		simulation_state.npc_type,
-		global_position
+		global_position,
+		simulation_state.current_floor
 	])
+
+
+# =============================================================================
+# NAVIGATION MAP MANAGEMENT (REFACTORED)
+# =============================================================================
+
+func _set_navigation_map_for_floor(floor_number: int) -> void:
+	"""
+	REFACTORED: Set the navigation agent to use a specific floor's navigation map.
+	This is the key change from the layer-based approach.
+	"""
+	if navigation_agent_2d == null:
+		return
+	
+	var floor_map_rid: RID = FloorManager.get_navigation_map_for_floor(floor_number)
+	
+	if floor_map_rid != RID():
+		navigation_agent_2d.set_navigation_map(floor_map_rid)
+		print("Visual %s: Set navigation map to floor %d (map: %s)" % [
+			simulation_state.npc_name,
+			floor_number,
+			floor_map_rid
+		])
+	else:
+		push_error("Visual %s: Failed to get navigation map for floor %d" % [
+			simulation_state.npc_name,
+			floor_number
+		])
+
+
+func _on_npc_floor_changed(id: String, old_floor: int, new_floor: int) -> void:
+	"""Handle floor change by switching navigation maps"""
+	if id != npc_id:
+		return
+	
+	print("Visual %s: Floor changed %d -> %d" % [simulation_state.npc_name, old_floor, new_floor])
+	
+	# Switch to the new floor's navigation map
+	_set_navigation_map_for_floor(new_floor)
 
 
 # =============================================================================
@@ -91,6 +138,9 @@ func _connect_signals() -> void:
 	NPCSimulationManager.npc_action_started.connect(_on_npc_action_started)
 	NPCSimulationManager.npc_action_completed.connect(_on_npc_action_completed)
 	NPCSimulationManager.npc_action_progress.connect(_on_npc_action_progress)
+	
+	# REFACTORED: Connect to floor change signal
+	NPCSimulationManager.npc_floor_changed.connect(_on_npc_floor_changed)
 	
 	if simulation_state and simulation_state.state:
 		simulation_state.state.state_changed.connect(_on_simulation_state_changed)
@@ -126,14 +176,14 @@ func _sync_to_simulation_state() -> void:
 	global_position = simulation_state.current_position
 	_update_animation_for_state(simulation_state.state.type)
 	
-	# FIX #8: Restore action animation state when loading
 	if simulation_state.state.type == NPCState.Type.PERFORMING_ACTIONS and simulation_state.current_action:
 		_play_action_animation(simulation_state.current_action)
 	
 	if simulation_state.state.type == NPCState.Type.NAVIGATING:
 		if navigation_agent_2d and use_navigation:
+			# REFACTORED: Ensure we're on the correct navigation map
+			_set_navigation_map_for_floor(simulation_state.current_floor)
 			navigation_agent_2d.target_position = simulation_state.target_position
-			navigation_agent_2d.set_navigation_layer_value(simulation_state.current_floor, true)
 
 
 # =============================================================================
@@ -159,7 +209,6 @@ func _on_simulation_state_changed(old_state: int, new_state: int) -> void:
 			_play_animation("idle")
 		
 		NPCState.Type.PERFORMING_ACTIONS:
-			# Don't auto-play action animation here - wait for action_started signal
 			pass
 
 
@@ -167,14 +216,65 @@ func _on_npc_started_traveling(id: String, from_pos: Vector2, to_pos: Vector2, d
 	if id != npc_id:
 		return
 	
-	print("Visual %s: Starting travel to %s" % [simulation_state.npc_name, destination])
+	print("Visual %s: Starting travel to %s (floor %d)" % [
+		simulation_state.npc_name, 
+		destination,
+		simulation_state.current_floor
+	])
 	
 	if navigation_agent_2d and use_navigation:
+		# REFACTORED: Verify we're on the correct navigation map before pathfinding
+		_verify_navigation_map()
+		
 		navigation_agent_2d.target_position = to_pos
-		# Force the navigation agent to recalculate path
-		await get_tree().process_frame
+		
+		await get_tree().physics_frame
+		
+		if not navigation_agent_2d.is_target_reachable():
+			push_warning("Visual %s: Target %s not reachable on floor %d!" % [
+				simulation_state.npc_name,
+				to_pos,
+				simulation_state.current_floor
+			])
+			_debug_navigation_state()
 	
 	_play_animation("walk")
+
+
+func _verify_navigation_map() -> void:
+	"""
+	REFACTORED: Verify and correct the navigation map if needed.
+	This ensures the agent is always on the correct floor's map.
+	"""
+	if navigation_agent_2d == null or simulation_state == null:
+		return
+	
+	var expected_map: RID = FloorManager.get_navigation_map_for_floor(simulation_state.current_floor)
+	var current_map: RID = navigation_agent_2d.get_navigation_map()
+	
+	if current_map != expected_map:
+		push_warning("Visual %s: Navigation map mismatch! Correcting..." % simulation_state.npc_name)
+		navigation_agent_2d.set_navigation_map(expected_map)
+
+
+func _debug_navigation_state() -> void:
+	"""Debug helper to print navigation agent state"""
+	if navigation_agent_2d == null:
+		return
+	
+	var current_map: RID = navigation_agent_2d.get_navigation_map()
+	var expected_map: RID = FloorManager.get_navigation_map_for_floor(simulation_state.current_floor)
+	
+	print("=== Visual NPC Navigation Debug ===")
+	print("  NPC: %s" % simulation_state.npc_name)
+	print("  Floor: %d" % simulation_state.current_floor)
+	print("  Current Nav Map: %s" % current_map)
+	print("  Expected Nav Map: %s" % expected_map)
+	print("  Maps Match: %s" % (current_map == expected_map))
+	print("  Target Position: %s" % navigation_agent_2d.target_position)
+	print("  Target Reachable: %s" % navigation_agent_2d.is_target_reachable())
+	print("  Navigation Finished: %s" % navigation_agent_2d.is_navigation_finished())
+	print("===================================")
 
 
 func _on_npc_arrived_at_zone(id: String, zone_name: String, position: Vector2) -> void:
@@ -206,10 +306,7 @@ func _on_npc_action_started(id: String, action: NPCAction) -> void:
 		action.duration
 	])
 	
-	# Play action-specific animation
 	_play_action_animation(action)
-	
-	# Visual feedback for action start
 	_play_action_start_effect(action)
 
 
@@ -224,11 +321,8 @@ func _on_npc_action_completed(id: String, action: NPCAction, success: bool) -> v
 		print("Visual %s: Failed action: %s" % [simulation_state.npc_name, action.display_name])
 		_play_action_completion_effect(action, false)
 	
-	# Return to idle animation after action completes
 	current_action_animation = ""
 	
-	# If we're still in PERFORMING_ACTIONS state, stay in action pose
-	# Otherwise return to idle
 	if simulation_state.state.type != NPCState.Type.PERFORMING_ACTIONS:
 		_play_animation("idle")
 
@@ -237,8 +331,6 @@ func _on_npc_action_progress(id: String, action: NPCAction, progress: float) -> 
 	if id != npc_id:
 		return
 	
-	# Optional: Update visual feedback based on progress
-	# For example, could update a progress bar, particle effects, etc.
 	_update_action_visual_progress(action, progress)
 
 
@@ -258,7 +350,6 @@ func _play_animation(anim_name: String) -> void:
 	if animated_sprite_2d == null:
 		return
 	
-	# If we're currently playing an action animation, don't interrupt it
 	if current_action_animation != "" and anim_name != current_action_animation:
 		return
 	
@@ -277,29 +368,23 @@ func _play_action_animation(action: NPCAction) -> void:
 	if animated_sprite_2d == null:
 		return
 	
-	# Try action-specific animation first
 	var action_anim: String = ""
 	
-	# Check if we have a mapped animation for this action_id
 	if ACTION_ANIMATIONS.has(action.action_id):
 		action_anim = ACTION_ANIMATIONS[action.action_id]
 	else:
-		# Try "action_{action_id}" format
 		action_anim = "action_" + action.action_id
 	
-	# Check if the animation exists
 	if animated_sprite_2d.sprite_frames.has_animation(action_anim):
 		current_action_animation = action_anim
 		animated_sprite_2d.play(action_anim)
 		print("  Playing animation: %s" % action_anim)
 	else:
-		# Fallback to generic "action" animation
 		if animated_sprite_2d.sprite_frames.has_animation("action"):
 			current_action_animation = "action"
 			animated_sprite_2d.play("action")
 			print("  Playing fallback action animation")
 		else:
-			# Last resort: keep current animation
 			print("  No animation found for action: %s" % action.action_id)
 			current_action_animation = ""
 
@@ -317,23 +402,10 @@ func _update_sprite_direction() -> void:
 # =============================================================================
 
 func _play_action_start_effect(action: NPCAction) -> void:
-	"""Play visual/audio effects when action starts"""
-	# TODO: Add particles, sound effects, etc.
-	# Examples:
-	# - Eating: Show food particles
-	# - Reading: Show book open effect
-	# - Sleeping: Show ZZZ particles
-	# - Haunting: Show ghost trail
 	pass
 
 
 func _play_action_completion_effect(action: NPCAction, success: bool) -> void:
-	"""Play visual/audio effects when action completes"""
-	# TODO: Add completion effects
-	# Examples:
-	# - Success: Star particles, happy sound
-	# - Failure: Question mark icon, sad sound
-	
 	if success:
 		_flash_sprite(Color.GREEN, 0.2)
 	else:
@@ -341,28 +413,17 @@ func _play_action_completion_effect(action: NPCAction, success: bool) -> void:
 
 
 func _update_action_visual_progress(action: NPCAction, progress: float) -> void:
-	"""Update visuals based on action progress (0.0 to 1.0)"""
-	# TODO: Could update:
-	# - Progress bar above NPC
-	# - Particle intensity
-	# - Animation speed
-	# - Visual effects
-	
-	# Example: Modulate sprite based on action progress
 	if action.action_id == "sleep":
-		# Fade out as sleeping progresses
-		var alpha: float = 1.0 - (progress * 0.3)  # Fade to 70% opacity
+		var alpha: float = 1.0 - (progress * 0.3)
 		if animated_sprite_2d:
 			animated_sprite_2d.modulate.a = alpha
 	elif action.action_id == "haunt":
-		# Flicker effect during haunting
 		if animated_sprite_2d:
 			var flicker: float = 0.8 + (sin(progress * 20.0) * 0.2)
 			animated_sprite_2d.modulate.a = flicker
 
 
 func _flash_sprite(color: Color, duration: float) -> void:
-	"""Flash the sprite with a color"""
 	if animated_sprite_2d == null:
 		return
 	
@@ -410,7 +471,6 @@ func _update_navigation(delta: float) -> void:
 	else:
 		var distance: float = global_position.distance_to(simulation_state.target_position)
 		
-		# FIX #10: Use standardized arrival distance
 		if distance <= WAYPOINT_ARRIVAL_DISTANCE:
 			velocity = Vector2.ZERO
 			return
@@ -427,28 +487,21 @@ func _update_navigation(delta: float) -> void:
 
 
 func _update_idle(delta: float) -> void:
-	# FIX #17: Use named constant
 	velocity = velocity.lerp(Vector2.ZERO, delta * VELOCITY_LERP_SPEED)
 	
 	var dist: float = global_position.distance_to(simulation_state.current_position)
 	if dist > 1.0:
-		# FIX #17: Use named constant
 		global_position = global_position.lerp(simulation_state.current_position, delta * IDLE_POSITION_SYNC_SPEED)
 	
-	# Reset action animation modulations when idle
 	if animated_sprite_2d and animated_sprite_2d.modulate.a != 1.0:
-		# FIX #17: Use named constant
 		animated_sprite_2d.modulate.a = lerp(animated_sprite_2d.modulate.a, 1.0, delta * ACTION_ANIMATION_FADE_SPEED)
 
 
 func _update_performing_actions(delta: float) -> void:
 	velocity = Vector2.ZERO
 	
-	# Keep NPC stationary while performing actions
-	# Sync position to simulation state in case of drift
 	var dist: float = global_position.distance_to(simulation_state.current_position)
 	if dist > 1.0:
-		# FIX #17: Use named constant
 		global_position = global_position.lerp(simulation_state.current_position, delta * PERFORMING_ACTIONS_POSITION_SYNC_SPEED)
 
 
@@ -476,7 +529,6 @@ func get_current_state_name() -> String:
 
 
 func get_current_action_info() -> String:
-	"""Get info about current action being performed"""
 	if simulation_state and simulation_state.current_action:
 		var action: NPCAction = simulation_state.current_action
 		return "%s (%.0f%% complete, %.1fs remaining)" % [
@@ -487,8 +539,19 @@ func get_current_action_info() -> String:
 	return "None"
 
 
+func get_current_floor() -> int:
+	if simulation_state:
+		return simulation_state.current_floor
+	return 1
+
+
 func debug_info() -> String:
 	if simulation_state:
+		var nav_map_info: String = "N/A"
+		if navigation_agent_2d:
+			var current_map: RID = navigation_agent_2d.get_navigation_map()
+			nav_map_info = str(current_map)
+		
 		return """
 		Visual NPC: %s
 		Position: %s
@@ -498,6 +561,7 @@ func debug_info() -> String:
 		Current Action: %s
 		Simulation State: %s
 		Floor: %d
+		Navigation Map: %s
 		""" % [
 			simulation_state.npc_name,
 			global_position,
@@ -506,7 +570,8 @@ func debug_info() -> String:
 			current_action_animation if current_action_animation != "" else "None",
 			get_current_action_info(),
 			get_current_state_name(),
-			simulation_state.current_floor
+			simulation_state.current_floor,
+			nav_map_info
 		]
 	return "No simulation state"
 
@@ -522,6 +587,7 @@ func _exit_tree() -> void:
 	NPCSimulationManager.npc_action_started.disconnect(_on_npc_action_started)
 	NPCSimulationManager.npc_action_completed.disconnect(_on_npc_action_completed)
 	NPCSimulationManager.npc_action_progress.disconnect(_on_npc_action_progress)
+	NPCSimulationManager.npc_floor_changed.disconnect(_on_npc_floor_changed)
 	
 	if simulation_state and simulation_state.state:
 		simulation_state.state.state_changed.disconnect(_on_simulation_state_changed)

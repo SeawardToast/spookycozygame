@@ -1,8 +1,7 @@
-[gd_scene load_steps=5 format=3 uid="uid://bwmqnnkbbflat"]
+[gd_scene load_steps=4 format=3 uid="uid://bwmqnnkbbflat"]
 
 [ext_resource type="Texture2D" uid="uid://n0edou1klo15" path="res://assets/game/objects/Basic Plants.png" id="1_ru7wh"]
 [ext_resource type="PackedScene" uid="uid://bos4u6mri0agg" path="res://scenes/components/collectable_component.tscn" id="2_puqw6"]
-[ext_resource type="Resource" uid="uid://ddutignwnq4a3" path="res://scenes/objects/interactable_items/tomato_seed.tres" id="3_puqw6"]
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_56y6m"]
 radius = 4.0
@@ -14,8 +13,8 @@ vframes = 2
 frame = 11
 
 [node name="CollectableComponent" parent="." instance=ExtResource("2_puqw6")]
+scale = Vector2(1.6400003, 1.719999)
 collision_layer = 160
-item = ExtResource("3_puqw6")
 item_id = 3
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="CollectableComponent"]
