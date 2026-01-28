@@ -11,6 +11,7 @@ func save_game() -> void:
 	DayAndNightCycleManager.save_time()
 	NPCSimulationManager.save_npcs()
 	InventoryManager.save_all()
+	BuildingLayoutData.save_layout_data()  # Save building layout dictionaries
 	if save_level_data_component != null:
 		save_level_data_component.save_game()
 	print("Game saved")
@@ -23,6 +24,11 @@ func load_game() -> void:
 	InventoryManager.load_all()
 	if save_level_data_component != null:
 		save_level_data_component.load_game()
+
+	# Load building layout data (occupied cells dictionary)
+	await get_tree().process_frame  # Wait for loaded scenes to be ready
+	BuildingLayoutData.load_layout_data()
+	print("Building layout data loaded")
 		
 func reset_game() -> void:
 	await get_tree().process_frame

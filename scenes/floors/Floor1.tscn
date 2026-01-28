@@ -5227,4 +5227,4 @@ position = Vector2(381, 327)
 position = Vector2(530, 316)
 
 [node name="StorageChest2" parent="." instance=ExtResource("24_plc3k")]
-position = Vector2(530, 400)
+position = Vector2(472, 318)

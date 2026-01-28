@@ -22,6 +22,7 @@ var is_active: bool = false
 var ghost_instance: Node2D = null
 var ghost_valid: bool = false
 var current_grid_pos: Vector2i = Vector2i.ZERO
+var ghost_center_offset: Vector2 = Vector2.ZERO  # Offset to center ghost on cursor
 
 # Visual feedback
 var valid_color: Color = Color(0.2, 1.0, 0.2, 0.5)  # Green, semi-transparent
@@ -121,15 +122,17 @@ func _rotate_piece(direction: int) -> void:
 	"""Rotate the selected piece (direction: 1 for CW, -1 for CCW)"""
 	if selected_piece_id == "":
 		return
-	
+
 	current_rotation = (current_rotation + direction) % 4
 	if current_rotation < 0:
 		current_rotation += 4
-	
+
 	if ghost_instance:
 		ghost_instance.rotation_degrees = current_rotation * 90
+		# Recalculate center offset since rotation changes bounds
+		ghost_center_offset = _calculate_ghost_center_offset()
 		_update_ghost_validity()
-	
+
 	print("PlacementSystem: Rotation = %d" % current_rotation)
 
 
@@ -142,20 +145,24 @@ func _create_ghost() -> void:
 	var piece_data: BuildingPieceRegistry.PieceData = BuildingPieceRegistry.get_piece(selected_piece_id)
 	if not piece_data:
 		return
-	
+
 	var scene: PackedScene = load(piece_data.scene_path)
 	if not scene:
 		push_error("PlacementSystem: Failed to load scene: %s" % piece_data.scene_path)
 		return
-	
+
 	ghost_instance = scene.instantiate()
 	ghost_instance.rotation_degrees = current_rotation * 90
-	
+
 	# Make it a ghost (semi-transparent, no collision)
 	_apply_ghost_material(ghost_instance)
 	_disable_ghost_collision(ghost_instance)
-	
+
 	add_child(ghost_instance)
+
+	# Calculate center offset for this piece
+	ghost_center_offset = _calculate_ghost_center_offset()
+
 	_update_ghost_position()
 
 
@@ -171,12 +178,17 @@ func _update_ghost_position() -> void:
 	"""Update ghost position to follow mouse, snapped to grid"""
 	if not ghost_instance:
 		return
-	
+
 	var mouse_pos: Vector2 = get_global_mouse_position()
-	current_grid_pos = BuildingLayoutData.world_to_grid(mouse_pos)
-	var snapped_pos: Vector2 = BuildingLayoutData.grid_to_world(current_grid_pos)
-	
-	ghost_instance.global_position = snapped_pos
+
+	# Calculate the origin position that would center the ghost on the cursor
+	var origin_world_pos: Vector2 = mouse_pos - ghost_center_offset
+	current_grid_pos = BuildingLayoutData.world_to_grid(origin_world_pos)
+	var snapped_origin: Vector2 = BuildingLayoutData.grid_to_world(current_grid_pos)
+
+	# Position the ghost at the snapped origin
+	ghost_instance.global_position = snapped_origin
+
 	_update_ghost_validity()
 
 
@@ -186,7 +198,6 @@ func _update_ghost_validity() -> void:
 		return
 	
 	ghost_valid = BuildingLayoutData.can_place_at(selected_piece_id, current_grid_pos, current_rotation)
-	
 	var color: Color = valid_color if ghost_valid else invalid_color
 	_set_ghost_color(ghost_instance, color)
 
@@ -258,14 +269,14 @@ func _try_place_piece() -> void:
 	var instance: Node2D = scene.instantiate()
 	instance.position = BuildingLayoutData.grid_to_world(current_grid_pos)
 	instance.rotation_degrees = current_rotation * 90
-	
+
 	# Add to the current floor
 	var floor_node: Node2D = FloorManager.get_floor_node(FloorManager.current_floor)
 	if not floor_node:
 		placement_failed.emit("No floor node found")
 		instance.queue_free()
 		return
-	
+
 	# TODO
 	# Get or create a container for placed pieces
 	#var pieces_container: Node2D = floor_node.get_node_or_null("PlacedPieces")
@@ -273,9 +284,9 @@ func _try_place_piece() -> void:
 		#pieces_container = Node2D.new()
 		#pieces_container.name = "PlacedPieces"
 		#floor_node.add_child(pieces_container)
-	
+
 	floor_node.add_child(instance)
-	
+
 	# Register with LayoutData
 	if BuildingLayoutData.place_piece(selected_piece_id, current_grid_pos, current_rotation, instance):
 		placement_succeeded.emit(selected_piece_id, current_grid_pos)
@@ -344,6 +355,44 @@ func _handle_camera_pan(delta: float) -> void:
 # =============================================
 # UTILITY
 # =============================================
+
+func _calculate_ghost_center_offset() -> Vector2:
+	"""Calculate the offset needed to center the ghost on the cursor"""
+	if not ghost_instance:
+		return Vector2.ZERO
+
+	# Get TileMap cells from the ghost (without rotation applied yet, they're in local space)
+	var local_cells: Array[Vector2i] = BuildingLayoutData._get_tilemap_cells_from_instance(ghost_instance)
+
+	if local_cells.size() == 0:
+		# Fallback: use piece size if no TileMap found
+		var piece_data: BuildingPieceRegistry.PieceData = BuildingPieceRegistry.get_piece(selected_piece_id)
+		if piece_data:
+			var size: Vector2i = piece_data.size
+			# Adjust for rotation
+			if current_rotation == 1 or current_rotation == 3:
+				size = Vector2i(size.y, size.x)
+			return Vector2(size.x * cell_size / 2.0, size.y * cell_size / 2.0)
+		return Vector2.ZERO
+
+	# Calculate bounds of the cells
+	var min_x: int = local_cells[0].x
+	var max_x: int = local_cells[0].x
+	var min_y: int = local_cells[0].y
+	var max_y: int = local_cells[0].y
+
+	for cell: Vector2i in local_cells:
+		min_x = mini(min_x, cell.x)
+		max_x = maxi(max_x, cell.x)
+		min_y = mini(min_y, cell.y)
+		max_y = maxi(max_y, cell.y)
+
+	# Calculate center point in world coordinates
+	var center_x: float = (min_x + max_x + 1) * cell_size / 2.0
+	var center_y: float = (min_y + max_y + 1) * cell_size / 2.0
+
+	return Vector2(center_x, center_y)
+
 
 func get_current_grid_position() -> Vector2i:
 	return current_grid_pos
