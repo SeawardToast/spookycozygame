@@ -339,15 +339,33 @@ func load_all() -> bool:
 		return false
 	
 	var save_data: Dictionary = json.data
-	
+
 	selected_hotbar_slot_index = save_data.get("selected_hotbar_slot_index", 0)
-	
+
 	var saved_inventories: Dictionary = save_data.get("inventories", {})
 	for inventory_id: String in saved_inventories:
 		var inventory: InventoryData = get_inventory(inventory_id)
 		if inventory:
+			# Update existing inventory (player inventories)
 			inventory.from_dict(saved_inventories[inventory_id])
-	
+		else:
+			# Pre-create inventory from save data (chest inventories that haven't instantiated yet)
+			var inventory_data: Dictionary = saved_inventories[inventory_id]
+			var slots_data: Array = inventory_data.get("slots", [])
+
+			# Create a config with the correct slot count
+			var config := InventorySlotConfig.new()
+			config.total_slots = slots_data.size()
+			config.columns = 5  # Default for chests
+			config.display_name = "Storage"
+
+			# Create inventory with proper config (this initializes the slots array)
+			var new_inventory: InventoryData = InventoryData.new(inventory_id, config)
+			# Now populate it with saved data
+			new_inventory.from_dict(inventory_data)
+			register_inventory(new_inventory)
+			print("InventoryManager: Pre-loaded inventory from save: %s with %d slots" % [inventory_id, slots_data.size()])
+
 	inventories_loaded.emit()
 	return true
 

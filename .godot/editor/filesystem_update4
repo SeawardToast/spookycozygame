@@ -5,14 +5,9 @@ res://scenes/objects/tree/tree_shake.gdshader
 res://tilesets/game_tile_set.tres
 res://assets/game/characters/sprites/girl_ghost_1/girl_ghost_1.tres
 res://assets/game/characters/sprites/vampires/vampire_1/vampire_1.tres
-res://dialogue/dialogue_balloon_theme.tres
 res://scenes/objects/rocks/rock_shake.gdshader
 res://scenes/characters/guide/replace_color.gdshader
-res://scripts/globals/building_layout_data.gd
-res://scenes/components/placement_system.gd
-res://scripts/globals/save_game_manager.gd
 res://scenes/floors/Floor1.tscn
-res://scripts/globals/building_piece_registry.gd
-res://scripts/globals/data_types.gd
 res://scenes/objects/storage_chest/storage_chest.tscn
 res://scenes/objects/storage_chest/storage_chest.gd
+res://scripts/globals/inventory_manager.gd
