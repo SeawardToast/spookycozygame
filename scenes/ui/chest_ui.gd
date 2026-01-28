@@ -21,7 +21,6 @@ func _ready() -> void:
 	tooltip_label.hide()
 	_setup_player_slots()
 
-
 func _setup_player_slots() -> void:
 	for i in player_main_slots.get_child_count():
 		var slot: InventorySlot = player_main_slots.get_child(i)

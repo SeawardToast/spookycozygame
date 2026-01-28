@@ -23,13 +23,23 @@ func _ready() -> void:
 	main_inventory_texture_rect.hide()
 	tooltip_label.hide()
 	_setup_slots()
-	_render_all_slots()
-	_select_hotbar_slot(2)
-	
+
+	# Connect signals first
 	InventoryManager.player_inventory.slot_changed.connect(_on_main_slot_changed)
 	InventoryManager.player_hotbar.slot_changed.connect(_on_hotbar_slot_changed)
+	InventoryManager.inventories_loaded.connect(_on_inventories_loaded)
 	SignalBus.chest_opened.connect(_on_chest_opened)
 	SignalBus.chest_closed.connect(_on_chest_closed)
+
+	# Defer initial render to ensure InventoryManager is fully initialized
+	call_deferred("_initial_render")
+
+
+func _initial_render() -> void:
+	"""Initial render after InventoryManager is fully set up"""
+	_render_all_slots()
+	_select_hotbar_slot(2)
+	print("Inventory UI: Initial render complete")
 
 
 func _setup_slots() -> void:
@@ -307,6 +317,12 @@ func _on_slot_mouse_entered(slot: InventorySlot) -> void:
 func _on_slot_mouse_exited() -> void:
 	tooltip_label.hide()
 	
+func _on_inventories_loaded() -> void:
+	# Re-render all slots after loading saved data
+	_render_all_slots()
+	print("Inventory UI: Re-rendered all slots after inventory load")
+
+
 func _on_chest_opened() -> void:
 	hotbar_texture_rect.hide()
 
