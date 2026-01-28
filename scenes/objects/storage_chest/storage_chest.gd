@@ -7,6 +7,7 @@ class_name StorageChest
 
 var inventory_id: String = ""
 var chest_ui: ChestUI = null
+var persistent_id: String = ""  # Persistent ID for build mode chests
 
 @onready var interactable_component: InteractableComponent = $InteractableComponent
 @onready var animated_sprite_2d: AnimatedSprite2D = $AnimatedSprite2D
@@ -20,15 +21,28 @@ func _ready() -> void:
 	interactable_component.interactable_activated.connect(on_interactable_activated)
 	interactable_component.interactable_deactivated.connect(on_interactable_deactivated)
 	interactable_label_component.hide()
-	
-	inventory_id = "chest_" + str(get_instance_id())
+
+	# Check for pending custom_data from save system (for loaded chests)
+	if persistent_id == "":
+		var custom_data: Dictionary = BuildingLayoutData.get_and_clear_pending_custom_data(global_position)
+		if custom_data.has("persistent_id"):
+			persistent_id = custom_data["persistent_id"]
+
+	# Use persistent_id if set (from build mode or save), otherwise use instance ID
+	if persistent_id != "":
+		inventory_id = persistent_id
+	else:
+		inventory_id = "chest_" + str(get_instance_id())
 	
 	var config := SimpleStorageConfig.new()
 	config.total_slots = chest_size
 	config.columns = chest_columns
 	config.display_name = chest_name
 	
-	InventoryManager.create_inventory(inventory_id, config)
+	var chest_inventory: InventoryData = InventoryManager.get_inventory(inventory_id)
+	
+	if chest_inventory:
+		InventoryManager.create_inventory(inventory_id, config)
 	
 	chest_ui = get_tree().get_first_node_in_group("chest_ui") as ChestUI
 	if chest_ui:
@@ -74,6 +88,11 @@ func _close_chest() -> void:
 func _on_chest_ui_closed() -> void:
 	animated_sprite_2d.play("chest_close")
 	is_chest_open = false
+
+
+func set_persistent_id(id: String) -> void:
+	"""Set persistent ID before _ready() is called (used by build mode)"""
+	persistent_id = id
 
 
 func _exit_tree() -> void:

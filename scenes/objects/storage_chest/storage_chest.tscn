@@ -1,9 +1,11 @@
-[gd_scene load_steps=19 format=3 uid="uid://ca4i01gqecin"]
+[gd_scene load_steps=21 format=3 uid="uid://ca4i01gqecin"]
 
 [ext_resource type="Script" uid="uid://bj0ykkahmm4ih" path="res://scenes/objects/storage_chest/storage_chest.gd" id="1_gjee1"]
 [ext_resource type="Texture2D" uid="uid://uhfu606f3j2q" path="res://assets/game/objects/Chest.png" id="2_pa5n3"]
 [ext_resource type="PackedScene" uid="uid://basw62h85rk21" path="res://scenes/components/interactable_component.tscn" id="3_wsv5n"]
 [ext_resource type="PackedScene" uid="uid://bbkvroxuk3ta" path="res://scenes/components/interactable_label_component.tscn" id="4_plgrk"]
+[ext_resource type="PackedScene" uid="uid://ber0r841sem8q" path="res://scenes/components/save_load/save_data_component.tscn" id="5_fscpk"]
+[ext_resource type="Resource" uid="uid://sbybiywmb8mp" path="res://resources/scene_data_resource.tres" id="6_t5ghq"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_umtkn"]
 size = Vector2(13, 13)
@@ -131,3 +133,6 @@ offset_bottom = -13.0
 
 [node name="RewardMarker" type="Marker2D" parent="."]
 position = Vector2(17, 23)
+
+[node name="SaveDataComponent" parent="." instance=ExtResource("5_fscpk")]
+save_data_resource = ExtResource("6_t5ghq")

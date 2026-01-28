@@ -22,13 +22,14 @@ func load_game() -> void:
 	DayAndNightCycleManager.load_time()
 	NPCSimulationManager.load_npcs()
 	InventoryManager.load_all()
-	if save_level_data_component != null:
-		save_level_data_component.load_game()
 
-	# Load building layout data (occupied cells dictionary)
-	await get_tree().process_frame  # Wait for loaded scenes to be ready
+	# Load building layout data FIRST (so pending_custom_data is available)
 	BuildingLayoutData.load_layout_data()
 	print("Building layout data loaded")
+
+	# Then load scene instances (chests will get pending_custom_data in _ready())
+	if save_level_data_component != null:
+		save_level_data_component.load_game()
 		
 func reset_game() -> void:
 	await get_tree().process_frame

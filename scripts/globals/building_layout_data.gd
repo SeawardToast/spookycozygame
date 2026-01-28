@@ -15,6 +15,9 @@ var furniture_pieces: Dictionary = {}      # grid_pos -> PlacedPiece (FURNITURE 
 var construction_cells: Dictionary = {}    # grid_pos -> origin_grid_pos
 var furniture_cells: Dictionary = {}       # grid_pos -> origin_grid_pos
 
+# Pending custom_data for loaded pieces (used during load)
+var pending_custom_data: Dictionary = {}  # grid_pos -> custom_data
+
 class PlacedPiece:
 	var piece_id: String
 	var grid_pos: Vector2i  # Origin position
@@ -22,14 +25,16 @@ class PlacedPiece:
 	var instance: Node2D  # Scene instance
 	var occupied_cells: Array[Vector2i]  # All cells this piece occupies
 	var building_type: DataTypes.BuildingType  # CONSTRUCTION or FURNITURE
+	var custom_data: Dictionary = {}  # Piece-specific data (e.g., chest inventory IDs)
 
-	func _init(p_id: String, p_pos: Vector2i, p_rot: int, p_instance: Node2D, p_cells: Array[Vector2i], p_type: DataTypes.BuildingType) -> void:
+	func _init(p_id: String, p_pos: Vector2i, p_rot: int, p_instance: Node2D, p_cells: Array[Vector2i], p_type: DataTypes.BuildingType, p_custom_data: Dictionary = {}) -> void:
 		piece_id = p_id
 		grid_pos = p_pos
 		rotation = p_rot
 		instance = p_instance
 		occupied_cells = p_cells
 		building_type = p_type
+		custom_data = p_custom_data
 
 func _ready() -> void:
 	pass
@@ -65,10 +70,22 @@ func place_piece(piece_id: String, grid_pos: Vector2i, rotation: int, instance: 
 		push_warning("LayoutData: Cannot place %s at %s" % [piece_id, grid_pos])
 		return false
 
-	# Create PlacedPiece with type
+	# Generate custom_data for special pieces
+	var custom_data: Dictionary = {}
+
+	# Generate persistent ID for chests
+	if piece_id == "furniture_chest":
+		var persistent_id: String = "chest_%d_%d" % [grid_pos.x, grid_pos.y]
+		custom_data["persistent_id"] = persistent_id
+
+		# Set persistent_id on the chest instance if it has the method
+		if instance.has_method("set_persistent_id"):
+			instance.set_persistent_id(persistent_id)
+
+	# Create PlacedPiece with type and custom data
 	var placed: PlacedPiece = PlacedPiece.new(
 		piece_id, grid_pos, rotation, instance, cells,
-		piece_data.building_type
+		piece_data.building_type, custom_data
 	)
 
 	# Route to correct layer
@@ -461,7 +478,8 @@ func get_save_data() -> Dictionary:
 			"grid_pos": {"x": placed.grid_pos.x, "y": placed.grid_pos.y},
 			"rotation": placed.rotation,
 			"occupied_cells": _serialize_vector2i_array(placed.occupied_cells),
-			"building_type": placed.building_type
+			"building_type": placed.building_type,
+			"custom_data": placed.custom_data
 		}
 		data["construction_pieces"].append(piece_dict)
 
@@ -472,7 +490,8 @@ func get_save_data() -> Dictionary:
 			"grid_pos": {"x": placed.grid_pos.x, "y": placed.grid_pos.y},
 			"rotation": placed.rotation,
 			"occupied_cells": _serialize_vector2i_array(placed.occupied_cells),
-			"building_type": placed.building_type
+			"building_type": placed.building_type,
+			"custom_data": placed.custom_data
 		}
 		data["furniture_pieces"].append(piece_dict)
 
@@ -503,6 +522,7 @@ func load_save_data(data: Dictionary) -> void:
 	furniture_pieces.clear()
 	construction_cells.clear()
 	furniture_cells.clear()
+	pending_custom_data.clear()
 
 	# Load construction pieces
 	if data.has("construction_pieces"):
@@ -513,6 +533,10 @@ func load_save_data(data: Dictionary) -> void:
 			for cell: Vector2i in cells:
 				construction_cells[cell] = grid_pos
 
+			# Store custom_data for later application
+			if piece_dict.has("custom_data") and not piece_dict["custom_data"].is_empty():
+				pending_custom_data[grid_pos] = piece_dict["custom_data"]
+
 	# Load furniture pieces
 	if data.has("furniture_pieces"):
 		for piece_dict: Dictionary in data["furniture_pieces"]:
@@ -522,5 +546,20 @@ func load_save_data(data: Dictionary) -> void:
 			for cell: Vector2i in cells:
 				furniture_cells[cell] = grid_pos
 
-	print("LayoutData: Loaded %d construction cells, %d furniture cells" %
-		  [construction_cells.size(), furniture_cells.size()])
+			# Store custom_data for later application
+			if piece_dict.has("custom_data") and not piece_dict["custom_data"].is_empty():
+				pending_custom_data[grid_pos] = piece_dict["custom_data"]
+
+	print("LayoutData: Loaded %d construction cells, %d furniture cells, %d pending custom_data" %
+		  [construction_cells.size(), furniture_cells.size(), pending_custom_data.size()])
+
+
+func get_and_clear_pending_custom_data(world_pos: Vector2) -> Dictionary:
+	"""Get custom_data for a piece at world position (used during load).
+	Clears the data after retrieval so it's only used once."""
+	var grid_pos: Vector2i = world_to_grid(world_pos)
+	if grid_pos in pending_custom_data:
+		var data: Dictionary = pending_custom_data[grid_pos]
+		pending_custom_data.erase(grid_pos)
+		return data
+	return {}

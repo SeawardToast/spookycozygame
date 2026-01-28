@@ -14,3 +14,5 @@ res://scripts/globals/save_game_manager.gd
 res://scenes/floors/Floor1.tscn
 res://scripts/globals/building_piece_registry.gd
 res://scripts/globals/data_types.gd
+res://scenes/objects/storage_chest/storage_chest.tscn
+res://scenes/objects/storage_chest/storage_chest.gd

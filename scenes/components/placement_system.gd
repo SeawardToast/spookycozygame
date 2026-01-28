@@ -158,6 +158,9 @@ func _create_ghost() -> void:
 	_apply_ghost_material(ghost_instance)
 	_disable_ghost_collision(ghost_instance)
 
+	# Set high z_index so ghost renders on top of placed pieces
+	ghost_instance.z_index = 100
+
 	add_child(ghost_instance)
 
 	# Calculate center offset for this piece
@@ -284,6 +287,12 @@ func _try_place_piece() -> void:
 		#pieces_container = Node2D.new()
 		#pieces_container.name = "PlacedPieces"
 		#floor_node.add_child(pieces_container)
+
+	# Set persistent_id BEFORE add_child() so it's available in _ready()
+	if selected_piece_id == "furniture_chest":
+		var persistent_id: String = "chest_%d_%d" % [current_grid_pos.x, current_grid_pos.y]
+		if instance.has_method("set_persistent_id"):
+			instance.set_persistent_id(persistent_id)
 
 	floor_node.add_child(instance)
 

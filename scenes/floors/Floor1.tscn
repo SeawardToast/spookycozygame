@@ -1,4 +1,4 @@
-[gd_scene load_steps=86 format=4 uid="uid://bie46hf1mi1bf"]
+[gd_scene load_steps=85 format=4 uid="uid://bie46hf1mi1bf"]
 
 [ext_resource type="PackedScene" uid="uid://bfg465jiv33x6" path="res://scenes/components/save_load/save_level_data_component.tscn" id="1_5hhxh"]
 [ext_resource type="Script" uid="uid://b6s08yav4lhwr" path="res://scripts/scene_helpers/zone_auto_register.gd" id="2_2d04r"]
@@ -23,7 +23,6 @@
 [ext_resource type="Texture2D" uid="uid://byp3nryxm6bdg" path="res://assets/game/tilesets/haunted_house_tileset.png" id="14_rpatp"]
 [ext_resource type="Texture2D" uid="uid://cnymmcpehy0pq" path="res://assets/game/tilesets/dungeon/Dungeon_Tileset.png" id="15_4mhty"]
 [ext_resource type="Texture2D" uid="uid://cc44hc253vg6p" path="res://assets/game/tilesets/interior_tile.png" id="16_ekkrr"]
-[ext_resource type="PackedScene" uid="uid://ca4i01gqecin" path="res://scenes/objects/storage_chest/storage_chest.tscn" id="24_plc3k"]
 
 [sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_og3a8"]
 texture = ExtResource("2_5hhxh")
@@ -5222,9 +5221,3 @@ position = Vector2(345, 325)
 
 [node name="CornHarvest" parent="." instance=ExtResource("7_13n10")]
 position = Vector2(381, 327)
-
-[node name="StorageChest" parent="." instance=ExtResource("24_plc3k")]
-position = Vector2(530, 316)
-
-[node name="StorageChest2" parent="." instance=ExtResource("24_plc3k")]
-position = Vector2(472, 318)
