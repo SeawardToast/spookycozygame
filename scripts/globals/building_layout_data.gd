@@ -9,11 +9,11 @@ signal piece_removed(grid_pos: Vector2i, piece_id: String)
 # Grid cell size in pixels (adjust to match your tile size)
 @export var cell_size: int = 16
 
-# Placed pieces: grid_pos -> PlacedPiece data
-var placed_pieces: Dictionary = {}
-
-# Spatial lookup: which cells are occupied and by what
-var occupied_cells: Dictionary = {}  # grid_pos -> origin_grid_pos (for multi-cell pieces)
+# Layer-separated placement tracking
+var construction_pieces: Dictionary = {}   # grid_pos -> PlacedPiece (CONSTRUCTION type)
+var furniture_pieces: Dictionary = {}      # grid_pos -> PlacedPiece (FURNITURE type)
+var construction_cells: Dictionary = {}    # grid_pos -> origin_grid_pos
+var furniture_cells: Dictionary = {}       # grid_pos -> origin_grid_pos
 
 class PlacedPiece:
 	var piece_id: String
@@ -21,13 +21,15 @@ class PlacedPiece:
 	var rotation: int  # 0-3
 	var instance: Node2D  # Scene instance
 	var occupied_cells: Array[Vector2i]  # All cells this piece occupies
-	
-	func _init(p_id: String, p_pos: Vector2i, p_rot: int, p_instance: Node2D, p_cells: Array[Vector2i]) -> void:
+	var building_type: DataTypes.BuildingType  # CONSTRUCTION or FURNITURE
+
+	func _init(p_id: String, p_pos: Vector2i, p_rot: int, p_instance: Node2D, p_cells: Array[Vector2i], p_type: DataTypes.BuildingType) -> void:
 		piece_id = p_id
 		grid_pos = p_pos
 		rotation = p_rot
 		instance = p_instance
 		occupied_cells = p_cells
+		building_type = p_type
 
 func _ready() -> void:
 	pass
@@ -58,54 +60,113 @@ func place_piece(piece_id: String, grid_pos: Vector2i, rotation: int, instance: 
 		cells = _get_occupied_cells(grid_pos, piece_data.size, rotation)
 		print("LayoutData: Using size-based cells for %s (no TileMap found)" % piece_id)
 
-	# Check if any cells are already occupied
-	for cell: Vector2i in cells:
-		if is_cell_occupied(cell):
-			push_warning("LayoutData: Cell %s is already occupied" % cell)
-			return false
+	# Validate
+	if not can_place_at(piece_id, grid_pos, rotation):
+		push_warning("LayoutData: Cannot place %s at %s" % [piece_id, grid_pos])
+		return false
 
-	# Place the piece
-	var placed: PlacedPiece = PlacedPiece.new(piece_id, grid_pos, rotation, instance, cells)
-	placed_pieces[grid_pos] = placed
+	# Create PlacedPiece with type
+	var placed: PlacedPiece = PlacedPiece.new(
+		piece_id, grid_pos, rotation, instance, cells,
+		piece_data.building_type
+	)
 
-	# Mark all cells as occupied
-	for cell: Vector2i in cells:
-		occupied_cells[cell] = grid_pos  # Points back to origin
+	# Route to correct layer
+	match piece_data.building_type:
+		DataTypes.BuildingType.CONSTRUCTION:
+			construction_pieces[grid_pos] = placed
+			for cell: Vector2i in cells:
+				construction_cells[cell] = grid_pos
+
+		DataTypes.BuildingType.FURNITURE:
+			furniture_pieces[grid_pos] = placed
+			for cell: Vector2i in cells:
+				furniture_cells[cell] = grid_pos
 
 	piece_added.emit(grid_pos, piece_id)
 	layout_changed.emit(grid_pos)
 
-	print("LayoutData: Placed %s at %s (rotation: %d) occupying %d cells" % [piece_id, grid_pos, rotation, cells.size()])
+	print("LayoutData: Placed %s at %s (type: %d, rotation: %d) occupying %d cells" %
+		  [piece_id, grid_pos, piece_data.building_type, rotation, cells.size()])
 	return true
 
 func remove_piece(grid_pos: Vector2i) -> bool:
-	"""Remove a piece at the given grid position (or the piece that occupies that cell)"""
-	# If this cell is occupied but not an origin, find the origin
+	"""Remove piece at position - defaults to top layer (furniture first)"""
+	# Check furniture layer first
+	if grid_pos in furniture_cells:
+		return remove_furniture_at(grid_pos)
+	# Fall back to construction layer
+	elif grid_pos in construction_cells:
+		return remove_construction_at(grid_pos)
+	return false
+
+
+func remove_furniture_at(grid_pos: Vector2i) -> bool:
+	"""Explicitly remove furniture at position"""
 	var origin_pos: Vector2i = grid_pos
-	if grid_pos in occupied_cells:
-		origin_pos = occupied_cells[grid_pos]
-	
-	if origin_pos not in placed_pieces:
+	if grid_pos in furniture_cells:
+		origin_pos = furniture_cells[grid_pos]
+
+	if origin_pos not in furniture_pieces:
 		return false
-	
-	var placed: PlacedPiece = placed_pieces[origin_pos]
+
+	var placed: PlacedPiece = furniture_pieces[origin_pos]
 	var piece_id: String = placed.piece_id
-	
-	# Free the instance
+
+	# Free instance
 	if placed.instance and is_instance_valid(placed.instance):
 		placed.instance.queue_free()
-	
-	# Clear all occupied cells
+
+	# Clear furniture layer cells
 	for cell: Vector2i in placed.occupied_cells:
-		occupied_cells.erase(cell)
-	
-	# Remove from placed pieces
-	placed_pieces.erase(origin_pos)
-	
+		furniture_cells.erase(cell)
+
+	furniture_pieces.erase(origin_pos)
+
 	piece_removed.emit(origin_pos, piece_id)
 	layout_changed.emit(origin_pos)
-	
-	print("LayoutData: Removed %s from %s" % [piece_id, origin_pos])
+
+	print("LayoutData: Removed furniture %s from %s" % [piece_id, origin_pos])
+	return true
+
+
+func remove_construction_at(grid_pos: Vector2i) -> bool:
+	"""Explicitly remove construction at position"""
+	var origin_pos: Vector2i = grid_pos
+	if grid_pos in construction_cells:
+		origin_pos = construction_cells[grid_pos]
+
+	if origin_pos not in construction_pieces:
+		return false
+
+	var placed: PlacedPiece = construction_pieces[origin_pos]
+	var piece_id: String = placed.piece_id
+
+	# Check if furniture exists on top - prevent deletion
+	var has_furniture_on_top: bool = false
+	for cell: Vector2i in placed.occupied_cells:
+		if is_furniture_at(cell):
+			has_furniture_on_top = true
+			break
+
+	if has_furniture_on_top:
+		push_warning("Cannot remove construction with furniture on top at %s" % origin_pos)
+		return false
+
+	# Free instance
+	if placed.instance and is_instance_valid(placed.instance):
+		placed.instance.queue_free()
+
+	# Clear construction layer cells
+	for cell: Vector2i in placed.occupied_cells:
+		construction_cells.erase(cell)
+
+	construction_pieces.erase(origin_pos)
+
+	piece_removed.emit(origin_pos, piece_id)
+	layout_changed.emit(origin_pos)
+
+	print("LayoutData: Removed construction %s from %s" % [piece_id, origin_pos])
 	return true
 
 # =============================================
@@ -113,14 +174,38 @@ func remove_piece(grid_pos: Vector2i) -> bool:
 # =============================================
 
 func is_cell_occupied(grid_pos: Vector2i) -> bool:
-	return grid_pos in occupied_cells
+	return is_construction_at(grid_pos) or is_furniture_at(grid_pos)
 
 
 func get_piece_at(grid_pos: Vector2i) -> PlacedPiece:
-	"""Get the piece at a grid position (or null if empty)"""
-	if grid_pos in occupied_cells:
-		var origin: Vector2i = occupied_cells[grid_pos]
-		return placed_pieces.get(origin)
+	"""Get the piece at a grid position - returns furniture if present, otherwise construction"""
+	# Check furniture layer first (top layer)
+	var furniture: PlacedPiece = get_furniture_at(grid_pos)
+	if furniture:
+		return furniture
+	# Fall back to construction layer
+	return get_construction_at(grid_pos)
+
+
+func is_construction_at(grid_pos: Vector2i) -> bool:
+	return grid_pos in construction_cells
+
+
+func is_furniture_at(grid_pos: Vector2i) -> bool:
+	return grid_pos in furniture_cells
+
+
+func get_construction_at(grid_pos: Vector2i) -> PlacedPiece:
+	if grid_pos in construction_cells:
+		var origin: Vector2i = construction_cells[grid_pos]
+		return construction_pieces.get(origin)
+	return null
+
+
+func get_furniture_at(grid_pos: Vector2i) -> PlacedPiece:
+	if grid_pos in furniture_cells:
+		var origin: Vector2i = furniture_cells[grid_pos]
+		return furniture_pieces.get(origin)
 	return null
 
 func get_openings_at(grid_pos: Vector2i) -> Array[Vector2i]:
@@ -208,22 +293,28 @@ func can_place_at(piece_id: String, grid_pos: Vector2i, rotation: int) -> bool:
 		# If scene fails to load, use fallback
 		cells = _get_occupied_cells(grid_pos, piece_data.size, rotation)
 
-	# Check if all required cells are free
-	for cell: Vector2i in cells:
-		if is_cell_occupied(cell):
-			return false
+	# Type-specific validation
+	match piece_data.building_type:
+		DataTypes.BuildingType.CONSTRUCTION:
+			# Constructions cannot overlap with other constructions
+			for cell: Vector2i in cells:
+				if is_construction_at(cell):
+					return false
+			return true
 
-	# For now, allow placement anywhere that's free
-	# You can add connection validation here later:
-	# - Check that at least one opening connects to an existing piece
-	# - Or allow "starting" pieces with no connections
+		DataTypes.BuildingType.FURNITURE:
+			# Furniture requires construction underneath AND no other furniture
+			for cell: Vector2i in cells:
+				if not is_construction_at(cell):
+					return false  # Must have construction base
+				if is_furniture_at(cell):
+					return false  # Cannot stack furniture
+			return true
 
-	return true
+	return false  # Unknown type
 
 func would_connect(piece_id: String, grid_pos: Vector2i, rotation: int) -> bool:
 	"""Check if placing this piece would connect to at least one existing piece"""
-	if placed_pieces.is_empty():
-		return true  # First piece can go anywhere
 	
 	var openings: Array[Vector2i] = BuildingPieceRegistry.get_rotated_openings(piece_id, rotation)
 	
@@ -298,13 +389,20 @@ func _get_occupied_cells(origin: Vector2i, size: Vector2i, rotation: int) -> Arr
 	return cells
 
 func get_all_placed_pieces() -> Array:
-	"""Get all placed pieces"""
-	return placed_pieces.values()
+	"""Get all placed pieces (combined from both layers)"""
+	var all_pieces: Array = []
+	all_pieces.append_array(construction_pieces.values())
+	all_pieces.append_array(furniture_pieces.values())
+	return all_pieces
 
 func clear_all() -> void:
 	"""Remove all placed pieces"""
-	for origin_pos: Vector2i in placed_pieces.keys():
-		remove_piece(origin_pos)
+	# Clear furniture first (top layer)
+	for origin_pos: Vector2i in furniture_pieces.keys().duplicate():
+		remove_furniture_at(origin_pos)
+	# Then clear constructions
+	for origin_pos: Vector2i in construction_pieces.keys().duplicate():
+		remove_construction_at(origin_pos)
 
 # =============================================
 # SAVE/LOAD
@@ -342,7 +440,7 @@ func load_layout_data() -> void:
 			var data: Dictionary = json.data
 			load_save_data(data)
 
-			print("BuildingLayoutData: After load_save_data - occupied_cells: %d, placed_pieces: %d" % [occupied_cells.size(), placed_pieces.size()])
+			print("BuildingLayoutData: After load_save_data - construction_cells: %d, construction_pieces: %d" % [construction_cells.size(), construction_pieces.size()])
 		else:
 			push_error("BuildingLayoutData: Failed to parse save data: %s" % json.get_error_message())
 	else:
@@ -352,24 +450,31 @@ func load_layout_data() -> void:
 func get_save_data() -> Dictionary:
 	"""Get layout data for saving"""
 	var data: Dictionary = {
-		"pieces": [],
-		"occupied_cells": {}
+		"construction_pieces": [],
+		"furniture_pieces": []
 	}
 
-	# Save placed pieces
-	for placed: PlacedPiece in placed_pieces.values():
-		data["pieces"].append({
+	# Save construction pieces
+	for placed: PlacedPiece in construction_pieces.values():
+		var piece_dict: Dictionary = {
 			"piece_id": placed.piece_id,
 			"grid_pos": {"x": placed.grid_pos.x, "y": placed.grid_pos.y},
 			"rotation": placed.rotation,
-			"occupied_cells": _serialize_vector2i_array(placed.occupied_cells)
-		})
+			"occupied_cells": _serialize_vector2i_array(placed.occupied_cells),
+			"building_type": placed.building_type
+		}
+		data["construction_pieces"].append(piece_dict)
 
-	# Save occupied cells dictionary
-	for cell_pos: Vector2i in occupied_cells.keys():
-		var origin_pos: Vector2i = occupied_cells[cell_pos]
-		var key: String = "%d,%d" % [cell_pos.x, cell_pos.y]
-		data["occupied_cells"][key] = {"x": origin_pos.x, "y": origin_pos.y}
+	# Save furniture pieces
+	for placed: PlacedPiece in furniture_pieces.values():
+		var piece_dict: Dictionary = {
+			"piece_id": placed.piece_id,
+			"grid_pos": {"x": placed.grid_pos.x, "y": placed.grid_pos.y},
+			"rotation": placed.rotation,
+			"occupied_cells": _serialize_vector2i_array(placed.occupied_cells),
+			"building_type": placed.building_type
+		}
+		data["furniture_pieces"].append(piece_dict)
 
 	return data
 
@@ -393,22 +498,29 @@ func _deserialize_vector2i_array(arr: Array) -> Array[Vector2i]:
 func load_save_data(data: Dictionary) -> void:
 	"""Load layout data from save (just restores the dictionaries)
 	Your custom save system should handle loading the actual scene instances"""
-	placed_pieces.clear()
-	occupied_cells.clear()
+	# Clear all layers
+	construction_pieces.clear()
+	furniture_pieces.clear()
+	construction_cells.clear()
+	furniture_cells.clear()
 
-	if not data.has("pieces"):
-		return
+	# Load construction pieces
+	if data.has("construction_pieces"):
+		for piece_dict: Dictionary in data["construction_pieces"]:
+			var grid_pos: Vector2i = Vector2i(piece_dict["grid_pos"]["x"], piece_dict["grid_pos"]["y"])
+			var cells: Array[Vector2i] = _deserialize_vector2i_array(piece_dict["occupied_cells"])
 
-	# Restore occupied cells dictionary
-	if data.has("occupied_cells"):
-		for key: String in data["occupied_cells"].keys():
-			var parts: PackedStringArray = key.split(",")
-			var cell_pos: Vector2i = Vector2i(int(parts[0]), int(parts[1]))
-			var origin_dict: Dictionary = data["occupied_cells"][key]
-			var origin_pos: Vector2i = Vector2i(origin_dict["x"], origin_dict["y"])
-			occupied_cells[cell_pos] = origin_pos
+			for cell: Vector2i in cells:
+				construction_cells[cell] = grid_pos
 
-	# Note: We don't restore placed_pieces here because we need the actual instance references
-	# Use register_loaded_piece() for each loaded building instance instead
+	# Load furniture pieces
+	if data.has("furniture_pieces"):
+		for piece_dict: Dictionary in data["furniture_pieces"]:
+			var grid_pos: Vector2i = Vector2i(piece_dict["grid_pos"]["x"], piece_dict["grid_pos"]["y"])
+			var cells: Array[Vector2i] = _deserialize_vector2i_array(piece_dict["occupied_cells"])
 
-	print("LayoutData: Loaded %d occupied cells from save data" % occupied_cells.size())
+			for cell: Vector2i in cells:
+				furniture_cells[cell] = grid_pos
+
+	print("LayoutData: Loaded %d construction cells, %d furniture cells" %
+		  [construction_cells.size(), furniture_cells.size()])

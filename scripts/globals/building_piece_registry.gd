@@ -13,6 +13,7 @@ class PieceData:
 	var category: String  # "hallway", "room", etc.
 	var is_room: bool
 	var door_positions: Array[Vector2i]  # For rooms: where doors can connect
+	var building_type: DataTypes.BuildingType  # CONSTRUCTION or FURNITURE
 	
 	func _init(
 		p_id: String,
@@ -22,7 +23,8 @@ class PieceData:
 		p_openings: Array[Vector2i] = [],
 		p_category: String = "hallway",
 		p_is_room: bool = false,
-		p_door_positions: Array[Vector2i] = []
+		p_door_positions: Array[Vector2i] = [],
+		p_building_type: DataTypes.BuildingType = DataTypes.BuildingType.CONSTRUCTION
 	) -> void:
 		id = p_id
 		display_name = p_display_name
@@ -32,6 +34,7 @@ class PieceData:
 		category = p_category
 		is_room = p_is_room
 		door_positions = p_door_positions
+		building_type = p_building_type
 		icon_path = ""
 
 
@@ -90,7 +93,7 @@ func _register_default_pieces() -> void:
 	# =============================================
 	# ROOM PIECES (examples - you'll customize these)
 	# =============================================
-	
+
 	# Small room (2x2)
 	#register_piece(PieceData.new(
 	#	"room_small",
@@ -102,7 +105,24 @@ func _register_default_pieces() -> void:
 	#	true,
 	#	[Vector2i(0, 1), Vector2i(1, 0)]  # Door positions on perimeter
 	#))
-	
+
+	# =============================================
+	# FURNITURE PIECES
+	# =============================================
+
+	# Storage Chest - can be placed on constructions
+	register_piece(PieceData.new(
+		"furniture_chest",
+		"Storage Chest",
+		"res://scenes/objects/storage_chest/storage_chest.tscn",
+		Vector2i(1, 1),
+		[],  # Furniture doesn't use openings
+		"furniture",
+		false,
+		[],
+		DataTypes.BuildingType.FURNITURE
+	))
+
 	print("PieceRegistry: Registered %d pieces" % pieces.size())
 
 

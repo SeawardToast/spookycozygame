@@ -35,3 +35,8 @@ enum GrowthStates {
 	Maturity,
 	Harvesting
 }
+
+enum BuildingType {
+	CONSTRUCTION,  # Hallways, rooms - form base layer
+	FURNITURE      # Cabinets, beds, chests - placeable on constructions
+}
