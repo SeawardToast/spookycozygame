@@ -11,3 +11,7 @@ res://scenes/floors/Floor1.tscn
 res://scenes/objects/storage_chest/storage_chest.tscn
 res://scenes/objects/storage_chest/storage_chest.gd
 res://scripts/globals/inventory_manager.gd
+res://scenes/ui/inventory.tscn
+res://scenes/ui/chest_ui.gd
+res://scripts/globals/signal_bus.gd
+res://scenes/ui/inventory.gd

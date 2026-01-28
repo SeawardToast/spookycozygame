@@ -40,8 +40,8 @@ func _ready() -> void:
 	_register_inventory()
 
 	chest_ui = get_tree().get_first_node_in_group("chest_ui") as ChestUI
-	if chest_ui:
-		chest_ui.closed.connect(_on_chest_ui_closed)
+
+	SignalBus.chest_closed.connect(_on_chest_ui_closed)
 
 
 func set_persistent_id(id: String) -> void:

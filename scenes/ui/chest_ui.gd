@@ -16,9 +16,6 @@ var holding_source_slot: int = -1
 var drag_ghost: TextureRect = null
 var drag_ghost_label: Label = null
 
-signal closed()
-
-
 func _ready() -> void:
 	hide()
 	tooltip_label.hide()
@@ -65,7 +62,7 @@ func open(inventory_id: String) -> void:
 	chest_inv.slot_changed.connect(_on_chest_slot_changed)
 	InventoryManager.player_inventory.slot_changed.connect(_on_player_main_changed)
 	InventoryManager.player_hotbar.slot_changed.connect(_on_player_hotbar_changed)
-	
+	SignalBus.chest_opened.emit()
 	_render_all()
 	show()
 
@@ -82,8 +79,7 @@ func close() -> void:
 	_return_held_item()
 	chest_inventory_id = ""
 	hide()
-	closed.emit()
-
+	SignalBus.chest_closed.emit()
 
 # --------------------------------------------
 # Rendering

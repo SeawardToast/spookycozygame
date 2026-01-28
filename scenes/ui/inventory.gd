@@ -5,6 +5,7 @@ extends Node2D
 @onready var drag_preview_layer: Control = $DragPreview
 @onready var tooltip_label: Label = $TooltipLabel
 @onready var main_inventory_texture_rect: TextureRect = $MarginContainer/MainInventoryTextureRect
+@onready var hotbar_texture_rect: TextureRect = $MarginContainer/HotbarTextureRect
 
 var holding_item_id: int = -1
 var holding_quantity: int = 0
@@ -27,6 +28,8 @@ func _ready() -> void:
 	
 	InventoryManager.player_inventory.slot_changed.connect(_on_main_slot_changed)
 	InventoryManager.player_hotbar.slot_changed.connect(_on_hotbar_slot_changed)
+	SignalBus.chest_opened.connect(_on_chest_opened)
+	SignalBus.chest_closed.connect(_on_chest_closed)
 
 
 func _setup_slots() -> void:
@@ -259,7 +262,8 @@ func _create_drag_ghost(texture: Texture2D) -> void:
 	drag_ghost.scale = Vector2(1.2, 1.2)
 	drag_preview_layer.add_child(drag_ghost)
 	drag_ghost.global_position = get_global_mouse_position() - drag_ghost.size * 0.5
-	
+	# Set high z_index so ghost renders on top of placed pieces
+	drag_ghost.z_index = 100
 	if holding_quantity > 1:
 		drag_ghost_label = Label.new()
 		drag_ghost_label.text = str(holding_quantity)
@@ -300,6 +304,11 @@ func _on_slot_mouse_entered(slot: InventorySlot) -> void:
 		tooltip_label.text = slot.item_name
 		tooltip_label.show()
 
-
 func _on_slot_mouse_exited() -> void:
 	tooltip_label.hide()
+	
+func _on_chest_opened() -> void:
+	hotbar_texture_rect.hide()
+
+func _on_chest_closed() -> void:
+	hotbar_texture_rect.show()
