@@ -79,6 +79,7 @@ door=""
 walkable=""
 navigation_obstacles=""
 floor_scene=""
+construction_connectable=""
 
 [input]
 

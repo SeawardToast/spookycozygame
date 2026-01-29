@@ -250,11 +250,22 @@ func _disable_ghost_collision(node: Node) -> void:
 
 func _try_place_piece() -> void:
 	"""Attempt to place the selected piece at the current position"""
+	print("\n=== PLACEMENT ATTEMPT ===")
+	print("Piece: %s, GridPos: %s, Rotation: %s" % [selected_piece_id, current_grid_pos, current_rotation])
+
 	if selected_piece_id == "":
+		print("❌ BLOCKED: No piece selected")
 		placement_failed.emit("No piece selected")
 		return
-	
+
 	if not ghost_valid:
+		print("❌ BLOCKED: Ghost is invalid (red)")
+		print("Running validation with debug enabled to see why...")
+		# Enable debug validation and check why it's failing
+		BuildingLayoutData.debug_validation = true
+		var test_valid: bool = BuildingLayoutData.can_place_at(selected_piece_id, current_grid_pos, current_rotation)
+		BuildingLayoutData.debug_validation = false
+		print("Validation result: %s" % test_valid)
 		placement_failed.emit("Invalid placement position")
 		return
 	
@@ -370,7 +381,7 @@ func _calculate_ghost_center_offset() -> Vector2:
 	if not ghost_instance:
 		return Vector2.ZERO
 
-	# Get TileMap cells from the ghost (without rotation applied yet, they're in local space)
+	# Get TileMap cells from the ghost (in local space)
 	var local_cells: Array[Vector2i] = BuildingLayoutData._get_tilemap_cells_from_instance(ghost_instance)
 
 	if local_cells.size() == 0:
@@ -384,13 +395,19 @@ func _calculate_ghost_center_offset() -> Vector2:
 			return Vector2(size.x * cell_size / 2.0, size.y * cell_size / 2.0)
 		return Vector2.ZERO
 
-	# Calculate bounds of the cells
-	var min_x: int = local_cells[0].x
-	var max_x: int = local_cells[0].x
-	var min_y: int = local_cells[0].y
-	var max_y: int = local_cells[0].y
-
+	# Rotate the cells to match current rotation
+	var rotated_cells: Array[Vector2i] = []
 	for cell: Vector2i in local_cells:
+		var rotated_cell: Vector2i = _rotate_cell_for_offset(cell, current_rotation)
+		rotated_cells.append(rotated_cell)
+
+	# Calculate bounds of the rotated cells
+	var min_x: int = rotated_cells[0].x
+	var max_x: int = rotated_cells[0].x
+	var min_y: int = rotated_cells[0].y
+	var max_y: int = rotated_cells[0].y
+
+	for cell: Vector2i in rotated_cells:
 		min_x = mini(min_x, cell.x)
 		max_x = maxi(max_x, cell.x)
 		min_y = mini(min_y, cell.y)
@@ -401,6 +418,21 @@ func _calculate_ghost_center_offset() -> Vector2:
 	var center_y: float = (min_y + max_y + 1) * cell_size / 2.0
 
 	return Vector2(center_x, center_y)
+
+
+func _rotate_cell_for_offset(cell: Vector2i, rotation: int) -> Vector2i:
+	"""Rotate a cell coordinate for offset calculation"""
+	var result: Vector2i = cell
+	match rotation:
+		0:  # 0 degrees
+			result = cell
+		1:  # 90 degrees clockwise
+			result = Vector2i(-cell.y, cell.x)
+		2:  # 180 degrees
+			result = Vector2i(-cell.x, -cell.y)
+		3:  # 270 degrees clockwise
+			result = Vector2i(cell.y, -cell.x)
+	return result
 
 
 func get_current_grid_position() -> Vector2i:

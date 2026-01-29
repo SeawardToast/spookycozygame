@@ -18,3 +18,6 @@ res://scenes/ui/inventory.gd
 res://scenes/components/placement_system.gd
 res://scripts/globals/building_layout_data.gd
 res://scripts/globals/building_piece_registry.gd
+res://scenes/buildings/hallway_straight.tscn
+res://scenes/test/building_construction_test_scene.tscn
+res://scenes/floors/Floor2.tscn
