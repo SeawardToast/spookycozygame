@@ -313,10 +313,15 @@ func can_place_at(piece_id: String, grid_pos: Vector2i, rotation: int) -> bool:
 	# Type-specific validation
 	match piece_data.building_type:
 		DataTypes.BuildingType.CONSTRUCTION:
-			# Constructions cannot overlap with other constructions
+			# Rule 1: Constructions cannot overlap with other constructions
 			for cell: Vector2i in cells:
 				if is_construction_at(cell):
 					return false
+
+			# Rule 2: Must align navigation polygons with adjacent constructions
+			if not _validate_nav_alignment(piece_id, grid_pos, rotation, cells):
+				return false
+
 			return true
 
 		DataTypes.BuildingType.FURNITURE:
@@ -329,6 +334,40 @@ func can_place_at(piece_id: String, grid_pos: Vector2i, rotation: int) -> bool:
 			return true
 
 	return false  # Unknown type
+
+
+func _validate_nav_alignment(piece_id: String, grid_pos: Vector2i, rotation: int, cells: Array[Vector2i]) -> bool:
+	"""Validate that navigation polygons align with adjacent constructions
+
+	Returns true if:
+	- No adjacent constructions (first piece, or no neighbors)
+	- All adjacent constructions have matching nav tile alignment on shared edges
+
+	Returns false if:
+	- At least one adjacent construction has mismatched nav tiles on shared edge
+	"""
+	# Get nav tiles for the piece being placed (rotated)
+	var nav_tiles: Array[Vector2i] = _get_rotated_nav_tiles(piece_id, grid_pos, rotation)
+
+	if nav_tiles.is_empty():
+		# Piece has no nav tiles - allow placement
+		return true
+
+	# Find all adjacent constructions
+	var adjacent_constructions: Dictionary = _find_adjacent_constructions(cells)
+
+	if adjacent_constructions.is_empty():
+		# No adjacent constructions - always valid (first piece or isolated)
+		return true
+
+	# Check each adjacent construction for nav alignment
+	for direction: Vector2i in adjacent_constructions.keys():
+		var adjacent_placed: PlacedPiece = adjacent_constructions[direction]
+		if not _check_edge_alignment(nav_tiles, adjacent_placed, direction, cells):
+			return false  # Misalignment detected
+
+	return true  # All edges align correctly
+
 
 func would_connect(piece_id: String, grid_pos: Vector2i, rotation: int) -> bool:
 	"""Check if placing this piece would connect to at least one existing piece"""
@@ -404,6 +443,179 @@ func _get_occupied_cells(origin: Vector2i, size: Vector2i, rotation: int) -> Arr
 			cells.append(origin + Vector2i(x, y))
 	
 	return cells
+
+
+# =============================================
+# NAV ALIGNMENT VALIDATION HELPERS
+# =============================================
+
+func _get_rotated_nav_tiles(piece_id: String, origin: Vector2i, rotation: int) -> Array[Vector2i]:
+	"""Get navigation tile coordinates after rotation and translation to global grid"""
+	var local_nav_tiles: Array[Vector2i] = BuildingPieceRegistry.get_nav_tile_coords(piece_id)
+	if local_nav_tiles.is_empty():
+		return []
+
+	var global_nav_tiles: Array[Vector2i] = []
+	for local_cell: Vector2i in local_nav_tiles:
+		var rotated_cell: Vector2i = _rotate_cell(local_cell, rotation)
+		global_nav_tiles.append(origin + rotated_cell)
+
+	return global_nav_tiles
+
+
+func _rotate_cell(cell: Vector2i, rotation: int) -> Vector2i:
+	"""Rotate a cell coordinate by rotation * 90 degrees clockwise"""
+	var result: Vector2i = cell
+	match rotation:
+		0:  # 0 degrees
+			result = cell
+		1:  # 90 degrees clockwise
+			result = Vector2i(-cell.y, cell.x)
+		2:  # 180 degrees
+			result = Vector2i(-cell.x, -cell.y)
+		3:  # 270 degrees clockwise (90 CCW)
+			result = Vector2i(cell.y, -cell.x)
+	return result
+
+
+func _find_adjacent_constructions(cells: Array[Vector2i]) -> Dictionary:
+	"""Find all adjacent constructions and which direction they're in
+
+	Returns: Dictionary[Vector2i (direction) -> PlacedPiece]
+	Only returns one PlacedPiece per direction (the first found)
+	"""
+	var adjacent: Dictionary = {}  # direction -> PlacedPiece
+	var directions: Array[Vector2i] = [Vector2i.UP, Vector2i.DOWN, Vector2i.LEFT, Vector2i.RIGHT]
+
+	for cell: Vector2i in cells:
+		for dir: Vector2i in directions:
+			var adjacent_cell: Vector2i = cell + dir
+
+			# Skip if this cell is part of the piece being placed
+			if adjacent_cell in cells:
+				continue
+
+			# Check if there's a construction here
+			if is_construction_at(adjacent_cell):
+				var placed: PlacedPiece = get_construction_at(adjacent_cell)
+
+				# Store one representative per direction
+				if dir not in adjacent:
+					adjacent[dir] = placed
+
+	return adjacent
+
+
+func _check_edge_alignment(
+	new_piece_nav_tiles: Array[Vector2i],
+	adjacent_placed: PlacedPiece,
+	direction: Vector2i,
+	new_piece_cells: Array[Vector2i]
+) -> bool:
+	"""Check if navigation tiles align on the shared edge between new and adjacent piece
+
+	Algorithm:
+	1. Find edge cells for both pieces on the shared boundary
+	2. Filter to only nav tiles on each edge
+	3. Project nav tiles onto 1D axis perpendicular to edge
+	4. Compare projections - must match exactly (same positions)
+	"""
+	# Get nav tiles for adjacent piece
+	var adjacent_nav_tiles: Array[Vector2i] = _get_rotated_nav_tiles(
+		adjacent_placed.piece_id,
+		adjacent_placed.grid_pos,
+		adjacent_placed.rotation
+	)
+
+	if adjacent_nav_tiles.is_empty():
+		# Adjacent piece has no nav tiles - no alignment required
+		return true
+
+	# Find edge cells for new piece on this direction
+	var new_edge_cells: Array[Vector2i] = _get_edge_cells(new_piece_cells, direction)
+	var new_edge_nav_tiles: Array[Vector2i] = _filter_nav_tiles(new_edge_cells, new_piece_nav_tiles)
+
+	# Find edge cells for adjacent piece on opposite direction
+	var opposite_dir: Vector2i = -direction
+	var adjacent_edge_cells: Array[Vector2i] = _get_edge_cells(adjacent_placed.occupied_cells, opposite_dir)
+	var adjacent_edge_nav_tiles: Array[Vector2i] = _filter_nav_tiles(adjacent_edge_cells, adjacent_nav_tiles)
+
+	# Project nav tiles onto 1D axis and compare
+	return _compare_edge_projections(
+		new_edge_nav_tiles,
+		adjacent_edge_nav_tiles,
+		direction
+	)
+
+
+func _get_edge_cells(cells: Array[Vector2i], direction: Vector2i) -> Array[Vector2i]:
+	"""Get all cells on the edge of a piece in the specified direction
+
+	Edge = cells that have no neighbor in that direction within the same piece
+	"""
+	var edge_cells: Array[Vector2i] = []
+
+	for cell: Vector2i in cells:
+		var neighbor: Vector2i = cell + direction
+		if neighbor not in cells:
+			# This cell is on the edge
+			edge_cells.append(cell)
+
+	return edge_cells
+
+
+func _filter_nav_tiles(cells: Array[Vector2i], nav_tiles: Array[Vector2i]) -> Array[Vector2i]:
+	"""Filter nav tiles to only those in the given cell list"""
+	var filtered: Array[Vector2i] = []
+
+	for tile: Vector2i in nav_tiles:
+		if tile in cells:
+			filtered.append(tile)
+
+	return filtered
+
+
+func _compare_edge_projections(
+	edge1_nav_tiles: Array[Vector2i],
+	edge2_nav_tiles: Array[Vector2i],
+	direction: Vector2i
+) -> bool:
+	"""Compare two edges by projecting nav tiles onto perpendicular axis
+
+	For horizontal edges (UP/DOWN): project onto X axis
+	For vertical edges (LEFT/RIGHT): project onto Y axis
+
+	Returns true if projections match exactly (same set of positions)
+	"""
+	# Determine projection axis based on direction
+	var is_horizontal: bool = (direction == Vector2i.UP or direction == Vector2i.DOWN)
+
+	# Project edge1 nav tiles
+	var proj1: Array[int] = []
+	for tile: Vector2i in edge1_nav_tiles:
+		var position: int = tile.x if is_horizontal else tile.y
+		if position not in proj1:
+			proj1.append(position)
+	proj1.sort()
+
+	# Project edge2 nav tiles
+	var proj2: Array[int] = []
+	for tile: Vector2i in edge2_nav_tiles:
+		var position: int = tile.x if is_horizontal else tile.y
+		if position not in proj2:
+			proj2.append(position)
+	proj2.sort()
+
+	# Compare sorted projections
+	if proj1.size() != proj2.size():
+		return false
+
+	for i in range(proj1.size()):
+		if proj1[i] != proj2[i]:
+			return false
+
+	return true
+
 
 func get_all_placed_pieces() -> Array:
 	"""Get all placed pieces (combined from both layers)"""

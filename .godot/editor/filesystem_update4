@@ -15,3 +15,6 @@ res://scenes/ui/inventory.tscn
 res://scenes/ui/chest_ui.gd
 res://scripts/globals/signal_bus.gd
 res://scenes/ui/inventory.gd
+res://scenes/components/placement_system.gd
+res://scripts/globals/building_layout_data.gd
+res://scripts/globals/building_piece_registry.gd

@@ -155,7 +155,7 @@ func _create_ghost() -> void:
 	ghost_instance.rotation_degrees = current_rotation * 90
 
 	# Make it a ghost (semi-transparent, no collision)
-	_apply_ghost_material(ghost_instance)
+	_apply_ghost_material(ghost_instance) 
 	_disable_ghost_collision(ghost_instance)
 
 	# Set high z_index so ghost renders on top of placed pieces
