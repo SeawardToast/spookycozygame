@@ -906,29 +906,61 @@ func load_save_data(data: Dictionary) -> void:
 		for piece_dict: Dictionary in data["construction_pieces"]:
 			var grid_pos: Vector2i = Vector2i(piece_dict["grid_pos"]["x"], piece_dict["grid_pos"]["y"])
 			var cells: Array[Vector2i] = _deserialize_vector2i_array(piece_dict["occupied_cells"])
+			var rotation: int = piece_dict.get("rotation", 0)
+			var piece_id: String = piece_dict.get("piece_id", "")
+			var building_type: int = piece_dict.get("building_type", DataTypes.BuildingType.CONSTRUCTION)
+			var custom_data_dict: Dictionary = piece_dict.get("custom_data", {})
+
+			# Create PlacedPiece with null instance (instance will be set when scene loads)
+			var placed: PlacedPiece = PlacedPiece.new(
+				piece_id,
+				grid_pos,
+				rotation,
+				null,  # Instance not loaded yet
+				cells,
+				building_type,
+				custom_data_dict
+			)
+			construction_pieces[grid_pos] = placed
 
 			for cell: Vector2i in cells:
 				construction_cells[cell] = grid_pos
 
 			# Store custom_data for later application
-			if piece_dict.has("custom_data") and not piece_dict["custom_data"].is_empty():
-				pending_custom_data[grid_pos] = piece_dict["custom_data"]
+			if not custom_data_dict.is_empty():
+				pending_custom_data[grid_pos] = custom_data_dict
 
 	# Load furniture pieces
 	if data.has("furniture_pieces"):
 		for piece_dict: Dictionary in data["furniture_pieces"]:
 			var grid_pos: Vector2i = Vector2i(piece_dict["grid_pos"]["x"], piece_dict["grid_pos"]["y"])
 			var cells: Array[Vector2i] = _deserialize_vector2i_array(piece_dict["occupied_cells"])
+			var rotation: int = piece_dict.get("rotation", 0)
+			var piece_id: String = piece_dict.get("piece_id", "")
+			var building_type: int = piece_dict.get("building_type", DataTypes.BuildingType.FURNITURE)
+			var custom_data_dict: Dictionary = piece_dict.get("custom_data", {})
+
+			# Create PlacedPiece with null instance (instance will be set when scene loads)
+			var placed: PlacedPiece = PlacedPiece.new(
+				piece_id,
+				grid_pos,
+				rotation,
+				null,  # Instance not loaded yet
+				cells,
+				building_type,
+				custom_data_dict
+			)
+			furniture_pieces[grid_pos] = placed
 
 			for cell: Vector2i in cells:
 				furniture_cells[cell] = grid_pos
 
 			# Store custom_data for later application
-			if piece_dict.has("custom_data") and not piece_dict["custom_data"].is_empty():
-				pending_custom_data[grid_pos] = piece_dict["custom_data"]
+			if not custom_data_dict.is_empty():
+				pending_custom_data[grid_pos] = custom_data_dict
 
-	print("LayoutData: Loaded %d construction cells, %d furniture cells, %d pending custom_data" %
-		  [construction_cells.size(), furniture_cells.size(), pending_custom_data.size()])
+	print("LayoutData: Loaded %d construction pieces, %d furniture pieces, %d construction cells, %d furniture cells" %
+		  [construction_pieces.size(), furniture_pieces.size(), construction_cells.size(), furniture_cells.size()])
 
 
 func get_and_clear_pending_custom_data(world_pos: Vector2) -> Dictionary:
@@ -940,3 +972,27 @@ func get_and_clear_pending_custom_data(world_pos: Vector2) -> Dictionary:
 		pending_custom_data.erase(grid_pos)
 		return data
 	return {}
+
+
+func get_rotation_for_load(world_pos: Vector2) -> int:
+	"""Get the rotation for a piece at world position during load.
+	Returns the rotation value (0-3) or 0 if not found.
+	This is used by SceneDataResource during load to restore rotation."""
+	var grid_pos: Vector2i = world_to_grid(world_pos)
+
+	# Check furniture layer first (top layer)
+	if grid_pos in furniture_cells:
+		var origin_pos: Vector2i = furniture_cells[grid_pos]
+		if origin_pos in furniture_pieces:
+			var placed: PlacedPiece = furniture_pieces[origin_pos]
+			return placed.rotation
+
+	# Check construction layer
+	if grid_pos in construction_cells:
+		var origin_pos: Vector2i = construction_cells[grid_pos]
+		if origin_pos in construction_pieces:
+			var placed: PlacedPiece = construction_pieces[origin_pos]
+			return placed.rotation
+
+	# Not found - return default rotation
+	return 0

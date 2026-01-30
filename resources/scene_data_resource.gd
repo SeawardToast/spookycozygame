@@ -22,5 +22,11 @@ func _load_data(window: Window) -> void:
 	
 	if parent_node != null and scene_node != null:
 		scene_node.global_position = global_position
+
+		# Only query rotation for construction/furniture pieces (placeable_construction group)
+		if scene_node.is_in_group("placeable_construction"):
+			var rotation: int = BuildingLayoutData.get_rotation_for_load(global_position)
+			scene_node.rotation_degrees = rotation * 90
+
 		parent_node.add_child(scene_node)
 	

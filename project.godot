@@ -80,6 +80,7 @@ walkable=""
 navigation_obstacles=""
 floor_scene=""
 construction_connectable=""
+placeable_construction=""
 
 [input]
 
