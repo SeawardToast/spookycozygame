@@ -280,6 +280,16 @@ func grid_to_world(grid_pos: Vector2i) -> Vector2:
 		grid_pos.y * cell_size + cell_size / 2.0
 	)
 
+
+func grid_to_world_corner(grid_pos: Vector2i) -> Vector2:
+	"""Convert grid coordinates to world position (top-left corner of cell)
+	Use this for TileMap-based pieces to avoid half-cell offsets"""
+	return Vector2(
+		grid_pos.x * cell_size,
+		grid_pos.y * cell_size
+	)
+
+
 func snap_to_grid(world_pos: Vector2) -> Vector2:
 	"""Snap a world position to the nearest grid cell center"""
 	var grid_pos: Vector2i = world_to_grid(world_pos)

@@ -187,7 +187,8 @@ func _update_ghost_position() -> void:
 	# Calculate the origin position that would center the ghost on the cursor
 	var origin_world_pos: Vector2 = mouse_pos - ghost_center_offset
 	current_grid_pos = BuildingLayoutData.world_to_grid(origin_world_pos)
-	var snapped_origin: Vector2 = BuildingLayoutData.grid_to_world(current_grid_pos)
+	# Use corner positioning for TileMap-based pieces to align with grid
+	var snapped_origin: Vector2 = BuildingLayoutData.grid_to_world_corner(current_grid_pos)
 
 	# Position the ghost at the snapped origin
 	ghost_instance.global_position = snapped_origin
@@ -281,7 +282,8 @@ func _try_place_piece() -> void:
 		return
 	
 	var instance: Node2D = scene.instantiate()
-	instance.position = BuildingLayoutData.grid_to_world(current_grid_pos)
+	# Use corner positioning for TileMap-based pieces to avoid half-cell offset
+	instance.position = BuildingLayoutData.grid_to_world_corner(current_grid_pos)
 	instance.rotation_degrees = current_rotation * 90
 
 	# Add to the current floor
