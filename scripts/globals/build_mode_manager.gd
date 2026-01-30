@@ -91,13 +91,14 @@ func exit_build_mode() -> void:
 func _set_player_input_enabled(enabled: bool) -> void:
 	if not player:
 		return
-	
-	# Your player uses a state machine - we can disable processing
-	# or set a flag. For now, disable the state machine node.
-	var state_machine: Node = player.get_node_or_null("PlayerStateMachine")
+
+	# Disable the state machine to prevent player input/movement
+	var state_machine: Node = player.get_node_or_null("StateMachine")
 	if state_machine:
 		state_machine.process_mode = Node.PROCESS_MODE_INHERIT if enabled else Node.PROCESS_MODE_DISABLED
-	
+	else:
+		push_warning("BuildModeManager: Could not find StateMachine node on player")
+
 	# Also stop any current velocity
 	if not enabled and player is CharacterBody2D:
 		player.velocity = Vector2.ZERO

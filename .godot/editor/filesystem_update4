@@ -11,3 +11,4 @@ res://scenes/objects/rocks/rock_shake.gdshader
 res://scenes/characters/guide/replace_color.gdshader
 res://scenes/buildings/hallway_straight.tscn
 res://scenes/test/building_construction_test_scene.tscn
+res://scripts/globals/build_mode_manager.gd
