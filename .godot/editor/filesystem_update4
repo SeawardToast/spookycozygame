@@ -12,3 +12,4 @@ res://scenes/buildings/hallway_straight.tscn
 res://scenes/test/building_construction_test_scene.tscn
 res://scripts/globals/building_piece_registry.gd
 res://scenes/buildings/hallway_L.tscn
+res://scenes/components/placement_system.gd

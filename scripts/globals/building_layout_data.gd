@@ -356,6 +356,8 @@ func can_place_at(piece_id: String, grid_pos: Vector2i, rotation: int) -> bool:
 func _validate_connection_groups(piece_id: String, grid_pos: Vector2i, rotation: int, cells: Array[Vector2i]) -> bool:
 	"""Validate that connectable TileMapLayers match with adjacent connectable tiles
 
+	Note: Constructions are always at rotation=0 (rotation parameter ignored for constructions)
+
 	Simple validation:
 	1. Find all TileMapLayers in "connectable_tiles" group in the piece
 	2. For each layer, check if its tiles are adjacent to other "connectable_tiles" in the world
@@ -367,7 +369,7 @@ func _validate_connection_groups(piece_id: String, grid_pos: Vector2i, rotation:
 	"""
 	if debug_validation:
 		print("\n=== CONNECTABLE TILES VALIDATION START ===")
-		print("Piece: %s, GridPos: %s, Rotation: %s" % [piece_id, grid_pos, rotation])
+		print("Piece: %s, GridPos: %s" % [piece_id, grid_pos])
 
 	# Load the piece scene to find connectable TileMapLayers
 	var piece_data: BuildingPieceRegistry.PieceData = BuildingPieceRegistry.get_piece(piece_id)
@@ -399,11 +401,21 @@ func _validate_connection_groups(piece_id: String, grid_pos: Vector2i, rotation:
 	for layer: TileMapLayer in connectable_layers:
 		var local_tiles: Array[Vector2i] = layer.get_used_cells()
 
-		# Transform tiles to global grid (rotation + translation)
+		# Get the layer's position offset in grid cells (relative to piece origin)
+		var layer_offset_pixels: Vector2 = layer.position
+		var layer_offset_cells: Vector2i = Vector2i(
+			floori(layer_offset_pixels.x / cell_size),
+			floori(layer_offset_pixels.y / cell_size)
+		)
+
+		# Transform tiles to global grid (layer offset + translation)
+		# Note: No rotation needed since constructions are always at rotation=0
 		var global_tiles: Array[Vector2i] = []
 		for local_tile: Vector2i in local_tiles:
-			var rotated_tile: Vector2i = _rotate_cell(local_tile, rotation)
-			global_tiles.append(grid_pos + rotated_tile)
+			# Add layer offset to get position relative to piece origin
+			var piece_relative_tile: Vector2i = local_tile + layer_offset_cells
+			# Translate to global grid position (no rotation for constructions)
+			global_tiles.append(grid_pos + piece_relative_tile)
 
 		if debug_validation:
 			print("  Layer with %d tiles (global positions): %s" % [global_tiles.size(), global_tiles])
@@ -531,21 +543,6 @@ func _find_connectable_layers_recursive(node: Node) -> Array:
 		layers.append_array(_find_connectable_layers_recursive(child))
 
 	return layers
-
-
-func _rotate_cell(cell: Vector2i, rotation: int) -> Vector2i:
-	"""Rotate a cell coordinate by rotation * 90 degrees clockwise"""
-	var result: Vector2i = cell
-	match rotation:
-		0:  # 0 degrees
-			result = cell
-		1:  # 90 degrees clockwise
-			result = Vector2i(-cell.y, cell.x)
-		2:  # 180 degrees
-			result = Vector2i(-cell.x, -cell.y)
-		3:  # 270 degrees clockwise (90 CCW)
-			result = Vector2i(cell.y, -cell.x)
-	return result
 
 
 func _find_adjacent_connectable_tiles_simple(tiles: Array[Vector2i]) -> Array[Vector2i]:

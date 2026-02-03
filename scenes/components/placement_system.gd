@@ -102,27 +102,42 @@ func _unhandled_input(event: InputEvent) -> void:
 # =============================================
 
 func select_piece(piece_id: String) -> void:
-	"""Select a piece type to place"""
+	"""Select a piece type to place
+
+	Constructions are always locked to rotation 0.
+	"""
 	if piece_id == selected_piece_id:
 		return
-	
+
 	selected_piece_id = piece_id
+
+	# Reset rotation (constructions stay at 0, furniture can be rotated)
 	current_rotation = 0
-	
+
 	_clear_ghost()
-	
+
 	if piece_id != "":
 		_create_ghost()
-	
+
 	selection_changed.emit(piece_id)
 	print("PlacementSystem: Selected piece: %s" % piece_id)
 
 
 func _rotate_piece(direction: int) -> void:
-	"""Rotate the selected piece (direction: 1 for CW, -1 for CCW)"""
+	"""Rotate the selected piece (direction: 1 for CW, -1 for CCW)
+
+	Note: Only furniture can be rotated. Constructions are locked to rotation 0.
+	"""
 	if selected_piece_id == "":
 		return
 
+	# Check if this piece is a construction - if so, don't allow rotation
+	var piece_data: BuildingPieceRegistry.PieceData = BuildingPieceRegistry.get_piece(selected_piece_id)
+	if piece_data and piece_data.building_type == DataTypes.BuildingType.CONSTRUCTION:
+		print("PlacementSystem: Constructions cannot be rotated")
+		return
+
+	# Only furniture can be rotated
 	current_rotation = (current_rotation + direction) % 4
 	if current_rotation < 0:
 		current_rotation += 4
