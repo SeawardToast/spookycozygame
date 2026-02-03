@@ -1,6 +1,5 @@
-res://resources/scene_data_resource.gd
 res://scripts/globals/building_layout_data.gd
-res://scenes/objects/storage_chest/storage_chest.tscn
+res://scenes/floors/Floor1.tscn
 res://scenes/ui/game_ui_theme.tres
 res://tilesets/large_house_tile_set.tres
 res://scenes/objects/tree/tree_shake.gdshader
@@ -11,9 +10,5 @@ res://scenes/objects/rocks/rock_shake.gdshader
 res://scenes/characters/guide/replace_color.gdshader
 res://scenes/buildings/hallway_straight.tscn
 res://scenes/test/building_construction_test_scene.tscn
-res://scripts/globals/build_mode_manager.gd
-res://scenes/buildings/hallway_L.tscn
-res://scenes/buildings/hallway_L_inverted.tscn
 res://scripts/globals/building_piece_registry.gd
-res://scenes/floors/Floor1.tscn
-res://scenes/components/placement_system.gd
+res://scenes/buildings/hallway_L.tscn

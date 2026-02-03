@@ -335,8 +335,8 @@ func can_place_at(piece_id: String, grid_pos: Vector2i, rotation: int) -> bool:
 				if is_construction_at(cell):
 					return false
 
-			# Rule 2: Must align navigation polygons with adjacent constructions
-			if not _validate_nav_alignment(piece_id, grid_pos, rotation, cells):
+			# Rule 2: Must have valid connection group matches with adjacent pieces
+			if not _validate_connection_groups(piece_id, grid_pos, rotation, cells):
 				return false
 
 			return true
@@ -353,69 +353,89 @@ func can_place_at(piece_id: String, grid_pos: Vector2i, rotation: int) -> bool:
 	return false  # Unknown type
 
 
-func _validate_nav_alignment(piece_id: String, grid_pos: Vector2i, rotation: int, cells: Array[Vector2i]) -> bool:
-	"""Validate that navigation polygons align with adjacent constructions or connectable tiles
+func _validate_connection_groups(piece_id: String, grid_pos: Vector2i, rotation: int, cells: Array[Vector2i]) -> bool:
+	"""Validate that connectable TileMapLayers match with adjacent connectable tiles
 
-	Returns true if:
-	- The piece connects to at least one adjacent construction or connectable tile
-	- All connections have matching nav tile alignment on shared edges
+	Simple validation:
+	1. Find all TileMapLayers in "connectable_tiles" group in the piece
+	2. For each layer, check if its tiles are adjacent to other "connectable_tiles" in the world
+	3. Count must match exactly (4 tiles must touch 4 tiles)
+	4. At least one layer must find a match
 
-	Returns false if:
-	- No adjacent constructions or connectable tiles (isolated placement not allowed)
-	- At least one connection has mismatched nav tiles on shared edge
+	Returns true if at least one connectable layer finds exact count match
+	Returns false if no connections or count mismatch
 	"""
 	if debug_validation:
-		print("\n=== NAV VALIDATION START ===")
-		print("Piece: %s, GridPos: %s, Rotation: %s, Cells: %s" % [piece_id, grid_pos, rotation, cells])
+		print("\n=== CONNECTABLE TILES VALIDATION START ===")
+		print("Piece: %s, GridPos: %s, Rotation: %s" % [piece_id, grid_pos, rotation])
 
-	# Get nav tiles for the piece being placed (rotated)
-	var nav_tiles: Array[Vector2i] = _get_rotated_nav_tiles(piece_id, grid_pos, rotation)
-
-	if debug_validation:
-		print("Nav tiles for piece: %s" % [nav_tiles])
-
-	if nav_tiles.is_empty():
-		if debug_validation:
-			print("❌ FAIL: Piece has no nav tiles")
+	# Load the piece scene to find connectable TileMapLayers
+	var piece_data: BuildingPieceRegistry.PieceData = BuildingPieceRegistry.get_piece(piece_id)
+	if not piece_data:
 		return false
 
-	# Find all adjacent constructions
-	var adjacent_constructions: Dictionary = _find_adjacent_constructions(cells)
-
-	if debug_validation:
-		print("Adjacent constructions: %s" % [adjacent_constructions.keys()])
-
-	# Find all adjacent connectable tiles
-	var adjacent_connectable_tiles: Dictionary = _find_adjacent_connectable_tiles(cells)
-
-	if debug_validation:
-		print("Adjacent connectable tiles: %s" % [adjacent_connectable_tiles.keys()])
-
-	# Must have at least one connection (construction or connectable tile)
-	if adjacent_constructions.is_empty() and adjacent_connectable_tiles.is_empty():
-		if debug_validation:
-			print("❌ FAIL: No adjacent constructions or connectable tiles")
+	var scene: PackedScene = load(piece_data.scene_path)
+	if not scene:
 		return false
 
-	# Check each adjacent construction for nav alignment
-	for direction: Vector2i in adjacent_constructions.keys():
-		var adjacent_placed: PlacedPiece = adjacent_constructions[direction]
-		if not _check_edge_alignment(nav_tiles, adjacent_placed, direction, cells):
-			if debug_validation:
-				print("❌ FAIL: Misalignment with construction in direction %s" % [direction])
-			return false
+	var temp_instance: Node2D = scene.instantiate()
 
-	# Check each adjacent connectable tile for nav alignment
-	for direction: Vector2i in adjacent_connectable_tiles.keys():
-		var connectable_positions: Array = adjacent_connectable_tiles[direction]
-		if not _check_connectable_tiles_alignment(nav_tiles, connectable_positions, direction, cells):
-			if debug_validation:
-				print("❌ FAIL: Misalignment with connectable tiles in direction %s" % [direction])
-			return false
+	# Find all TileMapLayers in "connectable_tiles" group
+	var connectable_layers: Array = _find_connectable_layers_recursive(temp_instance)
+
+	if connectable_layers.is_empty():
+		temp_instance.queue_free()
+		if debug_validation:
+			print("❌ FAIL: Piece has no TileMapLayers in 'connectable_tiles' group")
+		return false
 
 	if debug_validation:
-		print("✅ SUCCESS: All edges align correctly")
-	return true  # All edges align correctly
+		print("Found %d connectable layers in piece" % connectable_layers.size())
+
+	# Track if at least one layer finds a match
+	var at_least_one_match: bool = false
+
+	# Check each connectable layer
+	for layer: TileMapLayer in connectable_layers:
+		var local_tiles: Array[Vector2i] = layer.get_used_cells()
+
+		# Transform tiles to global grid (rotation + translation)
+		var global_tiles: Array[Vector2i] = []
+		for local_tile: Vector2i in local_tiles:
+			var rotated_tile: Vector2i = _rotate_cell(local_tile, rotation)
+			global_tiles.append(grid_pos + rotated_tile)
+
+		if debug_validation:
+			print("  Layer with %d tiles (global positions): %s" % [global_tiles.size(), global_tiles])
+
+		# Find adjacent connectable tiles in the world
+		var adjacent_tiles: Array[Vector2i] = _find_adjacent_connectable_tiles_simple(global_tiles)
+
+		if debug_validation:
+			print("    Found %d adjacent connectable tiles" % adjacent_tiles.size())
+
+		# Check if count matches
+		if adjacent_tiles.size() == global_tiles.size() and adjacent_tiles.size() > 0:
+			at_least_one_match = true
+			if debug_validation:
+				print("    ✓ Match! %d tiles connect to %d tiles" % [global_tiles.size(), adjacent_tiles.size()])
+		elif adjacent_tiles.size() > 0:
+			# Touching but count mismatch - invalid
+			temp_instance.queue_free()
+			if debug_validation:
+				print("    ❌ Count mismatch: %d tiles trying to connect to %d tiles" % [global_tiles.size(), adjacent_tiles.size()])
+			return false
+
+	temp_instance.queue_free()
+
+	if not at_least_one_match:
+		if debug_validation:
+			print("❌ FAIL: No connectable layers found matches")
+		return false
+
+	if debug_validation:
+		print("✅ SUCCESS: At least one layer matched")
+	return true
 
 
 func would_connect(piece_id: String, grid_pos: Vector2i, rotation: int) -> bool:
@@ -495,21 +515,22 @@ func _get_occupied_cells(origin: Vector2i, size: Vector2i, rotation: int) -> Arr
 
 
 # =============================================
-# NAV ALIGNMENT VALIDATION HELPERS
+# CONNECTABLE TILES VALIDATION HELPERS
 # =============================================
 
-func _get_rotated_nav_tiles(piece_id: String, origin: Vector2i, rotation: int) -> Array[Vector2i]:
-	"""Get navigation tile coordinates after rotation and translation to global grid"""
-	var local_nav_tiles: Array[Vector2i] = BuildingPieceRegistry.get_nav_tile_coords(piece_id)
-	if local_nav_tiles.is_empty():
-		return []
+func _find_connectable_layers_recursive(node: Node) -> Array:
+	"""Recursively find all TileMapLayers that are in the 'connectable_tiles' group"""
+	var layers: Array = []
 
-	var global_nav_tiles: Array[Vector2i] = []
-	for local_cell: Vector2i in local_nav_tiles:
-		var rotated_cell: Vector2i = _rotate_cell(local_cell, rotation)
-		global_nav_tiles.append(origin + rotated_cell)
+	if node is TileMapLayer:
+		var tilemap: TileMapLayer = node as TileMapLayer
+		if tilemap.is_in_group("connectable_tiles"):
+			layers.append(tilemap)
 
-	return global_nav_tiles
+	for child in node.get_children():
+		layers.append_array(_find_connectable_layers_recursive(child))
+
+	return layers
 
 
 func _rotate_cell(cell: Vector2i, rotation: int) -> Vector2i:
@@ -527,269 +548,67 @@ func _rotate_cell(cell: Vector2i, rotation: int) -> Vector2i:
 	return result
 
 
-func _find_adjacent_constructions(cells: Array[Vector2i]) -> Dictionary:
-	"""Find all adjacent constructions and which direction they're in
+func _find_adjacent_connectable_tiles_simple(tiles: Array[Vector2i]) -> Array[Vector2i]:
+	"""Find connectable tiles adjacent to the given tiles
 
-	Returns: Dictionary[Vector2i (direction) -> PlacedPiece]
-	Only returns one PlacedPiece per direction (the first found)
+	Returns array of positions where connectable tiles exist adjacent to the input tiles
 	"""
-	var adjacent: Dictionary = {}  # direction -> PlacedPiece
+	var adjacent_connectable: Array[Vector2i] = []
 	var directions: Array[Vector2i] = [Vector2i.UP, Vector2i.DOWN, Vector2i.LEFT, Vector2i.RIGHT]
+	var checked: Dictionary = {}  # Avoid duplicates
 
-	for cell: Vector2i in cells:
-		for dir: Vector2i in directions:
-			var adjacent_cell: Vector2i = cell + dir
-
-			# Skip if this cell is part of the piece being placed
-			if adjacent_cell in cells:
-				continue
-
-			# Check if there's a construction here
-			if is_construction_at(adjacent_cell):
-				var placed: PlacedPiece = get_construction_at(adjacent_cell)
-
-				# Store one representative per direction
-				if dir not in adjacent:
-					adjacent[dir] = placed
-
-	return adjacent
-
-
-func _check_edge_alignment(
-	new_piece_nav_tiles: Array[Vector2i],
-	adjacent_placed: PlacedPiece,
-	direction: Vector2i,
-	new_piece_cells: Array[Vector2i]
-) -> bool:
-	"""Check if navigation tiles align on the shared edge between new and adjacent piece
-
-	Algorithm:
-	1. Find edge cells for both pieces on the shared boundary
-	2. Filter to only nav tiles on each edge
-	3. Project nav tiles onto 1D axis perpendicular to edge
-	4. Compare projections - must match exactly (same positions)
-	"""
-	# Get nav tiles for adjacent piece
-	var adjacent_nav_tiles: Array[Vector2i] = _get_rotated_nav_tiles(
-		adjacent_placed.piece_id,
-		adjacent_placed.grid_pos,
-		adjacent_placed.rotation
-	)
-
-	if adjacent_nav_tiles.is_empty():
-		# Adjacent piece has no nav tiles - no alignment required
-		return true
-
-	# Find edge cells for new piece on this direction
-	var new_edge_cells: Array[Vector2i] = _get_edge_cells(new_piece_cells, direction)
-	var new_edge_nav_tiles: Array[Vector2i] = _filter_nav_tiles(new_edge_cells, new_piece_nav_tiles)
-
-	# Find edge cells for adjacent piece on opposite direction
-	var opposite_dir: Vector2i = -direction
-	var adjacent_edge_cells: Array[Vector2i] = _get_edge_cells(adjacent_placed.occupied_cells, opposite_dir)
-	var adjacent_edge_nav_tiles: Array[Vector2i] = _filter_nav_tiles(adjacent_edge_cells, adjacent_nav_tiles)
-
-	# Project nav tiles onto 1D axis and compare
-	return _compare_edge_projections(
-		new_edge_nav_tiles,
-		adjacent_edge_nav_tiles,
-		direction
-	)
-
-
-func _get_edge_cells(cells: Array[Vector2i], direction: Vector2i) -> Array[Vector2i]:
-	"""Get all cells on the edge of a piece in the specified direction
-
-	Edge = cells that have no neighbor in that direction within the same piece
-	"""
-	var edge_cells: Array[Vector2i] = []
-
-	for cell: Vector2i in cells:
-		var neighbor: Vector2i = cell + direction
-		if neighbor not in cells:
-			# This cell is on the edge
-			edge_cells.append(cell)
-
-	return edge_cells
-
-
-func _filter_nav_tiles(cells: Array[Vector2i], nav_tiles: Array[Vector2i]) -> Array[Vector2i]:
-	"""Filter nav tiles to only those in the given cell list"""
-	var filtered: Array[Vector2i] = []
-
-	for tile: Vector2i in nav_tiles:
-		if tile in cells:
-			filtered.append(tile)
-
-	return filtered
-
-
-func _compare_edge_projections(
-	edge1_nav_tiles: Array[Vector2i],
-	edge2_nav_tiles: Array[Vector2i],
-	direction: Vector2i
-) -> bool:
-	"""Compare two edges by projecting nav tiles onto perpendicular axis
-
-	For horizontal edges (UP/DOWN): project onto X axis
-	For vertical edges (LEFT/RIGHT): project onto Y axis
-
-	Returns true if projections match exactly (same set of positions)
-	"""
-	# Determine projection axis based on direction
-	var is_horizontal: bool = (direction == Vector2i.UP or direction == Vector2i.DOWN)
-
-	# Project edge1 nav tiles
-	var proj1: Array[int] = []
-	for tile: Vector2i in edge1_nav_tiles:
-		var position: int = tile.x if is_horizontal else tile.y
-		if position not in proj1:
-			proj1.append(position)
-	proj1.sort()
-
-	# Project edge2 nav tiles
-	var proj2: Array[int] = []
-	for tile: Vector2i in edge2_nav_tiles:
-		var position: int = tile.x if is_horizontal else tile.y
-		if position not in proj2:
-			proj2.append(position)
-	proj2.sort()
-
-	# Compare sorted projections
-	if proj1.size() != proj2.size():
-		return false
-
-	for i in range(proj1.size()):
-		if proj1[i] != proj2[i]:
-			return false
-
-	return true
-
-
-func _find_adjacent_connectable_tiles(cells: Array[Vector2i]) -> Dictionary:
-	"""Find all adjacent tiles from TileMapLayers in 'construction_connectable' group
-
-	Returns: Dictionary[Vector2i (direction) -> Array[grid_positions]]
-	All connectable tile positions adjacent to the piece, grouped by direction
-	"""
-	var adjacent_tiles: Dictionary = {}  # direction -> Array of grid positions with connectable tiles
-	var directions: Array[Vector2i] = [Vector2i.UP, Vector2i.DOWN, Vector2i.LEFT, Vector2i.RIGHT]
-
-	# Initialize arrays for each direction
-	for dir in directions:
-		adjacent_tiles[dir] = []
-
-	# Get all TileMapLayers in the construction_connectable group
+	# Get all TileMapLayers in "connectable_tiles" group from the world
 	if not get_tree():
-		if debug_validation:
-			print("DEBUG: get_tree() returned null!")
-		return adjacent_tiles
+		return adjacent_connectable
 
-	var connectable_layers: Array[Node] = get_tree().get_nodes_in_group("construction_connectable")
+	var world_connectable_layers: Array[Node] = get_tree().get_nodes_in_group("connectable_tiles")
 
-	if debug_validation:
-		print("DEBUG: Found %d nodes in 'construction_connectable' group" % connectable_layers.size())
+	# Also check placed construction pieces for their connectable layers
+	for placed: PlacedPiece in construction_pieces.values():
+		if placed.instance and is_instance_valid(placed.instance):
+			var piece_layers: Array = _find_connectable_layers_recursive(placed.instance)
+			for layer: TileMapLayer in piece_layers:
+				if layer not in world_connectable_layers:
+					world_connectable_layers.append(layer)
 
-	# Debug: Print tilemap info
-	if debug_validation:
-		for node in connectable_layers:
-			if node is TileMapLayer:
-				var tilemap: TileMapLayer = node as TileMapLayer
-				print("DEBUG: Found connectable tilemap: %s, tile_set=%s, transform=%s" %
-					[tilemap.name, tilemap.tile_set, tilemap.global_transform])
-				if tilemap.tile_set:
-					print("  Tile size: %s" % [tilemap.tile_set.tile_size])
-
-	# Collect all adjacent connectable tiles
-	var checked_positions: Dictionary = {}  # Track which positions we've already checked
-
-	for cell: Vector2i in cells:
+	# For each tile in our list, check all 4 directions for adjacent connectable tiles
+	for tile: Vector2i in tiles:
 		for dir: Vector2i in directions:
-			var adjacent_cell: Vector2i = cell + dir
-
-			# Skip if this cell is part of the piece being placed
-			if adjacent_cell in cells:
-				continue
+			var adjacent_pos: Vector2i = tile + dir
 
 			# Skip if we already checked this position
-			var position_key: String = "%s_%s" % [adjacent_cell, dir]
-			if position_key in checked_positions:
+			var pos_key: String = "%d_%d" % [adjacent_pos.x, adjacent_pos.y]
+			if pos_key in checked:
 				continue
-			checked_positions[position_key] = true
+			checked[pos_key] = true
+
+			# Skip if this position is in our own tiles list
+			if adjacent_pos in tiles:
+				continue
 
 			# Check each connectable layer for a tile at this position
-			for node in connectable_layers:
+			for node in world_connectable_layers:
 				if not node is TileMapLayer:
 					continue
 
 				var tilemap: TileMapLayer = node as TileMapLayer
 
-				# Convert building grid position to world position (center of cell for consistency)
-				var world_pos: Vector2 = grid_to_world(adjacent_cell)
-
-				# Convert to tilemap local coordinates
+				# Convert grid position to tilemap coordinates
+				var world_pos: Vector2 = grid_to_world(adjacent_pos)
 				var tilemap_local: Vector2 = tilemap.to_local(world_pos)
 				var tile_coords: Vector2i = tilemap.local_to_map(tilemap_local)
 
-				# Check if this tilemap has a tile at this position
+				# Check if this tilemap has a tile here
 				var tile_data: TileData = tilemap.get_cell_tile_data(tile_coords)
-				if tile_data and tile_data.get_navigation_polygon(0):
-					if debug_validation:
-						print("DEBUG: ✓ Found connectable tile! Direction=%s, GridPos=%s, TileCoords=%s" %
-							[dir, adjacent_cell, tile_coords])
-
-					# Add this position to the array for this direction
-					adjacent_tiles[dir].append(adjacent_cell)
+				if tile_data:
+					adjacent_connectable.append(adjacent_pos)
 					break  # Found tile at this position, move to next
 
-	# Remove empty directions
-	var non_empty_tiles: Dictionary = {}
-	for dir in directions:
-		if adjacent_tiles[dir].size() > 0:
-			non_empty_tiles[dir] = adjacent_tiles[dir]
-
-	return non_empty_tiles
+	return adjacent_connectable
 
 
-func _check_connectable_tiles_alignment(
-	new_piece_nav_tiles: Array[Vector2i],
-	connectable_positions: Array,
-	direction: Vector2i,
-	new_piece_cells: Array[Vector2i]
-) -> bool:
-	"""Check if navigation tiles align between new piece and connectable tiles
 
-	connectable_positions: Array of grid positions where connectable tiles with nav polygons exist
-	"""
-	if connectable_positions.is_empty():
-		return true
 
-	# Find edge cells for new piece on this direction
-	var new_edge_cells: Array[Vector2i] = _get_edge_cells(new_piece_cells, direction)
-	var new_edge_nav_tiles: Array[Vector2i] = _filter_nav_tiles(new_edge_cells, new_piece_nav_tiles)
-
-	# All connectable positions are assumed to have nav polygons (we filtered for that)
-	var connectable_edge_nav_tiles: Array[Vector2i] = []
-	for pos: Vector2i in connectable_positions:
-		connectable_edge_nav_tiles.append(pos)
-
-	if debug_validation:
-		print("  Edge comparison for direction %s:" % [direction])
-		print("    Hallway edge cells (all): %s" % [new_edge_cells])
-		print("    Hallway edge nav tiles: %s" % [new_edge_nav_tiles])
-		print("    Connectable edge nav tiles: %s" % [connectable_edge_nav_tiles])
-
-	# Project and compare
-	var result: bool = _compare_edge_projections(
-		new_edge_nav_tiles,
-		connectable_edge_nav_tiles,
-		direction
-	)
-
-	if debug_validation:
-		print("    Projection comparison result: %s" % result)
-
-	return result
 
 
 func get_all_placed_pieces() -> Array:

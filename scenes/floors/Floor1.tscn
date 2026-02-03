@@ -5211,7 +5211,7 @@ tile_map_data = PackedByteArray("AAAKAP3/BwAEAAAAAAAKAP7/BwAEAAEAAAAKAP//BwAEAAI
 tile_set = SubResource("TileSet_wlbq3")
 script = ExtResource("4_vfwqc")
 
-[node name="ConstructionConnectables" type="TileMapLayer" parent="GameTileMap" groups=["construction_connectable"]]
+[node name="ConstructionConnectables" type="TileMapLayer" parent="GameTileMap" groups=["connectable_tiles"]]
 tile_map_data = PackedByteArray("AAA7AAwABwAIAA8AAAA7AA0ABwAIAA8AAAA7AA4ABwAIAA8AAAA7AA8ABwAIAA4AAABQABYABwAIAA4AAABRABYABwAJAA4AAABSABYABwAKAA4AAABTABYABwALAA4AAABQAAcABwAIAA4AAABRAAcABwAJAA4AAABSAAcABwAKAA4AAABTAAcABwALAA4AAAA=")
 tile_set = ExtResource("20_loxi5")
 

@@ -14,8 +14,6 @@ class PieceData:
 	var is_room: bool
 	var door_positions: Array[Vector2i]  # For rooms: where doors can connect
 	var building_type: DataTypes.BuildingType  # CONSTRUCTION or FURNITURE
-	var nav_tile_coords: Array[Vector2i] = []  # Local coords of cells with nav polygons
-	var nav_data_computed: bool = false  # Lazy computation flag
 
 	func _init(
 		p_id: String,
@@ -156,54 +154,6 @@ func get_pieces_by_category(category: String) -> Array:
 
 func get_piece_ids() -> Array:
 	return pieces.keys()
-
-# =============================================
-# NAVIGATION POLYGON HELPERS
-# =============================================
-
-func get_nav_tile_coords(piece_id: String) -> Array[Vector2i]:
-	"""Get navigation tile coordinates for a piece (computes on first access)"""
-	var piece: PieceData = get_piece(piece_id)
-	if not piece:
-		return []
-
-	if not piece.nav_data_computed:
-		_compute_nav_tile_coords(piece)
-
-	return piece.nav_tile_coords
-
-
-func _compute_nav_tile_coords(piece_data: PieceData) -> void:
-	"""Extract which local cells have navigation polygons by inspecting the scene"""
-	if piece_data.nav_data_computed:
-		return
-
-	var scene: PackedScene = load(piece_data.scene_path)
-	if not scene:
-		push_error("Failed to load scene: %s" % piece_data.scene_path)
-		piece_data.nav_data_computed = true
-		return
-
-	var temp_instance: Node2D = scene.instantiate()
-	var tilemaps: Array[TileMapLayer] = []
-	_find_all_tilemaps_recursive(temp_instance, tilemaps)
-
-	for tilemap in tilemaps:
-		for cell_coords: Vector2i in tilemap.get_used_cells():
-			var tile_data: TileData = tilemap.get_cell_tile_data(cell_coords)
-			if tile_data and tile_data.get_navigation_polygon(0):
-				if cell_coords not in piece_data.nav_tile_coords:
-					piece_data.nav_tile_coords.append(cell_coords)
-
-	temp_instance.queue_free()
-	piece_data.nav_data_computed = true
-
-
-func _find_all_tilemaps_recursive(node: Node, result: Array[TileMapLayer]) -> void:
-	if node is TileMapLayer:
-		result.append(node)
-	for child in node.get_children():
-		_find_all_tilemaps_recursive(child, result)
 
 # =============================================
 # ROTATION HELPERS
