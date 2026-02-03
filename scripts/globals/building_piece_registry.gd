@@ -15,6 +15,10 @@ class PieceData:
 	var door_positions: Array[Vector2i]  # For rooms: where doors can connect
 	var building_type: DataTypes.BuildingType  # CONSTRUCTION or FURNITURE
 
+	# Cached connectable layer data (computed once, reused many times)
+	var connectable_layers_cached: bool = false
+	var cached_layer_data: Array = []  # Array of {offset: Vector2i, tiles: Array[Vector2i]}
+
 	func _init(
 		p_id: String,
 		p_display_name: String,
@@ -154,6 +158,71 @@ func get_pieces_by_category(category: String) -> Array:
 
 func get_piece_ids() -> Array:
 	return pieces.keys()
+
+# =============================================
+# CONNECTABLE LAYER CACHING
+# =============================================
+
+func get_cached_connectable_layers(piece_id: String) -> Array:
+	"""Get cached connectable layer data for a piece
+
+	Returns: Array of {offset: Vector2i, tiles: Array[Vector2i]}
+	Caches the result to avoid repeated scene loading
+	"""
+	var piece: PieceData = get_piece(piece_id)
+	if not piece:
+		return []
+
+	# Return cached data if available
+	if piece.connectable_layers_cached:
+		return piece.cached_layer_data
+
+	# Compute and cache the data
+	var scene: PackedScene = load(piece.scene_path)
+	if not scene:
+		piece.connectable_layers_cached = true
+		return []
+
+	var temp_instance: Node2D = scene.instantiate()
+	var layer_data: Array = []
+
+	# Find all connectable layers and extract their data
+	var layers: Array = _find_connectable_layers_recursive(temp_instance)
+	for layer: TileMapLayer in layers:
+		var layer_offset_pixels: Vector2 = layer.position
+		var layer_offset_cells: Vector2i = Vector2i(
+			floori(layer_offset_pixels.x / 16),  # TODO: Use cell_size from somewhere
+			floori(layer_offset_pixels.y / 16)
+		)
+		var local_tiles: Array[Vector2i] = layer.get_used_cells()
+
+		layer_data.append({
+			"offset": layer_offset_cells,
+			"tiles": local_tiles
+		})
+
+	temp_instance.queue_free()
+
+	# Cache the result
+	piece.cached_layer_data = layer_data
+	piece.connectable_layers_cached = true
+
+	return layer_data
+
+
+func _find_connectable_layers_recursive(node: Node) -> Array:
+	"""Recursively find all TileMapLayers in 'connectable_tiles' group"""
+	var layers: Array = []
+
+	if node is TileMapLayer:
+		var tilemap: TileMapLayer = node as TileMapLayer
+		if tilemap.is_in_group("connectable_tiles"):
+			layers.append(tilemap)
+
+	for child in node.get_children():
+		layers.append_array(_find_connectable_layers_recursive(child))
+
+	return layers
 
 # =============================================
 # ROTATION HELPERS

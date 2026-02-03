@@ -21,6 +21,10 @@ var furniture_cells: Dictionary = {}       # grid_pos -> origin_grid_pos
 # Pending custom_data for loaded pieces (used during load)
 var pending_custom_data: Dictionary = {}  # grid_pos -> custom_data
 
+# Spatial index for world connectable tiles (performance optimization)
+var world_connectable_tiles_index: Dictionary = {}  # grid_pos -> true
+var world_connectable_index_dirty: bool = true  # Rebuild index when dirty
+
 class PlacedPiece:
 	var piece_id: String
 	var grid_pos: Vector2i  # Origin position
@@ -107,6 +111,10 @@ func place_piece(piece_id: String, grid_pos: Vector2i, rotation: int, instance: 
 			for cell: Vector2i in cells:
 				furniture_cells[cell] = grid_pos
 
+	# Mark spatial index as dirty
+	if piece_data.building_type == DataTypes.BuildingType.CONSTRUCTION:
+		world_connectable_index_dirty = true
+
 	piece_added.emit(grid_pos, piece_id)
 	layout_changed.emit(grid_pos)
 
@@ -186,6 +194,9 @@ func remove_construction_at(grid_pos: Vector2i) -> bool:
 		construction_cells.erase(cell)
 
 	construction_pieces.erase(origin_pos)
+
+	# Mark spatial index as dirty
+	world_connectable_index_dirty = true
 
 	piece_removed.emit(origin_pos, piece_id)
 	layout_changed.emit(origin_pos)
@@ -371,42 +382,24 @@ func _validate_connection_groups(piece_id: String, grid_pos: Vector2i, rotation:
 		print("\n=== CONNECTABLE TILES VALIDATION START ===")
 		print("Piece: %s, GridPos: %s" % [piece_id, grid_pos])
 
-	# Load the piece scene to find connectable TileMapLayers
-	var piece_data: BuildingPieceRegistry.PieceData = BuildingPieceRegistry.get_piece(piece_id)
-	if not piece_data:
-		return false
+	# Get cached connectable layer data (avoids repeated scene loading)
+	var layer_data: Array = BuildingPieceRegistry.get_cached_connectable_layers(piece_id)
 
-	var scene: PackedScene = load(piece_data.scene_path)
-	if not scene:
-		return false
-
-	var temp_instance: Node2D = scene.instantiate()
-
-	# Find all TileMapLayers in "connectable_tiles" group
-	var connectable_layers: Array = _find_connectable_layers_recursive(temp_instance)
-
-	if connectable_layers.is_empty():
-		temp_instance.queue_free()
+	if layer_data.is_empty():
 		if debug_validation:
 			print("❌ FAIL: Piece has no TileMapLayers in 'connectable_tiles' group")
 		return false
 
 	if debug_validation:
-		print("Found %d connectable layers in piece" % connectable_layers.size())
+		print("Found %d connectable layers in piece (cached)" % layer_data.size())
 
 	# Track if at least one layer finds a match
 	var at_least_one_match: bool = false
 
 	# Check each connectable layer
-	for layer: TileMapLayer in connectable_layers:
-		var local_tiles: Array[Vector2i] = layer.get_used_cells()
-
-		# Get the layer's position offset in grid cells (relative to piece origin)
-		var layer_offset_pixels: Vector2 = layer.position
-		var layer_offset_cells: Vector2i = Vector2i(
-			floori(layer_offset_pixels.x / cell_size),
-			floori(layer_offset_pixels.y / cell_size)
-		)
+	for layer_info: Dictionary in layer_data:
+		var layer_offset_cells: Vector2i = layer_info["offset"]
+		var local_tiles: Array[Vector2i] = layer_info["tiles"]
 
 		# Transform tiles to global grid (layer offset + translation)
 		# Note: No rotation needed since constructions are always at rotation=0
@@ -433,12 +426,9 @@ func _validate_connection_groups(piece_id: String, grid_pos: Vector2i, rotation:
 				print("    ✓ Match! %d tiles connect to %d tiles" % [global_tiles.size(), adjacent_tiles.size()])
 		elif adjacent_tiles.size() > 0:
 			# Touching but count mismatch - invalid
-			temp_instance.queue_free()
 			if debug_validation:
 				print("    ❌ Count mismatch: %d tiles trying to connect to %d tiles" % [global_tiles.size(), adjacent_tiles.size()])
 			return false
-
-	temp_instance.queue_free()
 
 	if not at_least_one_match:
 		if debug_validation:
@@ -530,6 +520,51 @@ func _get_occupied_cells(origin: Vector2i, size: Vector2i, rotation: int) -> Arr
 # CONNECTABLE TILES VALIDATION HELPERS
 # =============================================
 
+func _rebuild_world_connectable_index() -> void:
+	"""Rebuild the spatial index of world connectable tiles
+
+	This is called lazily when the index is dirty (after placing/removing pieces)
+	"""
+	world_connectable_tiles_index.clear()
+
+	# Index world TileMapLayers in "connectable_tiles" group
+	if get_tree():
+		var world_layers: Array[Node] = get_tree().get_nodes_in_group("connectable_tiles")
+		for node in world_layers:
+			if not node is TileMapLayer:
+				continue
+
+			var tilemap: TileMapLayer = node as TileMapLayer
+			var used_cells: Array[Vector2i] = tilemap.get_used_cells()
+
+			for cell_coords: Vector2i in used_cells:
+				# Convert tilemap coordinates to global grid
+				var cell_world_pos: Vector2 = tilemap.map_to_local(cell_coords)
+				var cell_global_pos: Vector2 = tilemap.to_global(cell_world_pos)
+				var grid_pos: Vector2i = world_to_grid(cell_global_pos)
+
+				world_connectable_tiles_index[grid_pos] = true
+
+	# Index placed construction pieces' connectable layers
+	for placed: PlacedPiece in construction_pieces.values():
+		if not placed.instance or not is_instance_valid(placed.instance):
+			continue
+
+		var piece_layers: Array = _find_connectable_layers_recursive(placed.instance)
+		for layer: TileMapLayer in piece_layers:
+			var used_cells: Array[Vector2i] = layer.get_used_cells()
+
+			for cell_coords: Vector2i in used_cells:
+				# Convert to global grid coordinates
+				var cell_world_pos: Vector2 = layer.map_to_local(cell_coords)
+				var cell_global_pos: Vector2 = layer.to_global(cell_world_pos)
+				var grid_pos: Vector2i = world_to_grid(cell_global_pos)
+
+				world_connectable_tiles_index[grid_pos] = true
+
+	world_connectable_index_dirty = false
+
+
 func _find_connectable_layers_recursive(node: Node) -> Array:
 	"""Recursively find all TileMapLayers that are in the 'connectable_tiles' group"""
 	var layers: Array = []
@@ -546,29 +581,19 @@ func _find_connectable_layers_recursive(node: Node) -> Array:
 
 
 func _find_adjacent_connectable_tiles_simple(tiles: Array[Vector2i]) -> Array[Vector2i]:
-	"""Find connectable tiles adjacent to the given tiles
+	"""Find connectable tiles adjacent to the given tiles (optimized with spatial index)
 
 	Returns array of positions where connectable tiles exist adjacent to the input tiles
 	"""
+	# Rebuild spatial index if dirty (after placing/removing pieces)
+	if world_connectable_index_dirty:
+		_rebuild_world_connectable_index()
+
 	var adjacent_connectable: Array[Vector2i] = []
 	var directions: Array[Vector2i] = [Vector2i.UP, Vector2i.DOWN, Vector2i.LEFT, Vector2i.RIGHT]
 	var checked: Dictionary = {}  # Avoid duplicates
 
-	# Get all TileMapLayers in "connectable_tiles" group from the world
-	if not get_tree():
-		return adjacent_connectable
-
-	var world_connectable_layers: Array[Node] = get_tree().get_nodes_in_group("connectable_tiles")
-
-	# Also check placed construction pieces for their connectable layers
-	for placed: PlacedPiece in construction_pieces.values():
-		if placed.instance and is_instance_valid(placed.instance):
-			var piece_layers: Array = _find_connectable_layers_recursive(placed.instance)
-			for layer: TileMapLayer in piece_layers:
-				if layer not in world_connectable_layers:
-					world_connectable_layers.append(layer)
-
-	# For each tile in our list, check all 4 directions for adjacent connectable tiles
+	# For each tile in our list, check all 4 directions using the spatial index
 	for tile: Vector2i in tiles:
 		for dir: Vector2i in directions:
 			var adjacent_pos: Vector2i = tile + dir
@@ -583,23 +608,9 @@ func _find_adjacent_connectable_tiles_simple(tiles: Array[Vector2i]) -> Array[Ve
 			if adjacent_pos in tiles:
 				continue
 
-			# Check each connectable layer for a tile at this position
-			for node in world_connectable_layers:
-				if not node is TileMapLayer:
-					continue
-
-				var tilemap: TileMapLayer = node as TileMapLayer
-
-				# Convert grid position to tilemap coordinates
-				var world_pos: Vector2 = grid_to_world(adjacent_pos)
-				var tilemap_local: Vector2 = tilemap.to_local(world_pos)
-				var tile_coords: Vector2i = tilemap.local_to_map(tilemap_local)
-
-				# Check if this tilemap has a tile here
-				var tile_data: TileData = tilemap.get_cell_tile_data(tile_coords)
-				if tile_data:
-					adjacent_connectable.append(adjacent_pos)
-					break  # Found tile at this position, move to next
+			# Fast O(1) lookup in spatial index
+			if adjacent_pos in world_connectable_tiles_index:
+				adjacent_connectable.append(adjacent_pos)
 
 	return adjacent_connectable
 

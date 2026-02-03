@@ -23,6 +23,7 @@ var ghost_instance: Node2D = null
 var ghost_valid: bool = false
 var current_grid_pos: Vector2i = Vector2i.ZERO
 var ghost_center_offset: Vector2 = Vector2.ZERO  # Offset to center ghost on cursor
+var last_validated_pos: Vector2i = Vector2i(-99999, -99999)  # Track last validation position
 
 # Visual feedback
 var valid_color: Color = Color(0.2, 1.0, 0.2, 0.5)  # Green, semi-transparent
@@ -114,6 +115,9 @@ func select_piece(piece_id: String) -> void:
 	# Reset rotation (constructions stay at 0, furniture can be rotated)
 	current_rotation = 0
 
+	# Invalidate validation cache
+	last_validated_pos = Vector2i(-99999, -99999)
+
 	_clear_ghost()
 
 	if piece_id != "":
@@ -141,6 +145,9 @@ func _rotate_piece(direction: int) -> void:
 	current_rotation = (current_rotation + direction) % 4
 	if current_rotation < 0:
 		current_rotation += 4
+
+	# Invalidate validation cache (rotation changed)
+	last_validated_pos = Vector2i(-99999, -99999)
 
 	if ghost_instance:
 		ghost_instance.rotation_degrees = current_rotation * 90
@@ -212,13 +219,20 @@ func _update_ghost_position() -> void:
 
 
 func _update_ghost_validity() -> void:
-	"""Update ghost color based on placement validity"""
+	"""Update ghost color based on placement validity (cached for same position)"""
 	if not ghost_instance:
 		return
-	
+
+	# Skip validation if position hasn't changed (performance optimization)
+	if current_grid_pos == last_validated_pos:
+		return
+
 	ghost_valid = BuildingLayoutData.can_place_at(selected_piece_id, current_grid_pos, current_rotation)
 	var color: Color = valid_color if ghost_valid else invalid_color
 	_set_ghost_color(ghost_instance, color)
+
+	# Cache the validated position
+	last_validated_pos = current_grid_pos
 
 
 func _apply_ghost_material(node: Node) -> void:
