@@ -254,7 +254,7 @@ func get_openings_at(grid_pos: Vector2i) -> Array[Vector2i]:
 		return []
 	
 	# Only single-cell pieces have openings at their position
-	# Multi-cell pieces (rooms) use door_positions instead
+	# Rooms use door_edge layer in scene to determine door position
 	var piece_data: BuildingPieceRegistry.PieceData = BuildingPieceRegistry.get_piece(placed.piece_id)
 	if not piece_data or piece_data.is_room:
 		return []

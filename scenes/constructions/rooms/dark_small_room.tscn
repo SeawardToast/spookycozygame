@@ -1,7 +1,9 @@
-[gd_scene load_steps=3 format=4 uid="uid://dtj2nrykfdur8"]
+[gd_scene load_steps=5 format=4 uid="uid://dtj2nrykfdur8"]
 
 [ext_resource type="TileSet" uid="uid://dcaqtdvfufe8g" path="res://tilesets/game_tile_set.tres" id="1_4sjlg"]
 [ext_resource type="Script" uid="uid://co1glds8q350" path="res://scenes/constructions/rooms/dark_small_room.gd" id="1_226nq"]
+[ext_resource type="PackedScene" uid="uid://ber0r841sem8q" path="res://scenes/components/save_load/save_data_component.tscn" id="3_sl1ti"]
+[ext_resource type="Resource" uid="uid://sbybiywmb8mp" path="res://resources/scene_data_resource.tres" id="4_tcgwi"]
 
 [node name="SmallRoom" type="Node2D"]
 script = ExtResource("1_226nq")
@@ -28,3 +30,6 @@ position = Vector2(72, 135)
 [node name="CollisionPolygon2D" type="CollisionPolygon2D" parent="RoomInterior"]
 position = Vector2(27, 26)
 polygon = PackedVector2Array(100, 101, 100, -9, -9, -10, -10, 101)
+
+[node name="SaveDataComponent" parent="." instance=ExtResource("3_sl1ti")]
+save_data_resource = ExtResource("4_tcgwi")

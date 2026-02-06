@@ -388,7 +388,10 @@ func _register_room_placement(piece_data: BuildingPieceRegistry.PieceData, insta
 		instance.hide_door_side_wall()
 
 	# 2. Find adjacent hallway and erase wall tile
-	var door_offset: Vector2i = piece_data.door_positions[0] if piece_data.door_positions.size() > 0 else Vector2i.ZERO
+	# Get door offset from instance's door_edge layer (not from registry)
+	var door_offset: Vector2i = Vector2i.ZERO
+	if instance.has_method("get_door_grid_offset"):
+		door_offset = instance.get_door_grid_offset()
 	var door_grid: Vector2i = grid_pos + door_offset
 	var hallway_data: Dictionary = _find_adjacent_hallway_wall(door_grid)
 

@@ -12,7 +12,6 @@ class PieceData:
 	var openings: Array[Vector2i]  # Which directions have connections (before rotation)
 	var category: String  # "hallway", "room", etc.
 	var is_room: bool
-	var door_positions: Array[Vector2i]  # For rooms: where doors can connect
 	var building_type: DataTypes.BuildingType  # CONSTRUCTION or FURNITURE
 
 	# Cached connectable layer data (computed once, reused many times)
@@ -27,7 +26,6 @@ class PieceData:
 		p_openings: Array[Vector2i] = [],
 		p_category: String = "hallway",
 		p_is_room: bool = false,
-		p_door_positions: Array[Vector2i] = [],
 		p_building_type: DataTypes.BuildingType = DataTypes.BuildingType.CONSTRUCTION
 	) -> void:
 		id = p_id
@@ -37,7 +35,6 @@ class PieceData:
 		openings = p_openings
 		category = p_category
 		is_room = p_is_room
-		door_positions = p_door_positions
 		building_type = p_building_type
 		icon_path = ""
 
@@ -119,6 +116,7 @@ func _register_default_pieces() -> void:
 	# =============================================
 
 	# Dark Chamber (Small) - for vampires
+	# Door position is determined by door_edge layer in scene
 	register_piece(PieceData.new(
 		"room_dark_small",
 		"Dark Chamber (Small)",
@@ -127,7 +125,6 @@ func _register_default_pieces() -> void:
 		[],  # Rooms don't use openings
 		"room",
 		true,
-		[],  # Door position determined by door_edge layer in scene
 		DataTypes.BuildingType.CONSTRUCTION
 	))
 
@@ -144,7 +141,6 @@ func _register_default_pieces() -> void:
 		[],  # Furniture doesn't use openings
 		"furniture",
 		false,
-		[],
 		DataTypes.BuildingType.FURNITURE
 	))
 
@@ -253,20 +249,6 @@ func get_rotated_openings(piece_id: String, rotation: int) -> Array[Vector2i]:
 	return rotated
 
 
-func get_rotated_door_positions(piece_id: String, rotation: int) -> Array[Vector2i]:
-	"""Get door positions for a room after applying rotation"""
-	var piece: PieceData = get_piece(piece_id)
-	if not piece or not piece.is_room:
-		return []
-	
-	var rotated: Array[Vector2i] = []
-	for door_pos: Vector2i in piece.door_positions:
-		var rotated_pos: Vector2i = _rotate_position(door_pos, piece.size, rotation)
-		rotated.append(rotated_pos)
-	
-	return rotated
-
-
 func _rotate_direction(dir: Vector2i, rotation: int) -> Vector2i:
 	"""Rotate a direction vector by rotation * 90 degrees clockwise"""
 	var result: Vector2i = dir
@@ -274,20 +256,4 @@ func _rotate_direction(dir: Vector2i, rotation: int) -> Vector2i:
 		# 90 degree clockwise rotation: (x, y) -> (y, -x)
 		# But for grid directions: (x, y) -> (-y, x)
 		result = Vector2i(-result.y, result.x)
-	return result
-
-
-func _rotate_position(pos: Vector2i, size: Vector2i, rotation: int) -> Vector2i:
-	"""Rotate a position within a piece's bounds"""
-	var result: Vector2i = pos
-	var current_size: Vector2i = size
-	
-	for i: int in rotation:
-		# Rotate position 90 degrees clockwise within bounds
-		var new_x: int = current_size.y - 1 - result.y
-		var new_y: int = result.x
-		result = Vector2i(new_x, new_y)
-		# Size dimensions swap on each rotation
-		current_size = Vector2i(current_size.y, current_size.x)
-	
 	return result

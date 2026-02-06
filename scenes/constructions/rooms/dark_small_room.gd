@@ -61,8 +61,15 @@ func get_interior_cells(origin: Vector2i) -> Array[Vector2i]:
 
 
 func hide_door_side_wall() -> void:
-	_door_side_wall.visible = false
+	if _door_side_wall:
+		_door_side_wall.visible = false
+		# Also send to back in case visibility doesn't work
+		_door_side_wall.z_index = -10
+	else:
+		push_warning("door_side_wall layer not found")
 
 
 func show_door_side_wall() -> void:
-	_door_side_wall.visible = true
+	if _door_side_wall:
+		_door_side_wall.visible = true
+		_door_side_wall.z_index = 0
