@@ -74,7 +74,7 @@ Recent work:
 - `RoomManager` autoload manages all room state
 - Room scenes need: `door_side_wall` layer (hidden on placement), `door_edge` layer (single tile in connectable_tiles), `DoorPosition` Marker2D
 - **Door position is determined by the `door_edge` layer in the scene** - not hardcoded in registry
-- Room validation: door must be on top of hallway wall tile (not opening)
+- Room validation: door must be on top of hallway wall tile (checks Walls TileMapLayer directly)
 - `PlacedRoom` stores covered hallway wall tile data for restoration
 - `hallway_id` format: `piece_id_x_y` e.g. `hallway_straight_10_20`
 - Hallway deletion blocked if `RoomManager.has_attached_rooms()` returns true
@@ -88,6 +88,8 @@ Recent work:
 | Approach | Problem | Better Solution |
 |----------|---------|-----------------|
 | Rotation for construction pieces | Too complex for the benefit | Removed - use fixed orientations with variants (hallway_L, hallway_L_inverted) |
+| Openings-based room validation | Incorrectly filtered valid wall positions | Removed - just check for wall tile in Walls TileMapLayer |
+| Including door layers in cell calculation | door_side_wall/door_edge caused false overlap with hallway | Skip these layers in _get_tilemap_cells_from_instance |
 
 ---
 

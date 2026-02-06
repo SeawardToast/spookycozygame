@@ -10,7 +10,7 @@ signal piece_removed(grid_pos: Vector2i, piece_id: String)
 @export var cell_size: int = 16
 
 # Debug flag for validation logging
-var debug_validation: bool = false
+var debug_validation: bool = true
 
 # Layer-separated placement tracking
 var construction_pieces: Dictionary = {}   # grid_pos -> PlacedPiece (CONSTRUCTION type)
@@ -72,10 +72,8 @@ func place_piece(piece_id: String, grid_pos: Vector2i, rotation: int, instance: 
 		cells = _get_occupied_cells(grid_pos, piece_data.size, rotation)
 		print("LayoutData: Using size-based cells for %s (no TileMap found)" % piece_id)
 
-	# Validate (enable debug logging for placement attempts)
-	debug_validation = true
 	var valid: bool = can_place_at(piece_id, grid_pos, rotation)
-	debug_validation = false
+
 
 	if not valid:
 		push_warning("LayoutData: Cannot place %s at %s" % [piece_id, grid_pos])
@@ -334,15 +332,21 @@ func can_place_at(piece_id: String, grid_pos: Vector2i, rotation: int) -> bool:
 		if local_cells.size() > 0:
 			# Use actual TileMap cells with rotation applied
 			cells = _transform_cells_for_placement(local_cells, grid_pos, rotation)
+			if debug_validation and piece_data.is_room:
+				print("Room %s: %d cells from tilemap at %s" % [piece_id, cells.size(), grid_pos])
 		else:
 			# Fallback to size-based rectangle
 			cells = _get_occupied_cells(grid_pos, piece_data.size, rotation)
+			if debug_validation and piece_data.is_room:
+				print("Room %s: using size-based cells (no tilemap) at %s" % [piece_id, grid_pos])
 
 		# Clean up temporary instance
 		temp_instance.queue_free()
 	else:
 		# If scene fails to load, use fallback
 		cells = _get_occupied_cells(grid_pos, piece_data.size, rotation)
+		if debug_validation and piece_data.is_room:
+			print("Room %s: scene failed to load, using size-based cells" % piece_id)
 
 	# Type-specific validation
 	match piece_data.building_type:
@@ -350,10 +354,14 @@ func can_place_at(piece_id: String, grid_pos: Vector2i, rotation: int) -> bool:
 			# Rule 1: Constructions cannot overlap with other constructions
 			for cell: Vector2i in cells:
 				if is_construction_at(cell):
+					if debug_validation and piece_data.is_room:
+						print("Room cell %s overlaps with construction - failing early" % cell)
 					return false
 
 			# Room-specific validation
 			if piece_data.is_room:
+				if debug_validation:
+					print("Calling _validate_room_placement for %s at %s" % [piece_id, grid_pos])
 				return _validate_room_placement(piece_id, grid_pos, rotation)
 
 			# Rule 2: Must have valid connection group matches with adjacent pieces
@@ -452,6 +460,7 @@ func _validate_connection_groups(piece_id: String, grid_pos: Vector2i, rotation:
 
 func _validate_room_placement(piece_id: String, grid_pos: Vector2i, rotation: int) -> bool:
 	"""Room door must be placed ON TOP of a hallway wall tile"""
+	print("mate")
 	var piece_data: BuildingPieceRegistry.PieceData = BuildingPieceRegistry.get_piece(piece_id)
 	if not piece_data:
 		if debug_validation:
@@ -466,7 +475,7 @@ func _validate_room_placement(piece_id: String, grid_pos: Vector2i, rotation: in
 		print("\n=== ROOM PLACEMENT VALIDATION ===")
 		print("Room: %s, GridPos: %s, DoorOffset: %s, DoorGrid: %s" % [piece_id, grid_pos, door_offset, door_grid])
 
-	# Check all 4 directions from door
+	# Check all 4 directions from door for an adjacent hallway with a wall tile
 	for dir: Vector2i in [Vector2i.UP, Vector2i.DOWN, Vector2i.LEFT, Vector2i.RIGHT]:
 		var adjacent: Vector2i = door_grid + dir
 
@@ -478,13 +487,7 @@ func _validate_room_placement(piece_id: String, grid_pos: Vector2i, rotation: in
 		if not hallway or not hallway.instance:
 			continue
 
-		# Door attaches to hallway WALL, not opening
-		if has_opening_toward(adjacent, -dir):
-			if debug_validation:
-				print("  Direction %s: hallway has opening toward door (invalid)" % dir)
-			continue
-
-		# CRITICAL: Verify there's actually a wall tile at the door position
+		# Check if there's a wall tile at the door position in the hallway's Walls layer
 		var walls_layer: TileMapLayer = hallway.instance.get_node_or_null("GameTileMap/Walls")
 		if not walls_layer:
 			if debug_validation:
@@ -550,13 +553,16 @@ func would_connect(piece_id: String, grid_pos: Vector2i, rotation: int) -> bool:
 # =============================================
 
 func _get_tilemap_cells_from_instance(instance: Node) -> Array[Vector2i]:
-	"""Recursively find all TileMapLayer nodes and extract their used cells"""
+	"""Recursively find all TileMapLayer nodes and extract their used cells
+	Skips door_side_wall and door_edge layers (room-specific, not for occupancy)"""
 	var all_cells: Array[Vector2i] = []
 
 	if instance is TileMapLayer:
 		var tilemap: TileMapLayer = instance as TileMapLayer
-		var used_cells: Array[Vector2i] = tilemap.get_used_cells()
-		all_cells.append_array(used_cells)
+		# Skip room door layers - they're for validation/visuals, not occupancy
+		if tilemap.name != "door_side_wall" and tilemap.name != "door_edge":
+			var used_cells: Array[Vector2i] = tilemap.get_used_cells()
+			all_cells.append_array(used_cells)
 
 	# Recursively check children
 	for child in instance.get_children():
