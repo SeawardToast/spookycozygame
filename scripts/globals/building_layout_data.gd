@@ -174,6 +174,12 @@ func remove_construction_at(grid_pos: Vector2i) -> bool:
 	var placed: PlacedPiece = construction_pieces[origin_pos]
 	var piece_id: String = placed.piece_id
 
+	# Check if rooms are attached to this hallway - prevent deletion
+	var hallway_id: String = piece_id + "_" + str(origin_pos.x) + "_" + str(origin_pos.y)
+	if RoomManager.has_attached_rooms(hallway_id):
+		push_warning("Cannot remove hallway with attached rooms at %s" % origin_pos)
+		return false
+
 	# Check if furniture exists on top - prevent deletion
 	var has_furniture_on_top: bool = false
 	for cell: Vector2i in placed.occupied_cells:
@@ -346,6 +352,10 @@ func can_place_at(piece_id: String, grid_pos: Vector2i, rotation: int) -> bool:
 				if is_construction_at(cell):
 					return false
 
+			# Room-specific validation
+			if piece_data.is_room:
+				return _validate_room_placement(piece_id, grid_pos, rotation)
+
 			# Rule 2: Must have valid connection group matches with adjacent pieces
 			if not _validate_connection_groups(piece_id, grid_pos, rotation, cells):
 				return false
@@ -438,6 +448,86 @@ func _validate_connection_groups(piece_id: String, grid_pos: Vector2i, rotation:
 	if debug_validation:
 		print("✅ SUCCESS: At least one layer matched")
 	return true
+
+
+func _validate_room_placement(piece_id: String, grid_pos: Vector2i, rotation: int) -> bool:
+	"""Room door must be placed ON TOP of a hallway wall tile"""
+	var piece_data: BuildingPieceRegistry.PieceData = BuildingPieceRegistry.get_piece(piece_id)
+	if not piece_data:
+		if debug_validation:
+			print("❌ FAIL: Room piece not found")
+		return false
+
+	# Get door position from scene's door_edge layer
+	var door_offset: Vector2i = _get_room_door_offset(piece_data.scene_path)
+	var door_grid: Vector2i = grid_pos + door_offset
+
+	if debug_validation:
+		print("\n=== ROOM PLACEMENT VALIDATION ===")
+		print("Room: %s, GridPos: %s, DoorOffset: %s, DoorGrid: %s" % [piece_id, grid_pos, door_offset, door_grid])
+
+	# Check all 4 directions from door
+	for dir: Vector2i in [Vector2i.UP, Vector2i.DOWN, Vector2i.LEFT, Vector2i.RIGHT]:
+		var adjacent: Vector2i = door_grid + dir
+
+		# Must be construction (hallway)
+		if not is_construction_at(adjacent):
+			continue
+
+		var hallway: PlacedPiece = get_construction_at(adjacent)
+		if not hallway or not hallway.instance:
+			continue
+
+		# Door attaches to hallway WALL, not opening
+		if has_opening_toward(adjacent, -dir):
+			if debug_validation:
+				print("  Direction %s: hallway has opening toward door (invalid)" % dir)
+			continue
+
+		# CRITICAL: Verify there's actually a wall tile at the door position
+		var walls_layer: TileMapLayer = hallway.instance.get_node_or_null("GameTileMap/Walls")
+		if not walls_layer:
+			if debug_validation:
+				print("  Direction %s: no Walls layer found" % dir)
+			continue
+
+		# Convert door grid position to hallway's Walls layer local coords
+		var door_world: Vector2 = grid_to_world(door_grid)
+		var local_pos: Vector2 = walls_layer.to_local(door_world)
+		var wall_cell: Vector2i = walls_layer.local_to_map(local_pos)
+
+		# Check if there's a tile at this position
+		var tile_source: int = walls_layer.get_cell_source_id(wall_cell)
+		if tile_source != -1:  # -1 means no tile
+			if debug_validation:
+				print("✅ SUCCESS: Found wall tile at %s (source: %d)" % [wall_cell, tile_source])
+			return true
+		else:
+			if debug_validation:
+				print("  Direction %s: no wall tile at cell %s" % [dir, wall_cell])
+
+	if debug_validation:
+		print("❌ FAIL: Room door must be placed on a hallway wall tile")
+	return false
+
+
+func _get_room_door_offset(scene_path: String) -> Vector2i:
+	"""Get door position offset from room scene's door_edge layer"""
+	var scene: PackedScene = load(scene_path)
+	if not scene:
+		return Vector2i.ZERO
+
+	var temp_instance: Node2D = scene.instantiate()
+	var door_edge: TileMapLayer = temp_instance.get_node_or_null("GameTileMap/door_edge")
+
+	var offset: Vector2i = Vector2i.ZERO
+	if door_edge:
+		var cells: Array[Vector2i] = door_edge.get_used_cells()
+		if cells.size() > 0:
+			offset = cells[0]
+
+	temp_instance.queue_free()
+	return offset
 
 
 func would_connect(piece_id: String, grid_pos: Vector2i, rotation: int) -> bool:

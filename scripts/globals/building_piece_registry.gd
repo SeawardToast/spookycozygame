@@ -58,7 +58,17 @@ func _register_default_pieces() -> void:
 	register_piece(PieceData.new(
 		"hallway_straight",
 		"Straight Hallway",
-		"res://scenes/buildings/hallway_straight.tscn",
+		"res://scenes/constructions/hallway_straight.tscn",
+		Vector2i(1, 1),
+		[Vector2i.UP, Vector2i.DOWN],
+		"hallway"
+	))
+	
+	# Straight hallway (horizontal)
+	register_piece(PieceData.new(
+		"hallway_straight_horizontal",
+		"Straight Horizontal Hallway",
+		"res://scenes/constructions/hallway_straight_horizontal.tscn",
 		Vector2i(1, 1),
 		[Vector2i.UP, Vector2i.DOWN],
 		"hallway"
@@ -68,17 +78,17 @@ func _register_default_pieces() -> void:
 	register_piece(PieceData.new(
 		"hallway_L",
 		"L-Turn",
-		"res://scenes/buildings/hallway_L.tscn",
+		"res://scenes/constructions/hallway_L.tscn",
 		Vector2i(1, 1),
 		[Vector2i.UP, Vector2i.RIGHT],
 		"hallway"
 	))
 	
-		# Inverted L-turn (connects up and left)
+	# Inverted L-turn (connects up and left)
 	register_piece(PieceData.new(
 		"hallway_L_inverted",
 		"L-Turn Inverted",
-		"res://scenes/buildings/hallway_L_inverted.tscn",
+		"res://scenes/constructions/hallway_L_inverted.tscn",
 		Vector2i(1, 1),
 		[Vector2i.UP, Vector2i.RIGHT],
 		"hallway"
@@ -105,20 +115,21 @@ func _register_default_pieces() -> void:
 	))
 	
 	# =============================================
-	# ROOM PIECES (examples - you'll customize these)
+	# ROOM PIECES
 	# =============================================
 
-	# Small room (2x2)
-	#register_piece(PieceData.new(
-	#	"room_small",
-	#	"Small Room",
-	#	"res://scenes/building/rooms/room_small.tscn",
-	#	Vector2i(2, 2),
-	#	[],  # Rooms don't use openings
-	#	"room",
-	#	true,
-	#	[Vector2i(0, 1), Vector2i(1, 0)]  # Door positions on perimeter
-	#))
+	# Dark Chamber (Small) - for vampires
+	register_piece(PieceData.new(
+		"room_dark_small",
+		"Dark Chamber (Small)",
+		"res://scenes/constructions/rooms/dark_small_room.tscn",
+		Vector2i(7, 7),
+		[],  # Rooms don't use openings
+		"room",
+		true,
+		[],  # Door position determined by door_edge layer in scene
+		DataTypes.BuildingType.CONSTRUCTION
+	))
 
 	# =============================================
 	# FURNITURE PIECES

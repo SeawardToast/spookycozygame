@@ -342,7 +342,11 @@ func _try_place_piece() -> void:
 	if BuildingLayoutData.place_piece(selected_piece_id, current_grid_pos, current_rotation, instance):
 		placement_succeeded.emit(selected_piece_id, current_grid_pos)
 		BuildModeManager.piece_placed.emit(selected_piece_id, current_grid_pos, current_rotation)
-		
+
+		# Handle room-specific registration
+		if piece_data.is_room:
+			_register_room_placement(piece_data, instance, current_grid_pos)
+
 		# TODO: Update navigation if the piece has a NavigationRegion2D
 		# FloorManager.refresh_floor_obstacles(FloorManager.current_floor)
 	else:
@@ -354,13 +358,104 @@ func _try_delete_piece() -> void:
 	"""Try to delete the piece under the cursor"""
 	var mouse_pos: Vector2 = get_global_mouse_position()
 	var grid_pos: Vector2i = BuildingLayoutData.world_to_grid(mouse_pos)
-	
+
+	# Check if deleting a room - handle via RoomManager
+	var room: PlacedRoom = RoomManager.get_room_at(grid_pos)
+	if room:
+		if RoomManager.unregister_room(room.instance_id):
+			# Also remove from BuildingLayoutData
+			BuildingLayoutData.remove_construction_at(room.grid_pos)
+			piece_deleted.emit(grid_pos)
+			BuildModeManager.piece_removed.emit(grid_pos)
+			print("PlacementSystem: Deleted room at %s" % grid_pos)
+		else:
+			print("PlacementSystem: Cannot delete room (may have guest assigned)")
+		return
+
 	if BuildingLayoutData.remove_piece(grid_pos):
 		piece_deleted.emit(grid_pos)
 		BuildModeManager.piece_removed.emit(grid_pos)
 		print("PlacementSystem: Deleted piece at %s" % grid_pos)
 	else:
 		print("PlacementSystem: No piece to delete at %s" % grid_pos)
+
+
+func _register_room_placement(piece_data: BuildingPieceRegistry.PieceData, instance: Node2D, grid_pos: Vector2i) -> void:
+	"""Handle room-specific placement: hide door-side wall, erase hallway wall, register with RoomManager"""
+
+	# 1. Hide room's door-side wall
+	if instance.has_method("hide_door_side_wall"):
+		instance.hide_door_side_wall()
+
+	# 2. Find adjacent hallway and erase wall tile
+	var door_offset: Vector2i = piece_data.door_positions[0] if piece_data.door_positions.size() > 0 else Vector2i.ZERO
+	var door_grid: Vector2i = grid_pos + door_offset
+	var hallway_data: Dictionary = _find_adjacent_hallway_wall(door_grid)
+
+	if hallway_data.is_empty():
+		push_error("PlacementSystem: Room placed but no adjacent hallway found for wall erasure")
+		return
+
+	# 3. Erase the hallway wall tile
+	var tile_data: Dictionary = RoomManager.erase_hallway_wall_tile(
+		hallway_data.hallway_instance,
+		hallway_data.wall_cell
+	)
+
+	# 4. Get interior cells from room
+	var interior_cells: Array[Vector2i] = []
+	if instance.has_method("get_interior_cells"):
+		interior_cells = instance.get_interior_cells(grid_pos)
+	else:
+		# Fallback: use size-based cells
+		interior_cells = BuildingLayoutData._get_occupied_cells(grid_pos, piece_data.size, 0)
+
+	# 5. Get door world position
+	var door_world_pos: Vector2 = BuildingLayoutData.grid_to_world(door_grid)
+	if instance.has_method("get_door_world_position"):
+		door_world_pos = instance.get_door_world_position()
+
+	# 6. Register with RoomManager
+	RoomManager.register_room(
+		selected_piece_id,
+		grid_pos,
+		FloorManager.current_floor,
+		instance,
+		interior_cells,
+		door_grid,
+		door_world_pos,
+		{
+			"hallway_id": hallway_data.hallway_id,
+			"wall_cell": hallway_data.wall_cell,
+			"tile_data": tile_data
+		}
+	)
+
+
+func _find_adjacent_hallway_wall(door_grid: Vector2i) -> Dictionary:
+	"""Find hallway and wall cell adjacent to door position"""
+	for dir: Vector2i in [Vector2i.UP, Vector2i.DOWN, Vector2i.LEFT, Vector2i.RIGHT]:
+		var adjacent: Vector2i = door_grid + dir
+		var hallway: BuildingLayoutData.PlacedPiece = BuildingLayoutData.get_construction_at(adjacent)
+		if hallway and not BuildingLayoutData.has_opening_toward(adjacent, -dir):
+			# Found hallway wall - calculate which wall cell to erase
+			var wall_cell: Vector2i = _calculate_wall_cell(hallway, door_grid)
+			return {
+				"hallway_id": hallway.piece_id + "_" + str(hallway.grid_pos.x) + "_" + str(hallway.grid_pos.y),
+				"hallway_instance": hallway.instance,
+				"wall_cell": wall_cell
+			}
+	return {}
+
+
+func _calculate_wall_cell(hallway: BuildingLayoutData.PlacedPiece, door_grid: Vector2i) -> Vector2i:
+	"""Calculate the local cell coords in hallway's Walls layer to erase"""
+	var walls_layer: TileMapLayer = hallway.instance.get_node_or_null("GameTileMap/Walls")
+	if not walls_layer:
+		return Vector2i.ZERO
+	var door_world: Vector2 = BuildingLayoutData.grid_to_world(door_grid)
+	var local_pos: Vector2 = walls_layer.to_local(door_world)
+	return walls_layer.local_to_map(local_pos)
 
 
 # =============================================
