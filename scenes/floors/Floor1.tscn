@@ -1,4 +1,4 @@
-[gd_scene load_steps=87 format=4 uid="uid://bie46hf1mi1bf"]
+[gd_scene load_steps=86 format=4 uid="uid://bie46hf1mi1bf"]
 
 [ext_resource type="PackedScene" uid="uid://bfg465jiv33x6" path="res://scenes/components/save_load/save_level_data_component.tscn" id="1_5hhxh"]
 [ext_resource type="Script" uid="uid://b6s08yav4lhwr" path="res://scripts/scene_helpers/zone_auto_register.gd" id="2_2d04r"]
@@ -8,7 +8,6 @@
 [ext_resource type="Texture2D" uid="uid://c6p4eggyakn24" path="res://assets/game/tilesets/Grass.png" id="3_50ht3"]
 [ext_resource type="Texture2D" uid="uid://dobyosbrwkl46" path="res://assets/game/tilesets/dungeon2/decorative_cracks_floor.png" id="4_plc3k"]
 [ext_resource type="Script" uid="uid://4nd2sutmq5tu" path="res://scripts/navigation/tilemap_layer_navigation_helper.gd" id="4_vfwqc"]
-[ext_resource type="PackedScene" uid="uid://b8rmgeoryatiu" path="res://scenes/objects/door/door.tscn" id="5_c1aho"]
 [ext_resource type="Texture2D" uid="uid://c5rghts8tsehh" path="res://assets/game/tilesets/dungeon2/decorative_cracks_walls.png" id="5_loxi5"]
 [ext_resource type="Texture2D" uid="uid://gy1bsncu0ech" path="res://assets/game/tilesets/dungeon2/walls_floor.png" id="6_4wn2v"]
 [ext_resource type="PackedScene" uid="uid://bwmqnnkbbflat" path="res://scenes/objects/plants/tomato_harvest.tscn" id="6_vfwqc"]
@@ -5212,15 +5211,12 @@ tile_set = SubResource("TileSet_wlbq3")
 script = ExtResource("4_vfwqc")
 
 [node name="ConstructionConnectables" type="TileMapLayer" parent="GameTileMap" groups=["connectable_tiles"]]
-tile_map_data = PackedByteArray("AAA7AAwABwAIAA8AAAA7AA0ABwAIAA8AAAA7AA4ABwAIAA8AAAA7AA8ABwAIAA4AAABQABYABwAIAA4AAABRABYABwAJAA4AAABSABYABwAKAA4AAABTABYABwALAA4AAABQAAcABwAIAA4AAABRAAcABwAJAA4AAABSAAcABwAKAA4AAABTAAcABwALAA4AAABgAAoABwAIAA4AAABgAAsABwAIAA8AAABgAAwABwAIAA4AAABgAA0ABwAIAA8AAAA=")
+tile_map_data = PackedByteArray("AAA7AAwABwAIAA8AAAA7AA0ABwAIAA8AAAA7AA4ABwAIAA8AAAA7AA8ABwAIAA4AAABQABYABwAIAA4AAABRABYABwAJAA4AAABSABYABwAKAA4AAABTABYABwALAA4AAABQAAcABwAIAA4AAABRAAcABwAJAA4AAABSAAcABwAKAA4AAABTAAcABwALAA4AAAA=")
 tile_set = ExtResource("20_loxi5")
 
 [node name="Stairs" parent="." instance=ExtResource("2_sv8ea")]
 y_sort_enabled = true
 position = Vector2(233, 215)
-
-[node name="Door" parent="." instance=ExtResource("5_c1aho")]
-position = Vector2(872, 105)
 
 [node name="TomatoHarvest" parent="." instance=ExtResource("6_vfwqc")]
 position = Vector2(345, 325)

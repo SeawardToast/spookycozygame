@@ -176,9 +176,10 @@ func _create_ghost() -> void:
 	ghost_instance = scene.instantiate()
 	ghost_instance.rotation_degrees = current_rotation * 90
 
-	# Make it a ghost (semi-transparent, no collision)
-	_apply_ghost_material(ghost_instance) 
+	# Make it a ghost (semi-transparent, no collision, no connectable indexing)
+	_apply_ghost_material(ghost_instance)
 	_disable_ghost_collision(ghost_instance)
+	_strip_ghost_groups(ghost_instance)
 
 	# Set high z_index so ghost renders on top of placed pieces
 	ghost_instance.z_index = 100
@@ -263,15 +264,26 @@ func _disable_ghost_collision(node: Node) -> void:
 	if node is CollisionObject2D:
 		node.collision_layer = 0
 		node.collision_mask = 0
-	
+
 	if node is CollisionShape2D or node is CollisionPolygon2D:
 		node.disabled = true
-	
+
 	if node is TileMapLayer:
 		node.collision_enabled = false
-	
+
 	for child in node.get_children():
 		_disable_ghost_collision(child)
+
+
+func _strip_ghost_groups(node: Node) -> void:
+	"""Remove ghost from groups that affect building validation (e.g. connectable_tiles).
+	Prevents stale ghost tiles from polluting the spatial index."""
+	if node.is_in_group("connectable_tiles"):
+		node.remove_from_group("connectable_tiles")
+	if node.is_in_group("placeable_construction"):
+		node.remove_from_group("placeable_construction")
+	for child in node.get_children():
+		_strip_ghost_groups(child)
 
 
 # =============================================
