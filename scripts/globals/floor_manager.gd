@@ -520,25 +520,6 @@ func _find_nodes_in_group(node: Node, group_name: String, result: Array[Node]) -
 		_find_nodes_in_group(child, group_name, result)
 
 
-func _find_navigation_tilemaps(node: Node, result: Array[TileMapLayer]) -> void:
-	if node is TileMapLayer:
-		var tilemap: TileMapLayer = node
-		if _tilemap_has_navigation(tilemap):
-			result.append(tilemap)
-	
-	for child in node.get_children():
-		_find_navigation_tilemaps(child, result)
-
-
-func _tilemap_has_navigation(tilemap: TileMapLayer) -> bool:
-	var used_cells: Array[Vector2i] = tilemap.get_used_cells()
-	for cell_coords: Vector2i in used_cells:
-		var tile_data: TileData = tilemap.get_cell_tile_data(cell_coords)
-		if tile_data and tile_data.get_navigation_polygon(0):
-			return true
-	return false
-
-
 # =============================================
 # GETTERS
 # =============================================

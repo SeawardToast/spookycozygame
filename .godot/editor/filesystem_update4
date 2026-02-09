@@ -9,3 +9,16 @@ res://scenes/objects/rocks/rock_shake.gdshader
 res://scenes/characters/guide/replace_color.gdshader
 res://scenes/components/placement_system.gd
 res://scenes/test/building_construction_test_scene.tscn
+res://scenes/characters/player/idle_state.gd
+res://scenes/characters/player/player.gd
+res://scenes/components/hit_component.gd
+res://scenes/components/hurt_component.gd
+res://scripts/definitions/item.gd
+res://scripts/globals/building_layout_data.gd
+res://scripts/globals/data_types.gd
+res://scripts/globals/floor_manager.gd
+res://scripts/globals/guest_report_manager.gd
+res://scripts/globals/inventory_manager.gd
+res://scripts/globals/npc_simulation_manager.gd
+res://scripts/globals/npc_type_registry.gd
+res://scripts/globals/save_game_manager.gd

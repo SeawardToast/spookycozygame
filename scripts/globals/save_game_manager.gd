@@ -33,6 +33,6 @@ func load_game() -> void:
 		
 func reset_game() -> void:
 	await get_tree().process_frame
-	InventoryManager.reset_inventory()
+	InventoryManager.delete_save()
 	DayAndNightCycleManager.reset_time()
 	NPCSimulationManager.reset_npcs()

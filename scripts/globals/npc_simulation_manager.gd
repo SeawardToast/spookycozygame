@@ -338,61 +338,6 @@ func _restore_npc_state(npc: NPCSimulationState, data: Dictionary) -> void:
 	npc.state.change_to(state_type, state_context)
 
 
-func _create_npc_state_from_dict(data: Dictionary) -> NPCSimulationState:
-	var npc_id: String = data.get("npc_id", "")
-	var npc_type: String = data.get("npc_type", "")
-	var npc_name: String = data.get("npc_name", "")
-	
-	var pos_data: Dictionary = data.get("current_position", {})
-	var position: Vector2 = Vector2(pos_data.get("x", 0.0), pos_data.get("y", 0.0))
-	
-	var speed: float = data.get("speed", 100.0)
-	
-	var state: NPCSimulationState = NPCSimulationState.new(
-		npc_id,
-		npc_type,
-		npc_name,
-		position,
-		speed
-	)
-	
-	state.from_dict(data)
-	
-	var npc_definition: Variant = NPCTypeRegistry.create_npc_definition(npc_type)
-	if npc_definition:
-		state.behavior_data["definition"] = npc_definition
-		state.schedule = npc_definition.get_schedule()
-		
-		var active_entry_id: String = data.get("active_entry_id", "")
-		if active_entry_id != "":
-			for entry in state.schedule:
-				if entry.id == active_entry_id:
-					state.active_entry = entry
-					break
-		
-		var action_data: Dictionary = data.get("current_action", {})
-		if not action_data.is_empty() and state.active_entry:
-			if state.current_action_index < state.active_entry.actions.size():
-				var action: NPCAction = state.active_entry.actions[state.current_action_index]
-				action.restore_from_dict(action_data)
-				state.current_action = action
-	
-	state.state.state_changed.connect(
-		func(old_state: int, new_state: int) -> void:
-			_on_npc_state_changed(npc_id, old_state, new_state)
-	)
-	
-	print("Created NPC state: %s (%s) at floor %d, position %s - State: %s" % [
-		npc_name,
-		npc_type,
-		state.current_floor,
-		state.current_position,
-		NPCState.Type.keys()[state.state.type]
-	])
-	
-	return state
-
-
 func delete_save() -> bool:
 	if FileAccess.file_exists(SAVE_PATH):
 		var dir: DirAccess = DirAccess.open("user://")

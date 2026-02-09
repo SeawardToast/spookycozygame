@@ -10,7 +10,7 @@ signal piece_removed(grid_pos: Vector2i, piece_id: String)
 @export var cell_size: int = 16
 
 # Debug flag for validation logging
-var debug_validation: bool = true
+var debug_validation: bool = false
 
 # Layer-separated placement tracking
 var construction_pieces: Dictionary = {}   # grid_pos -> PlacedPiece (CONSTRUCTION type)
@@ -42,10 +42,6 @@ class PlacedPiece:
 		occupied_cells = p_cells
 		building_type = p_type
 		custom_data = p_custom_data
-
-func _ready() -> void:
-	pass
-
 
 # =============================================
 # PLACEMENT
@@ -305,11 +301,6 @@ func grid_to_world_corner(grid_pos: Vector2i) -> Vector2:
 	)
 
 
-func snap_to_grid(world_pos: Vector2) -> Vector2:
-	"""Snap a world position to the nearest grid cell center"""
-	var grid_pos: Vector2i = world_to_grid(world_pos)
-	return grid_to_world(grid_pos)
-
 # =============================================
 # VALIDATION
 # =============================================
@@ -460,7 +451,6 @@ func _validate_connection_groups(piece_id: String, grid_pos: Vector2i, rotation:
 
 func _validate_room_placement(piece_id: String, grid_pos: Vector2i, rotation: int) -> bool:
 	"""Room door must be placed ON TOP of a hallway wall tile"""
-	print("mate")
 	var piece_data: BuildingPieceRegistry.PieceData = BuildingPieceRegistry.get_piece(piece_id)
 	if not piece_data:
 		if debug_validation:
@@ -531,21 +521,6 @@ func _get_room_door_offset(scene_path: String) -> Vector2i:
 
 	temp_instance.queue_free()
 	return offset
-
-
-func would_connect(piece_id: String, grid_pos: Vector2i, rotation: int) -> bool:
-	"""Check if placing this piece would connect to at least one existing piece"""
-	
-	var openings: Array[Vector2i] = BuildingPieceRegistry.get_rotated_openings(piece_id, rotation)
-	
-	for opening_dir: Vector2i in openings:
-		var adjacent_pos: Vector2i = grid_pos + opening_dir
-		var opposite_dir: Vector2i = -opening_dir
-		
-		if has_opening_toward(adjacent_pos, opposite_dir):
-			return true  # Found a matching connection
-	
-	return false
 
 
 # =============================================
@@ -641,39 +616,7 @@ func _rebuild_world_connectable_index() -> void:
 
 				world_connectable_tiles_index[grid_pos] = true
 
-	# Index placed construction pieces' connectable layers
-	for placed: PlacedPiece in construction_pieces.values():
-		if not placed.instance or not is_instance_valid(placed.instance):
-			continue
-
-		var piece_layers: Array = _find_connectable_layers_recursive(placed.instance)
-		for layer: TileMapLayer in piece_layers:
-			var used_cells: Array[Vector2i] = layer.get_used_cells()
-
-			for cell_coords: Vector2i in used_cells:
-				# Convert to global grid coordinates
-				var cell_world_pos: Vector2 = layer.map_to_local(cell_coords)
-				var cell_global_pos: Vector2 = layer.to_global(cell_world_pos)
-				var grid_pos: Vector2i = world_to_grid(cell_global_pos)
-
-				world_connectable_tiles_index[grid_pos] = true
-
 	world_connectable_index_dirty = false
-
-
-func _find_connectable_layers_recursive(node: Node) -> Array:
-	"""Recursively find all TileMapLayers that are in the 'connectable_tiles' group"""
-	var layers: Array = []
-
-	if node is TileMapLayer:
-		var tilemap: TileMapLayer = node as TileMapLayer
-		if tilemap.is_in_group("connectable_tiles"):
-			layers.append(tilemap)
-
-	for child in node.get_children():
-		layers.append_array(_find_connectable_layers_recursive(child))
-
-	return layers
 
 
 func _find_adjacent_connectable_tiles_simple(tiles: Array[Vector2i]) -> Array[Vector2i]:
@@ -709,9 +652,6 @@ func _find_adjacent_connectable_tiles_simple(tiles: Array[Vector2i]) -> Array[Ve
 				adjacent_connectable.append(adjacent_pos)
 
 	return adjacent_connectable
-
-
-
 
 
 

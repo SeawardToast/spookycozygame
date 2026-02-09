@@ -370,48 +370,6 @@ func load_all() -> bool:
 	return true
 
 
-func save_inventory(inventory_id: String) -> bool:
-	var inventory: InventoryData = get_inventory(inventory_id)
-	if not inventory:
-		return false
-	
-	var path: String = "user://inventory_%s.json" % inventory_id
-	var json_string: String= JSON.stringify(inventory.to_dict(), "\t")
-	var file: FileAccess = FileAccess.open(path, FileAccess.WRITE)
-	
-	if not file:
-		push_error("Failed to save inventory: " + inventory_id)
-		return false
-	
-	file.store_string(json_string)
-	file.close()
-	return true
-
-
-func load_inventory(inventory_id: String) -> bool:
-	var inventory: InventoryData = get_inventory(inventory_id)
-	if not inventory:
-		return false
-	
-	var path: String = "user://inventory_%s.json" % inventory_id
-	if not FileAccess.file_exists(path):
-		return false
-	
-	var file: FileAccess = FileAccess.open(path, FileAccess.READ)
-	if not file:
-		return false
-	
-	var json_string: String = file.get_as_text()
-	file.close()
-	
-	var json: JSON = JSON.new()
-	if json.parse(json_string) != OK:
-		return false
-	
-	inventory.from_dict(json.data)
-	return true
-
-
 func delete_save() -> bool:
 	if FileAccess.file_exists(SAVE_PATH):
 		DirAccess.remove_absolute(SAVE_PATH)
