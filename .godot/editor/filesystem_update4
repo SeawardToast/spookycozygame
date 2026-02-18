@@ -15,3 +15,4 @@ res://scripts/definitions/guest_assignment.gd
 res://scripts/globals/npc_type_registry.gd
 res://scenes/test/building_construction_test_scene.tscn
 res://scenes/ui/hotel_management_ui/hotel_management_ui.gd
+res://scripts/globals/guest_assignment_manager.gd
