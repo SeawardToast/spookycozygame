@@ -10,6 +10,7 @@ enum Status {
 
 var assignment_id: String
 var guest_id: String
+var guest_name: String = ""
 var guest_type: String
 var room_instance_id: String
 var check_in_day: int
@@ -39,6 +40,7 @@ func to_dict() -> Dictionary:
 	return {
 		"assignment_id": assignment_id,
 		"guest_id": guest_id,
+		"guest_name": guest_name,
 		"guest_type": guest_type,
 		"room_instance_id": room_instance_id,
 		"check_in_day": check_in_day,
@@ -51,6 +53,7 @@ static func from_dict(data: Dictionary) -> GuestAssignment:
 	var assignment := GuestAssignment.new()
 	assignment.assignment_id = data.get("assignment_id", "")
 	assignment.guest_id = data.get("guest_id", "")
+	assignment.guest_name = data.get("guest_name", "")
 	assignment.guest_type = data.get("guest_type", "")
 	assignment.room_instance_id = data.get("room_instance_id", "")
 	assignment.check_in_day = data.get("check_in_day", 0)

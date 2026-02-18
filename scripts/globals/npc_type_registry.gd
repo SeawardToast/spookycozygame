@@ -31,7 +31,7 @@ func get_all_types() -> Array:
 
 
 func get_random_type() -> String:
-	var types: Array[String] = get_all_types()
+	var types: Array = get_all_types()
 	if types.is_empty():
 		return ""
 	return types[randi() % types.size()]

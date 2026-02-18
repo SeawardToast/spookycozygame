@@ -1,0 +1,51 @@
+[gd_scene load_steps=4 format=3 uid="uid://qn8avmahanrf"]
+
+[ext_resource type="Theme" uid="uid://ljcck66th0xd" path="res://scenes/ui/game_ui_theme.tres" id="1_hmc0v"]
+[ext_resource type="PackedScene" uid="uid://c5acu3ncrt2eg" path="res://scenes/ui/hotel_management_ui/pending_guest_list_block.tscn" id="2_jb0no"]
+[ext_resource type="Script" uid="uid://dgwjqnx3kq2hh" path="res://scenes/ui/hotel_management_ui/hotel_management_ui.gd" id="2_o5npt"]
+
+[node name="HotelManagementPanel" type="Control"]
+layout_mode = 3
+anchors_preset = 0
+offset_right = 402.0
+offset_bottom = 234.0
+theme = ExtResource("1_hmc0v")
+theme_type_variation = &"DarkWoodPanel"
+script = ExtResource("2_o5npt")
+
+[node name="TabContainer" type="TabContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+size_flags_horizontal = 4
+current_tab = 0
+clip_tabs = false
+
+[node name="Guests" type="RichTextLabel" parent="TabContainer"]
+layout_mode = 2
+metadata/_tab_index = 0
+
+[node name="MarginContainer" type="MarginContainer" parent="TabContainer/Guests"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="PendingGuestList" type="VBoxContainer" parent="TabContainer/Guests/MarginContainer"]
+layout_mode = 2
+
+[node name="PendingGuestListBlock" parent="TabContainer/Guests/MarginContainer/PendingGuestList" instance=ExtResource("2_jb0no")]
+custom_minimum_size = Vector2(0, 20)
+layout_mode = 2
+
+[node name="Rooms" type="RichTextLabel" parent="TabContainer"]
+visible = false
+layout_mode = 2
+text = "
+"
+metadata/_tab_index = 1
