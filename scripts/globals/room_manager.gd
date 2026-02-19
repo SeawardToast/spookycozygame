@@ -379,6 +379,14 @@ func check_out_guest(guest_id: String) -> bool:
 	return true
 
 
+func reconnect_instance(grid_pos: Vector2i, instance: Node2D) -> void:
+	var room_id: String = rooms_by_grid.get(grid_pos, "")
+	var room: PlacedRoom = placed_rooms.get(room_id)
+	if not room or room.instance != null:
+		return
+	room.instance = instance
+
+
 func get_guest_room(guest_id: String) -> PlacedRoom:
 	var room_id: String = guest_to_room.get(guest_id, "")
 	return placed_rooms.get(room_id)

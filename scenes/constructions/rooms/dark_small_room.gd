@@ -8,6 +8,10 @@ extends Node2D
 const CELL_SIZE: int = 16
 
 
+func _ready() -> void:
+	RoomManager.reconnect_instance(BuildingLayoutData.world_to_grid(global_position), self)
+
+
 func get_door_world_position() -> Vector2:
 	return _door_marker.global_position
 

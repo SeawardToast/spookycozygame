@@ -241,7 +241,7 @@ texture_margin_bottom = 7.0489507
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_3405b"]
 atlas = ExtResource("1_nhbk8")
-region = Rect2(402, 73, 28, 14)
+region = Rect2(163, 178, 90, 27)
 
 [sub_resource type="StyleBoxTexture" id="StyleBoxTexture_2isuy"]
 texture = SubResource("AtlasTexture_3405b")
@@ -252,11 +252,11 @@ texture_margin_bottom = 1.0
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_iyedh"]
 atlas = ExtResource("1_nhbk8")
-region = Rect2(466, 105, 28, 14)
+region = Rect2(259, 180, 90, 25)
 
 [sub_resource type="StyleBoxTexture" id="StyleBoxTexture_mfc43"]
 texture = SubResource("AtlasTexture_iyedh")
-region_rect = Rect2(0, 0, 28, 14)
+region_rect = Rect2(0, 0, 90, 25)
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_ba0tq"]
 atlas = ExtResource("1_nhbk8")
@@ -288,6 +288,7 @@ texture_margin_right = 4.0
 texture_margin_bottom = 6.0
 
 [resource]
+default_font = ExtResource("2_mtjyl")
 DarkWoodPanel/base_type = &"PanelContainer"
 DarkWoodPanel/styles/panel = SubResource("StyleBoxTexture_mtjyl")
 DayAndNightButton/base_type = &"Button"

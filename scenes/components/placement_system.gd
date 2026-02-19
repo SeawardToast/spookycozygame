@@ -359,8 +359,8 @@ func _try_place_piece() -> void:
 		if piece_data.is_room:
 			_register_room_placement(piece_data, instance, current_grid_pos)
 
-		# TODO: Update navigation if the piece has a NavigationRegion2D
-		# FloorManager.refresh_floor_obstacles(FloorManager.current_floor)
+		# Register navigation for newly placed piece
+		FloorManager.register_placed_piece_navigation(instance, FloorManager.current_floor)
 	else:
 		instance.queue_free()
 		placement_failed.emit("LayoutData rejected placement")
@@ -374,6 +374,7 @@ func _try_delete_piece() -> void:
 	# Check if deleting a room - handle via RoomManager
 	var room: PlacedRoom = RoomManager.get_room_at(grid_pos)
 	if room:
+		FloorManager.unregister_piece_navigation(room.instance, FloorManager.current_floor)
 		if RoomManager.unregister_room(room.instance_id):
 			# Also remove from BuildingLayoutData
 			BuildingLayoutData.remove_construction_at(room.grid_pos)
@@ -384,6 +385,9 @@ func _try_delete_piece() -> void:
 			print("PlacementSystem: Cannot delete room (may have guest assigned)")
 		return
 
+	var placed: BuildingLayoutData.PlacedPiece = BuildingLayoutData.get_construction_at(grid_pos)
+	if placed and placed.instance:
+		FloorManager.unregister_piece_navigation(placed.instance, FloorManager.current_floor)
 	if BuildingLayoutData.remove_piece(grid_pos):
 		piece_deleted.emit(grid_pos)
 		BuildModeManager.piece_removed.emit(grid_pos)

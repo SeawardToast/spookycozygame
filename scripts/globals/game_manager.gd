@@ -113,8 +113,8 @@ func _initialize_game(level_root_ref: Node2D, player_ref: Node, camera_ref: Came
 	game_initialized.emit()
 	
 	# Spawn initial NPCs if no save data existed
-	if NPCSimulationManager.get_npc_count() == 0:
-		call_deferred("_spawn_initial_npcs")
+	#if NPCSimulationManager.get_npc_count() == 0:
+		#call_deferred("_spawn_initial_npcs")
 
 func initialize_game(level_root_ref: Node2D, player_ref: Node, camera_ref: Camera2D, starting_floor: int = 1) -> void:
 	"""Public method for development/testing - directly initializes the game"""

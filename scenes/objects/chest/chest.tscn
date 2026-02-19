@@ -109,7 +109,7 @@ radius = 28.071337
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_44sq4"]
 
-[node name="Chest" type="StaticBody2D"]
+[node name="Chest" type="StaticBody2D" groups=["navigation_obstacles"]]
 script = ExtResource("1_umtkn")
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="."]

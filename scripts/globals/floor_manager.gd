@@ -290,15 +290,48 @@ func enable_navigation_at_world_pos(floor_number: int, world_pos: Vector2) -> vo
 		enable_navigation_at_tile(floor_number, nav_tile_coords)
 
 
+func register_placed_piece_navigation(instance: Node2D, floor_number: int) -> void:
+	"""Register navigation regions for a runtime-placed piece on the floor's dedicated nav map.
+	set_navigation_map() is called synchronously so regions are created on the floor map
+	when the physics frame processes — no proximity-matching on the world map needed."""
+	var floor_map_rid: RID = get_navigation_map_for_floor(floor_number)
+	if floor_map_rid == RID():
+		push_error("FloorManager: No nav map for floor %d" % floor_number)
+		return
+
+	# Assign floor map to all tilemaps BEFORE the physics frame creates their nav regions
+	var tilemaps: Array[TileMapLayer] = []
+	_find_all_tilemaps(instance, tilemaps)
+	for tilemap: TileMapLayer in tilemaps:
+		tilemap.set_navigation_map(floor_map_rid)
+
+	await get_tree().physics_frame
+	NavigationServer2D.map_force_update(floor_map_rid)
+	print("FloorManager: Registered nav for placed piece on floor %d" % floor_number)
+
+
+func unregister_piece_navigation(instance: Node2D, floor_number: int) -> void:
+	"""Remove nav tracking entries for a piece that is about to be deleted"""
+	if not floor_nav_regions.has(floor_number):
+		return
+	var tilemaps: Array[TileMapLayer] = []
+	_find_all_tilemaps(instance, tilemaps)
+	for tilemap: TileMapLayer in tilemaps:
+		for cell: Vector2i in tilemap.get_used_cells():
+			var tile_data: TileData = tilemap.get_cell_tile_data(cell)
+			if tile_data and tile_data.get_navigation_polygon(0):
+				floor_nav_regions[floor_number].erase(cell)
+
+
 func refresh_floor_obstacles(floor_number: int) -> void:
 	"""Reprocess all obstacle tilemaps on a floor"""
 	var floor_node: Node2D = get_floor_node(floor_number)
 	if not floor_node:
 		return
-	
+
 	if floors[floor_number].disabled_nav_tiles:
 		floors[floor_number].disabled_nav_tiles.clear()
-	
+
 	_process_obstacle_tilemaps(floor_node, floor_number)
 
 

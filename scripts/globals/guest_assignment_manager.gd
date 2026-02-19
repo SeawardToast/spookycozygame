@@ -7,6 +7,7 @@ signal guest_checked_out(assignment: GuestAssignment)
 const MAX_PENDING: int = 5
 const STAY_MIN_DAYS: int = 1
 const STAY_MAX_DAYS: int = 3
+const SAVE_PATH: String = "user://guest_assignments.json"
 
 var _pending_guests: Dictionary = {}  # guest_id -> GuestAssignment
 var _guest_to_npc: Dictionary = {}    # guest_id -> npc_id
@@ -140,3 +141,47 @@ func _find_active_assignment(guest_id: String) -> GuestAssignment:
 		return null
 	var assignment_id: String = RoomManager.room_assignments.get(room_id, "")
 	return RoomManager.active_assignments.get(assignment_id)
+
+
+# =============================================
+# SAVE / LOAD
+# =============================================
+
+func save_state() -> void:
+	var data: Dictionary = {
+		"guest_counter": _guest_counter,
+		"guest_to_npc": _guest_to_npc.duplicate(),
+		"npc_to_guest": _npc_to_guest.duplicate()
+	}
+	var file: FileAccess = FileAccess.open(SAVE_PATH, FileAccess.WRITE)
+	if file:
+		file.store_string(JSON.stringify(data, "\t"))
+		file.close()
+	else:
+		push_error("GuestAssignmentManager: Failed to save state")
+
+
+func load_state() -> void:
+	if not FileAccess.file_exists(SAVE_PATH):
+		return
+	var file: FileAccess = FileAccess.open(SAVE_PATH, FileAccess.READ)
+	if not file:
+		push_error("GuestAssignmentManager: Failed to open save file")
+		return
+	var json := JSON.new()
+	if json.parse(file.get_as_text()) != OK:
+		push_error("GuestAssignmentManager: Failed to parse save file")
+		return
+	var data: Dictionary = json.data
+	_guest_counter = data.get("guest_counter", 0)
+	_guest_to_npc = data.get("guest_to_npc", {})
+	_npc_to_guest = data.get("npc_to_guest", {})
+	print("GuestAssignmentManager: Loaded state (counter: %d, checked_in: %d)" % [_guest_counter, _guest_to_npc.size()])
+
+
+func sync_pending_from_room_manager() -> void:
+	_pending_guests.clear()
+	for assignment: GuestAssignment in RoomManager.active_assignments.values():
+		if assignment.status == GuestAssignment.Status.PENDING:
+			_pending_guests[assignment.guest_id] = assignment
+	print("GuestAssignmentManager: Synced %d pending guests from RoomManager" % _pending_guests.size())

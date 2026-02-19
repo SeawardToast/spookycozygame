@@ -21,25 +21,20 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 size_flags_horizontal = 4
+theme = ExtResource("1_hmc0v")
+theme_override_font_sizes/font_size = 16
+tab_alignment = 1
 current_tab = 0
 clip_tabs = false
 
-[node name="Guests" type="RichTextLabel" parent="TabContainer"]
+[node name="Guests" type="MarginContainer" parent="TabContainer"]
 layout_mode = 2
 metadata/_tab_index = 0
 
-[node name="MarginContainer" type="MarginContainer" parent="TabContainer/Guests"]
-layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
-
-[node name="PendingGuestList" type="VBoxContainer" parent="TabContainer/Guests/MarginContainer"]
+[node name="PendingGuestList" type="VBoxContainer" parent="TabContainer/Guests"]
 layout_mode = 2
 
-[node name="PendingGuestListBlock" parent="TabContainer/Guests/MarginContainer/PendingGuestList" instance=ExtResource("2_jb0no")]
+[node name="PendingGuestListBlock" parent="TabContainer/Guests/PendingGuestList" instance=ExtResource("2_jb0no")]
 custom_minimum_size = Vector2(0, 20)
 layout_mode = 2
 

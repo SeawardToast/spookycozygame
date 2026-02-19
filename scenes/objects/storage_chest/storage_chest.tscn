@@ -108,7 +108,7 @@ animations = [{
 [sub_resource type="CircleShape2D" id="CircleShape2D_umtkn"]
 radius = 28.071337
 
-[node name="StorageChest" type="StaticBody2D" groups=["placeable_construction"]]
+[node name="StorageChest" type="StaticBody2D" groups=["navigation_obstacles", "placeable_construction"]]
 script = ExtResource("1_gjee1")
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="."]

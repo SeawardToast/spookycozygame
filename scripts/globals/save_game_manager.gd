@@ -11,7 +11,9 @@ func save_game() -> void:
 	DayAndNightCycleManager.save_time()
 	NPCSimulationManager.save_npcs()
 	InventoryManager.save_all()
-	BuildingLayoutData.save_layout_data()  # Save building layout dictionaries
+	BuildingLayoutData.save_layout_data()
+	RoomManager.save_rooms()
+	GuestAssignmentManager.save_state()
 	if save_level_data_component != null:
 		save_level_data_component.save_game()
 	print("Game saved")
@@ -23,16 +25,24 @@ func load_game() -> void:
 	NPCSimulationManager.load_npcs()
 	InventoryManager.load_all()
 
-	# Load building layout data FIRST (so pending_custom_data is available)
+	# Load layout data before scenes so pending_custom_data and room data are available
 	BuildingLayoutData.load_layout_data()
-	print("Building layout data loaded")
+	RoomManager.load_rooms()
 
-	# Then load scene instances (chests will get pending_custom_data in _ready())
+	# Load scene instances — room _ready() calls reconnect_instance() to set instance pointers
 	if save_level_data_component != null:
 		save_level_data_component.load_game()
-		
+
+	# Restore guest assignment state after scenes are loaded
+	GuestAssignmentManager.load_state()
+	GuestAssignmentManager.sync_pending_from_room_manager()
+
 func reset_game() -> void:
 	await get_tree().process_frame
 	InventoryManager.delete_save()
 	DayAndNightCycleManager.reset_time()
 	NPCSimulationManager.reset_npcs()
+	if FileAccess.file_exists(RoomManager.SAVE_PATH):
+		DirAccess.remove_absolute(RoomManager.SAVE_PATH)
+	if FileAccess.file_exists(GuestAssignmentManager.SAVE_PATH):
+		DirAccess.remove_absolute(GuestAssignmentManager.SAVE_PATH)

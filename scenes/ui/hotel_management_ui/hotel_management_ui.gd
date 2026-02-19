@@ -3,7 +3,7 @@ extends Control
 const PENDING_BLOCK := preload("res://scenes/ui/hotel_management_ui/pending_guest_list_block.tscn")
 
 @onready var _panel: Control = $"."
-@onready var _pending_list: VBoxContainer = $TabContainer/Guests/MarginContainer/PendingGuestList
+@onready var _pending_list: VBoxContainer = $TabContainer/Guests/PendingGuestList
 
 
 func _ready() -> void:
