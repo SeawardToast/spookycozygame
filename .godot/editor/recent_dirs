@@ -1,9 +1,9 @@
+res://assets/game/objects
 res://assets/ui
 res://scripts/globals
 res://scenes/components/save_load
 res://assets/game/tilesets
 res://scenes
-res://assets/game/objects
 res://scenes/objects/interactable_items
 res://assets/game/tilesets/dungeon2
 res://assets/game/tilesets/dungeon

@@ -6,6 +6,7 @@ extends Node2D
 @onready var tooltip_label: Label = $TooltipLabel
 @onready var main_inventory_texture_rect: TextureRect = $MarginContainer/MainInventoryTextureRect
 @onready var hotbar_texture_rect: TextureRect = $MarginContainer/HotbarTextureRect
+@onready var currency_label: Label = $MarginContainer/MainInventoryTextureRect/CurrencyLabel
 
 var holding_item_id: int = -1
 var holding_quantity: int = 0
@@ -28,8 +29,11 @@ func _ready() -> void:
 	InventoryManager.player_inventory.slot_changed.connect(_on_main_slot_changed)
 	InventoryManager.player_hotbar.slot_changed.connect(_on_hotbar_slot_changed)
 	InventoryManager.inventories_loaded.connect(_on_inventories_loaded)
+	InventoryManager.currency_changed.connect(_on_currency_changed)
 	SignalBus.chest_opened.connect(_on_chest_opened)
 	SignalBus.chest_closed.connect(_on_chest_closed)
+
+	currency_label.text = str(InventoryManager.currency)
 
 	# Defer initial render to ensure InventoryManager is fully initialized
 	call_deferred("_initial_render")
@@ -328,3 +332,7 @@ func _on_chest_opened() -> void:
 
 func _on_chest_closed() -> void:
 	hotbar_texture_rect.show()
+
+
+func _on_currency_changed(new_amount: int) -> void:
+	currency_label.text = str(new_amount)

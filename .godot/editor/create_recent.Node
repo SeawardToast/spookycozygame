@@ -1,12 +1,12 @@
+Label
+TextureRect
 NavigationObstacle2D
 Button
 MarginContainer
-Label
 PanelContainer
 VBoxContainer
 Panel
 Control
-TextureRect
 TabBar
 RichTextLabel
 TabContainer
