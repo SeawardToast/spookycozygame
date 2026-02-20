@@ -17,3 +17,5 @@ res://scenes/ui/inventory.gd
 res://scripts/globals/inventory_manager.gd
 res://scripts/npc/custom_npcs/ghost/ghost_definition.gd
 res://scripts/npc/custom_npcs/vampire/vampire_definition.gd
+res://scripts/globals/guest_assignment_manager.gd
+res://scripts/globals/npc_simulation_manager.gd

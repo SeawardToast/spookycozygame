@@ -370,19 +370,20 @@ func _generate_npc_id(npc_type: String) -> String:
 	return "%s_%d" % [npc_type, npc_id_counter]
 
 
-func spawn_npc(npc_type: String, spawn_position: Vector2 = Vector2.ZERO) -> String:
+func spawn_npc(npc_type: String, spawn_position: Vector2 = Vector2.ZERO, npc_name: String = "") -> String:
 	var npc_definition: Variant = NPCTypeRegistry.create_npc_definition(npc_type)
 	if npc_definition == null:
 		push_error("Unknown NPC type: %s" % npc_type)
 		return ""
-	
+
 	var npc_id: String = _generate_npc_id(npc_type)
 	var start_pos: Vector2 = spawn_position if spawn_position != Vector2.ZERO else npc_definition.start_position
-	
+	var resolved_name: String = npc_name if not npc_name.is_empty() else npc_definition.npc_name
+
 	var state: NPCSimulationState = NPCSimulationState.new(
 		npc_id,
 		npc_type,
-		npc_definition.npc_name,
+		resolved_name,
 		start_pos,
 		npc_definition.speed
 	)

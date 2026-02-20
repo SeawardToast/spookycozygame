@@ -97,7 +97,7 @@ func check_in(guest_id: String) -> bool:
 	var room: PlacedRoom = RoomManager.get_guest_room(guest_id)
 	var spawn_pos: Vector2 = room.door_world_pos if room else Vector2.ZERO
 
-	var npc_id: String = NPCSimulationManager.spawn_npc(assignment.guest_type, spawn_pos)
+	var npc_id: String = NPCSimulationManager.spawn_npc(assignment.guest_type, spawn_pos, assignment.guest_name)
 	_guest_to_npc[guest_id] = npc_id
 	_npc_to_guest[npc_id] = guest_id
 	_pending_guests.erase(guest_id)
