@@ -1,3 +1,4 @@
+NavigationObstacle2D
 Button
 MarginContainer
 Label
@@ -11,4 +12,3 @@ RichTextLabel
 TabContainer
 HBoxContainer
 TileMapLayer
-CollisionPolygon2D

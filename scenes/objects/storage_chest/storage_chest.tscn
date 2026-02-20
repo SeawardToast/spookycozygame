@@ -136,3 +136,8 @@ position = Vector2(17, 23)
 
 [node name="SaveDataComponent" parent="." instance=ExtResource("5_fscpk")]
 save_data_resource = ExtResource("6_t5ghq")
+
+[node name="NavigationObstacle2D" type="NavigationObstacle2D" parent="."]
+radius = 11.16
+vertices = PackedVector2Array(-8, -6, -8, 8, 8, 8, 8, -6)
+affect_navigation_mesh = true
