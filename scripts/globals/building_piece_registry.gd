@@ -56,7 +56,7 @@ func _register_default_pieces() -> void:
 		"hallway_straight",
 		"Straight Hallway",
 		"res://scenes/constructions/hallway_straight.tscn",
-		Vector2i(1, 1),
+		Vector2i(6, 12),
 		[Vector2i.UP, Vector2i.DOWN],
 		"hallway"
 	))
@@ -66,7 +66,7 @@ func _register_default_pieces() -> void:
 		"hallway_straight_horizontal",
 		"Straight Horizontal Hallway",
 		"res://scenes/constructions/hallway_straight_horizontal.tscn",
-		Vector2i(1, 1),
+		Vector2i(12, 6),
 		[Vector2i.UP, Vector2i.DOWN],
 		"hallway"
 	))

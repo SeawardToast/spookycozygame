@@ -194,7 +194,18 @@ func _process_obstacle_tilemaps(floor_node: Node, floor_number: int) -> void:
 		if obstacle is TileMapLayer:
 			_disable_navigation_under_obstacles(obstacle, floor_number)
 		elif obstacle is Node2D:
-			disable_navigation_at_world_pos(floor_number, (obstacle as Node2D).global_position)
+			_disable_navigation_for_node2d(obstacle, floor_number)
+
+
+func _disable_navigation_for_node2d(obstacle: Node2D, floor_number: int) -> void:
+	"""Disable nav tiles for every grid cell the obstacle covers.
+	Reads the exact occupied_cells from BuildingLayoutData — works for any shape."""
+	var grid_pos: Vector2i = BuildingLayoutData.world_to_grid(obstacle.global_position)
+	var placed: BuildingLayoutData.PlacedPiece = BuildingLayoutData.get_piece_at(grid_pos)
+	if not placed:
+		return
+	for cell: Vector2i in placed.occupied_cells:
+		disable_navigation_at_world_pos(floor_number, BuildingLayoutData.grid_to_world(cell))
 
 
 func _disable_navigation_under_obstacles(obstacle_tilemap: TileMapLayer, floor_number: int) -> void:
@@ -335,11 +346,16 @@ func unregister_piece_navigation(instance: Node2D, floor_number: int) -> void:
 				floor_nav_regions[floor_number].erase(cell)
 
 	# Re-enable nav tiles under non-tilemap obstacles (e.g. furniture)
+	# Must run before BuildingLayoutData.remove_piece() so occupied_cells is still available
 	var obstacle_nodes: Array[Node] = []
 	_find_nodes_in_group(instance, "navigation_obstacles", obstacle_nodes)
 	for node: Node in obstacle_nodes:
 		if not node is TileMapLayer and node is Node2D:
-			enable_navigation_at_world_pos(floor_number, (node as Node2D).global_position)
+			var grid_pos: Vector2i = BuildingLayoutData.world_to_grid((node as Node2D).global_position)
+			var placed: BuildingLayoutData.PlacedPiece = BuildingLayoutData.get_piece_at(grid_pos)
+			if placed:
+				for cell: Vector2i in placed.occupied_cells:
+					enable_navigation_at_world_pos(floor_number, BuildingLayoutData.grid_to_world(cell))
 
 
 func refresh_floor_obstacles(floor_number: int) -> void:
