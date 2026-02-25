@@ -1,4 +1,4 @@
-res://scenes/test/building_construction_test_scene.tscn
+res://scenes/ui/hotel_management_ui/hotel_management_ui.tscn
 res://scenes/ui/game_ui_theme.tres
 res://tilesets/large_house_tile_set.tres
 res://scenes/objects/tree/tree_shake.gdshader
@@ -8,14 +8,10 @@ res://assets/game/characters/sprites/vampires/vampire_1/vampire_1.tres
 res://dialogue/dialogue_balloon_theme.tres
 res://scenes/objects/rocks/rock_shake.gdshader
 res://scenes/characters/guide/replace_color.gdshader
-res://scenes/components/placement_system.gd
-res://scripts/globals/floor_manager.gd
-res://scenes/constructions/hallway_straight_horizontal.tscn
-res://scripts/globals/building_piece_registry.gd
-res://scenes/ui/inventory.tscn
-res://scenes/ui/inventory.gd
-res://scripts/globals/inventory_manager.gd
-res://scripts/npc/custom_npcs/ghost/ghost_definition.gd
-res://scripts/npc/custom_npcs/vampire/vampire_definition.gd
-res://scripts/globals/guest_assignment_manager.gd
-res://scripts/globals/npc_simulation_manager.gd
+res://scenes/ui/hotel_management_ui/pending_guest_list_block.tscn
+res://scenes/test/building_construction_test_scene.tscn
+res://scenes/ui/game_screen.tscn
+res://scenes/ui/hotel_management_ui/active_guest_tabs.tscn
+res://scenes/ui/hotel_management_ui/active_guest_list_block.tscn
+res://scenes/ui/hotel_management_ui/hotel_management_ui.gd
+res://scenes/ui/report_board/report_board.tscn

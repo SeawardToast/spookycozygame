@@ -1,4 +1,4 @@
-[gd_scene load_steps=10 format=3 uid="uid://caubcxpoj4nhc"]
+[gd_scene load_steps=9 format=3 uid="uid://caubcxpoj4nhc"]
 
 [ext_resource type="Script" uid="uid://dgm5knshx78wa" path="res://scripts/npc/main_hotel_scene_manager.gd" id="1_wd4lc"]
 [ext_resource type="PackedScene" uid="uid://cqxcxnw5skkbr" path="res://scenes/components/PlacementSystem.tscn" id="2_iiw6j"]
@@ -8,7 +8,6 @@
 [ext_resource type="Script" uid="uid://c1uamwi6562u7" path="res://scripts/npc/visual_npc_spawner.gd" id="6_u7n2l"]
 [ext_resource type="Script" uid="uid://cbao8t4xipws4" path="res://scripts/scene_helpers/placeable_item_preview.gd" id="7_seme5"]
 [ext_resource type="Script" uid="uid://buvkr02fpfhbc" path="res://scenes/test/buildmode_debug.gd" id="8_s86te"]
-[ext_resource type="Script" uid="uid://d3nlxtrkjlpto" path="res://scripts/debug/debug_piece_cells.gd" id="9_iiw6j"]
 
 [node name="BuildingTestScene" type="Node2D"]
 y_sort_enabled = true
@@ -41,6 +40,3 @@ script = ExtResource("7_seme5")
 
 [node name="BuildmodeDebug" type="CanvasLayer" parent="."]
 script = ExtResource("8_s86te")
-
-[node name="Node" type="Node" parent="."]
-script = ExtResource("9_iiw6j")

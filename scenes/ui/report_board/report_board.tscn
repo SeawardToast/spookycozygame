@@ -4,9 +4,8 @@
 [ext_resource type="Theme" uid="uid://ljcck66th0xd" path="res://scenes/ui/game_ui_theme.tres" id="1_pe5h1"]
 
 [node name="ReportBoard" type="PanelContainer"]
-custom_minimum_size = Vector2(500, 350)
-offset_right = 300.0
-offset_bottom = 150.0
+offset_right = 686.0
+offset_bottom = 401.0
 theme = ExtResource("1_pe5h1")
 theme_type_variation = &"DarkWoodPanel"
 script = ExtResource("1_dclfs")

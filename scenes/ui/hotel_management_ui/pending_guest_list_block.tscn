@@ -27,7 +27,7 @@ layout_mode = 2
 
 [node name="Label" type="Label" parent="MarginContainer"]
 layout_mode = 2
-size_flags_horizontal = 4
+size_flags_horizontal = 0
 theme = ExtResource("1_8p16g")
 theme_type_variation = &"DayAndNightLabel"
 text = "Guest Name"
