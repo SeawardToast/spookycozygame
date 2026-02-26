@@ -13,12 +13,17 @@ signal inventories_saved()
 signal hotbar_item_selected(item: Item)
 signal inventory_registered(inventory_id: String)
 signal inventory_unregistered(inventory_id: String)
+signal currency_changed(new_amount: int)
+
+var currency: int = 0
+
 const SAVE_PATH: String = "user://inventories.json"
 
 
 func _ready() -> void:
 	_load_item_definitions()
 	_setup_player_inventories()
+	GuestAssignmentManager.guest_checked_out.connect(_on_guest_checked_out)
 
 func _load_item_definitions() -> void:
 	var items_path: String = "res://scenes/objects/interactable_items/"
@@ -294,12 +299,45 @@ func consume_player_item(item_id: int, quantity: int = 1) -> bool:
 
 
 # --------------------------------------------
+# Currency
+# --------------------------------------------
+
+func add_currency(amount: int) -> void:
+	currency += amount
+	currency_changed.emit(currency)
+
+
+func remove_currency(amount: int) -> bool:
+	if amount > currency:
+		return false
+	currency -= amount
+	currency_changed.emit(currency)
+	return true
+
+
+func _on_guest_checked_out(assignment: GuestAssignment) -> void:
+	var payment: int = _calculate_checkout_payment(assignment)
+	if payment > 0:
+		add_currency(payment)
+		print("InventoryManager: Awarded %d currency for %s checkout" % [payment, assignment.guest_name])
+
+
+func _calculate_checkout_payment(assignment: GuestAssignment) -> int:
+	var definition: Variant = NPCTypeRegistry.create_npc_definition(assignment.guest_type)
+	if not definition or not "base_nightly_payment" in definition:
+		return 0
+	var nights: int = assignment.check_out_day - assignment.check_in_day
+	return nights * definition.base_nightly_payment
+
+
+# --------------------------------------------
 # Save / Load
 # --------------------------------------------
 
 func save_all() -> bool:
 	var save_data: Dictionary = {
 		"selected_hotbar_slot_index": selected_hotbar_slot_index,
+		"currency": currency,
 		"inventories": {}
 	}
 	
@@ -339,58 +377,36 @@ func load_all() -> bool:
 		return false
 	
 	var save_data: Dictionary = json.data
-	
+
 	selected_hotbar_slot_index = save_data.get("selected_hotbar_slot_index", 0)
-	
+	currency = save_data.get("currency", 0)
+	currency_changed.emit(currency)
+
 	var saved_inventories: Dictionary = save_data.get("inventories", {})
 	for inventory_id: String in saved_inventories:
 		var inventory: InventoryData = get_inventory(inventory_id)
 		if inventory:
+			# Update existing inventory (player inventories)
 			inventory.from_dict(saved_inventories[inventory_id])
-	
+		else:
+			# Pre-create inventory from save data (chest inventories that haven't instantiated yet)
+			var inventory_data: Dictionary = saved_inventories[inventory_id]
+			var slots_data: Array = inventory_data.get("slots", [])
+
+			# Create a config with the correct slot count
+			var config := InventorySlotConfig.new()
+			config.total_slots = slots_data.size()
+			config.columns = 5  # Default for chests
+			config.display_name = "Storage"
+
+			# Create inventory with proper config (this initializes the slots array)
+			var new_inventory: InventoryData = InventoryData.new(inventory_id, config)
+			# Now populate it with saved data
+			new_inventory.from_dict(inventory_data)
+			register_inventory(new_inventory)
+			print("InventoryManager: Pre-loaded inventory from save: %s with %d slots" % [inventory_id, slots_data.size()])
+
 	inventories_loaded.emit()
-	return true
-
-
-func save_inventory(inventory_id: String) -> bool:
-	var inventory: InventoryData = get_inventory(inventory_id)
-	if not inventory:
-		return false
-	
-	var path: String = "user://inventory_%s.json" % inventory_id
-	var json_string: String= JSON.stringify(inventory.to_dict(), "\t")
-	var file: FileAccess = FileAccess.open(path, FileAccess.WRITE)
-	
-	if not file:
-		push_error("Failed to save inventory: " + inventory_id)
-		return false
-	
-	file.store_string(json_string)
-	file.close()
-	return true
-
-
-func load_inventory(inventory_id: String) -> bool:
-	var inventory: InventoryData = get_inventory(inventory_id)
-	if not inventory:
-		return false
-	
-	var path: String = "user://inventory_%s.json" % inventory_id
-	if not FileAccess.file_exists(path):
-		return false
-	
-	var file: FileAccess = FileAccess.open(path, FileAccess.READ)
-	if not file:
-		return false
-	
-	var json_string: String = file.get_as_text()
-	file.close()
-	
-	var json: JSON = JSON.new()
-	if json.parse(json_string) != OK:
-		return false
-	
-	inventory.from_dict(json.data)
 	return true
 
 

@@ -1,14 +1,5 @@
 class_name DataTypes
 
-enum Tools {
-	None,
-	AxeWood,
-	TillGround,
-	WaterCrops,
-	PlantCorn,
-	PlantTomato
-}
-
 enum ItemType {
 	None,
 	AxeWood,
@@ -34,4 +25,16 @@ enum GrowthStates {
 	Reproduction,
 	Maturity,
 	Harvesting
+}
+
+enum BuildingType {
+	CONSTRUCTION,  # Hallways, rooms - form base layer
+	FURNITURE      # Cabinets, beds, chests - placeable on constructions
+}
+
+enum RoomType {
+	STANDARD,
+	DARK,        # For vampires
+	REINFORCED,  # For werewolves
+	AQUATIC      # For swamp creatures
 }

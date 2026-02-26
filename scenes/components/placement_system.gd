@@ -1,0 +1,592 @@
+# PlacementSystem.gd
+# Handles piece selection, ghost preview, placement, and deletion in build mode
+# Add as child of BuildModeManager or as standalone node
+extends Node2D
+
+signal placement_succeeded(piece_id: String, grid_pos: Vector2i)
+signal placement_failed(reason: String)
+signal piece_deleted(grid_pos: Vector2i)
+signal selection_changed(piece_id: String)
+
+# Grid settings (should match LayoutData)
+@export var cell_size: int = 16
+@export var camera_pan_speed: float = 300.0
+@export var camera_pan_edge_margin: float = 50.0  # For edge-of-screen panning
+
+# Current selection state
+var selected_piece_id: String = ""
+var current_rotation: int = 0  # 0-3, each step is 90 degrees clockwise
+var is_active: bool = false
+
+# Ghost preview
+var ghost_instance: Node2D = null
+var ghost_valid: bool = false
+var current_grid_pos: Vector2i = Vector2i.ZERO
+var ghost_center_offset: Vector2 = Vector2.ZERO  # Offset to center ghost on cursor
+var last_validated_pos: Vector2i = Vector2i(-99999, -99999)  # Track last validation position
+
+# Visual feedback
+var valid_color: Color = Color(0.2, 1.0, 0.2, 0.5)  # Green, semi-transparent
+var invalid_color: Color = Color(1.0, 0.2, 0.2, 0.5)  # Red, semi-transparent
+
+# Camera reference for panning
+var camera: Camera2D = null
+
+func _ready() -> void:
+	# Register with BuildModeManager
+	BuildModeManager.register_placement_system(self)
+	
+	# Get camera reference
+	if GameManager.camera:
+		camera = GameManager.camera
+	else:
+		GameManager.game_initialized.connect(_on_game_initialized)
+	
+	set_process(false)
+	set_process_unhandled_input(false)
+
+
+func _on_game_initialized() -> void:
+	camera = GameManager.camera
+
+
+func set_active(active: bool) -> void:
+	is_active = active
+	set_process(active)
+	set_process_unhandled_input(active)
+	
+	if not active:
+		_clear_ghost()
+		selected_piece_id = ""
+	
+	print("PlacementSystem: Active = %s" % active)
+
+
+func _process(delta: float) -> void:
+	if not is_active:
+		return
+	
+	_handle_camera_pan(delta)
+	_update_ghost_position()
+
+
+func _unhandled_input(event: InputEvent) -> void:
+	if not is_active:
+		return
+	
+	# Rotate piece
+	if event.is_action_pressed("build_rotate_cw"):
+		_rotate_piece(1)
+	elif event.is_action_pressed("build_rotate_ccw"):
+		_rotate_piece(-1)
+	
+	# Place piece
+	if event.is_action_pressed("build_place"):
+		_try_place_piece()
+	
+	# Delete piece / cancel selection
+	if event.is_action_pressed("build_cancel"):
+		if selected_piece_id != "":
+			# Cancel current selection
+			select_piece("")
+		else:
+			# Try to delete piece under cursor
+			_try_delete_piece()
+	
+	# Direct delete (right-click on existing piece)
+	if event.is_action_pressed("build_delete"):
+		_try_delete_piece()
+
+
+# =============================================
+# PIECE SELECTION
+# =============================================
+
+func select_piece(piece_id: String) -> void:
+	"""Select a piece type to place
+
+	Constructions are always locked to rotation 0.
+	"""
+	if piece_id == selected_piece_id:
+		return
+
+	selected_piece_id = piece_id
+
+	# Reset rotation (constructions stay at 0, furniture can be rotated)
+	current_rotation = 0
+
+	# Invalidate validation cache
+	last_validated_pos = Vector2i(-99999, -99999)
+
+	_clear_ghost()
+
+	if piece_id != "":
+		_create_ghost()
+
+	selection_changed.emit(piece_id)
+	print("PlacementSystem: Selected piece: %s" % piece_id)
+
+
+func _rotate_piece(direction: int) -> void:
+	"""Rotate the selected piece (direction: 1 for CW, -1 for CCW)
+
+	Note: Only furniture can be rotated. Constructions are locked to rotation 0.
+	"""
+	if selected_piece_id == "":
+		return
+
+	# Check if this piece is a construction - if so, don't allow rotation
+	var piece_data: BuildingPieceRegistry.PieceData = BuildingPieceRegistry.get_piece(selected_piece_id)
+	if piece_data and piece_data.building_type == DataTypes.BuildingType.CONSTRUCTION:
+		print("PlacementSystem: Constructions cannot be rotated")
+		return
+
+	# Only furniture can be rotated
+	current_rotation = (current_rotation + direction) % 4
+	if current_rotation < 0:
+		current_rotation += 4
+
+	# Invalidate validation cache (rotation changed)
+	last_validated_pos = Vector2i(-99999, -99999)
+
+	if ghost_instance:
+		ghost_instance.rotation_degrees = current_rotation * 90
+		# Recalculate center offset since rotation changes bounds
+		ghost_center_offset = _calculate_ghost_center_offset()
+		_update_ghost_validity()
+
+	print("PlacementSystem: Rotation = %d" % current_rotation)
+
+
+# =============================================
+# GHOST PREVIEW
+# =============================================
+
+func _create_ghost() -> void:
+	"""Create a ghost preview of the selected piece"""
+	var piece_data: BuildingPieceRegistry.PieceData = BuildingPieceRegistry.get_piece(selected_piece_id)
+	if not piece_data:
+		return
+
+	var scene: PackedScene = load(piece_data.scene_path)
+	if not scene:
+		push_error("PlacementSystem: Failed to load scene: %s" % piece_data.scene_path)
+		return
+
+	ghost_instance = scene.instantiate()
+	ghost_instance.rotation_degrees = current_rotation * 90
+
+	# Make it a ghost (semi-transparent, no collision, no connectable indexing)
+	_apply_ghost_material(ghost_instance)
+	_disable_ghost_collision(ghost_instance)
+	_strip_ghost_groups(ghost_instance)
+
+	# Set high z_index so ghost renders on top of placed pieces
+	ghost_instance.z_index = 100
+
+	add_child(ghost_instance)
+
+	# Calculate center offset for this piece
+	ghost_center_offset = _calculate_ghost_center_offset()
+
+	_update_ghost_position()
+
+
+func _clear_ghost() -> void:
+	"""Remove the ghost preview"""
+	if ghost_instance:
+		ghost_instance.queue_free()
+		ghost_instance = null
+	ghost_valid = false
+
+
+func _update_ghost_position() -> void:
+	"""Update ghost position to follow mouse, snapped to grid"""
+	if not ghost_instance:
+		return
+
+	var mouse_pos: Vector2 = get_global_mouse_position()
+
+	# Calculate the origin position that would center the ghost on the cursor
+	var origin_world_pos: Vector2 = mouse_pos - ghost_center_offset
+	current_grid_pos = BuildingLayoutData.world_to_grid(origin_world_pos)
+	# Use corner positioning for TileMap-based pieces to align with grid
+	var snapped_origin: Vector2 = BuildingLayoutData.grid_to_world_corner(current_grid_pos)
+
+	# Position the ghost at the snapped origin
+	ghost_instance.global_position = snapped_origin
+
+	_update_ghost_validity()
+
+
+func _update_ghost_validity() -> void:
+	"""Update ghost color based on placement validity (cached for same position)"""
+	if not ghost_instance:
+		return
+
+	# Skip validation if position hasn't changed (performance optimization)
+	if current_grid_pos == last_validated_pos:
+		return
+
+	ghost_valid = BuildingLayoutData.can_place_at(selected_piece_id, current_grid_pos, current_rotation)
+	var color: Color = valid_color if ghost_valid else invalid_color
+	_set_ghost_color(ghost_instance, color)
+
+	# Cache the validated position
+	last_validated_pos = current_grid_pos
+
+
+func _apply_ghost_material(node: Node) -> void:
+	"""Make a node and its children semi-transparent"""
+	if node is Sprite2D:
+		node.modulate = valid_color
+	elif node is TileMapLayer:
+		node.modulate = valid_color
+	
+	for child in node.get_children():
+		_apply_ghost_material(child)
+
+func _set_ghost_color(node: Node, color: Color) -> void:
+	"""Set the modulate color for ghost visualization"""
+	if node is Sprite2D:
+		node.modulate = color
+	elif node is TileMapLayer:
+		node.modulate = color
+	elif node is CanvasItem:
+		node.modulate = color
+	
+	for child in node.get_children():
+		_set_ghost_color(child, color)
+
+
+func _disable_ghost_collision(node: Node) -> void:
+	"""Disable all collision on the ghost"""
+	if node is CollisionObject2D:
+		node.collision_layer = 0
+		node.collision_mask = 0
+
+	if node is CollisionShape2D or node is CollisionPolygon2D:
+		node.disabled = true
+
+	if node is TileMapLayer:
+		node.collision_enabled = false
+
+	for child in node.get_children():
+		_disable_ghost_collision(child)
+
+
+func _strip_ghost_groups(node: Node) -> void:
+	"""Remove ghost from groups that affect building validation (e.g. connectable_tiles).
+	Prevents stale ghost tiles from polluting the spatial index."""
+	if node.is_in_group("connectable_tiles"):
+		node.remove_from_group("connectable_tiles")
+	if node.is_in_group("placeable_construction"):
+		node.remove_from_group("placeable_construction")
+	for child in node.get_children():
+		_strip_ghost_groups(child)
+
+
+# =============================================
+# PLACEMENT
+# =============================================
+
+func _try_place_piece() -> void:
+	"""Attempt to place the selected piece at the current position"""
+	print("\n=== PLACEMENT ATTEMPT ===")
+	print("Piece: %s, GridPos: %s, Rotation: %s" % [selected_piece_id, current_grid_pos, current_rotation])
+
+	if selected_piece_id == "":
+		print("❌ BLOCKED: No piece selected")
+		placement_failed.emit("No piece selected")
+		return
+
+	if not ghost_valid:
+		print("❌ BLOCKED: Ghost is invalid (red)")
+		print("Running validation with debug enabled to see why...")
+		# Enable debug validation and check why it's failing
+		BuildingLayoutData.debug_validation = true
+		var test_valid: bool = BuildingLayoutData.can_place_at(selected_piece_id, current_grid_pos, current_rotation)
+		BuildingLayoutData.debug_validation = false
+		print("Validation result: %s" % test_valid)
+		placement_failed.emit("Invalid placement position")
+		return
+	
+	var piece_data: BuildingPieceRegistry.PieceData = BuildingPieceRegistry.get_piece(selected_piece_id)
+	if not piece_data:
+		placement_failed.emit("Unknown piece")
+		return
+	
+	# Load and instantiate the actual piece
+	var scene: PackedScene = load(piece_data.scene_path)
+	if not scene:
+		placement_failed.emit("Failed to load piece scene")
+		return
+	
+	var instance: Node2D = scene.instantiate()
+	# Use corner positioning for TileMap-based pieces to avoid half-cell offset
+	instance.position = BuildingLayoutData.grid_to_world_corner(current_grid_pos)
+	instance.rotation_degrees = current_rotation * 90
+
+	# Add to the current floor
+	var floor_node: Node2D = FloorManager.get_floor_node(FloorManager.current_floor)
+	if not floor_node:
+		placement_failed.emit("No floor node found")
+		instance.queue_free()
+		return
+
+	# TODO
+	# Get or create a container for placed pieces
+	#var pieces_container: Node2D = floor_node.get_node_or_null("PlacedPieces")
+	#if not pieces_container:
+		#pieces_container = Node2D.new()
+		#pieces_container.name = "PlacedPieces"
+		#floor_node.add_child(pieces_container)
+
+	# Set persistent_id BEFORE add_child() so it's available in _ready()
+	if selected_piece_id == "furniture_chest":
+		var persistent_id: String = "chest_%d_%d" % [current_grid_pos.x, current_grid_pos.y]
+		if instance.has_method("set_persistent_id"):
+			instance.set_persistent_id(persistent_id)
+
+	floor_node.add_child(instance)
+
+	# Register with LayoutData
+	if BuildingLayoutData.place_piece(selected_piece_id, current_grid_pos, current_rotation, instance):
+		placement_succeeded.emit(selected_piece_id, current_grid_pos)
+		BuildModeManager.piece_placed.emit(selected_piece_id, current_grid_pos, current_rotation)
+
+		# Handle room-specific registration
+		if piece_data.is_room:
+			_register_room_placement(piece_data, instance, current_grid_pos)
+
+		# Register navigation for newly placed piece
+		FloorManager.register_placed_piece_navigation(instance, FloorManager.current_floor)
+	else:
+		instance.queue_free()
+		placement_failed.emit("LayoutData rejected placement")
+
+
+func _try_delete_piece() -> void:
+	"""Try to delete the piece under the cursor"""
+	var mouse_pos: Vector2 = get_global_mouse_position()
+	var grid_pos: Vector2i = BuildingLayoutData.world_to_grid(mouse_pos)
+
+	# Check if deleting a room - handle via RoomManager
+	var room: PlacedRoom = RoomManager.get_room_at(grid_pos)
+	if room:
+		FloorManager.unregister_piece_navigation(room.instance, FloorManager.current_floor)
+		if RoomManager.unregister_room(room.instance_id):
+			# Also remove from BuildingLayoutData
+			BuildingLayoutData.remove_construction_at(room.grid_pos)
+			piece_deleted.emit(grid_pos)
+			BuildModeManager.piece_removed.emit(grid_pos)
+			print("PlacementSystem: Deleted room at %s" % grid_pos)
+		else:
+			print("PlacementSystem: Cannot delete room (may have guest assigned)")
+		return
+
+	var placed: BuildingLayoutData.PlacedPiece = BuildingLayoutData.get_construction_at(grid_pos)
+	if placed and placed.instance:
+		FloorManager.unregister_piece_navigation(placed.instance, FloorManager.current_floor)
+	if BuildingLayoutData.remove_piece(grid_pos):
+		piece_deleted.emit(grid_pos)
+		BuildModeManager.piece_removed.emit(grid_pos)
+		print("PlacementSystem: Deleted piece at %s" % grid_pos)
+	else:
+		print("PlacementSystem: No piece to delete at %s" % grid_pos)
+
+
+func _register_room_placement(piece_data: BuildingPieceRegistry.PieceData, instance: Node2D, grid_pos: Vector2i) -> void:
+	"""Handle room-specific placement: hide door-side wall, erase hallway wall, register with RoomManager"""
+
+	# 1. Hide room's door-side wall
+	if instance.has_method("hide_door_side_wall"):
+		instance.hide_door_side_wall()
+
+	# 2. Find adjacent hallway and erase wall tile
+	# Get door offset from instance's door_edge layer (not from registry)
+	var door_offset: Vector2i = Vector2i.ZERO
+	if instance.has_method("get_door_grid_offset"):
+		door_offset = instance.get_door_grid_offset()
+	var door_grid: Vector2i = grid_pos + door_offset
+	var hallway_data: Dictionary = _find_adjacent_hallway_wall(door_grid)
+
+	if hallway_data.is_empty():
+		push_error("PlacementSystem: Room placed but no adjacent hallway found for wall erasure")
+		return
+
+	# 3. Erase the hallway wall tile
+	var tile_data: Dictionary = RoomManager.erase_hallway_wall_tile(
+		hallway_data.hallway_instance,
+		hallway_data.wall_cell
+	)
+
+	# 4. Get interior cells from room
+	var interior_cells: Array[Vector2i] = []
+	if instance.has_method("get_interior_cells"):
+		interior_cells = instance.get_interior_cells(grid_pos)
+	else:
+		# Fallback: use size-based cells
+		interior_cells = BuildingLayoutData._get_occupied_cells(grid_pos, piece_data.size, 0)
+
+	# 5. Get door world position
+	var door_world_pos: Vector2 = BuildingLayoutData.grid_to_world(door_grid)
+	if instance.has_method("get_door_world_position"):
+		door_world_pos = instance.get_door_world_position()
+
+	# 6. Register with RoomManager
+	RoomManager.register_room(
+		selected_piece_id,
+		grid_pos,
+		FloorManager.current_floor,
+		instance,
+		interior_cells,
+		door_grid,
+		door_world_pos,
+		{
+			"hallway_id": hallway_data.hallway_id,
+			"wall_cell": hallway_data.wall_cell,
+			"tile_data": tile_data
+		}
+	)
+
+
+func _find_adjacent_hallway_wall(door_grid: Vector2i) -> Dictionary:
+	"""Find hallway and wall cell adjacent to door position"""
+	for dir: Vector2i in [Vector2i.UP, Vector2i.DOWN, Vector2i.LEFT, Vector2i.RIGHT]:
+		var adjacent: Vector2i = door_grid + dir
+		var hallway: BuildingLayoutData.PlacedPiece = BuildingLayoutData.get_construction_at(adjacent)
+		if hallway and not BuildingLayoutData.has_opening_toward(adjacent, -dir):
+			# Found hallway wall - calculate which wall cell to erase
+			var wall_cell: Vector2i = _calculate_wall_cell(hallway, door_grid)
+			return {
+				"hallway_id": hallway.piece_id + "_" + str(hallway.grid_pos.x) + "_" + str(hallway.grid_pos.y),
+				"hallway_instance": hallway.instance,
+				"wall_cell": wall_cell
+			}
+	return {}
+
+
+func _calculate_wall_cell(hallway: BuildingLayoutData.PlacedPiece, door_grid: Vector2i) -> Vector2i:
+	"""Calculate the local cell coords in hallway's Walls layer to erase"""
+	var walls_layer: TileMapLayer = hallway.instance.get_node_or_null("GameTileMap/Walls")
+	if not walls_layer:
+		return Vector2i.ZERO
+	var door_world: Vector2 = BuildingLayoutData.grid_to_world(door_grid)
+	var local_pos: Vector2 = walls_layer.to_local(door_world)
+	return walls_layer.local_to_map(local_pos)
+
+
+# =============================================
+# CAMERA PANNING
+# =============================================
+
+func _handle_camera_pan(delta: float) -> void:
+	"""Handle camera panning via WASD or edge-of-screen"""
+	if not camera:
+		return
+	
+	var pan_direction: Vector2 = Vector2.ZERO
+	
+	# WASD panning
+	if Input.is_action_pressed("walk_up"):
+		pan_direction.y -= 1
+	if Input.is_action_pressed("walk_down"):
+		pan_direction.y += 1
+	if Input.is_action_pressed("walk_left"):
+		pan_direction.x -= 1
+	if Input.is_action_pressed("walk_right"):
+		pan_direction.x += 1
+	
+	# Edge-of-screen panning (optional)
+	#var mouse_pos: Vector2 = get_viewport().get_mouse_position()
+	#var viewport_size: Vector2 = get_viewport_rect().size
+	#
+	#if mouse_pos.x < camera_pan_edge_margin:
+	#	pan_direction.x -= 1
+	#elif mouse_pos.x > viewport_size.x - camera_pan_edge_margin:
+	#	pan_direction.x += 1
+	#
+	#if mouse_pos.y < camera_pan_edge_margin:
+	#	pan_direction.y -= 1
+	#elif mouse_pos.y > viewport_size.y - camera_pan_edge_margin:
+	#	pan_direction.y += 1
+	
+	if pan_direction != Vector2.ZERO:
+		pan_direction = pan_direction.normalized()
+		camera.global_position += pan_direction * camera_pan_speed * delta
+
+
+# =============================================
+# UTILITY
+# =============================================
+
+func _calculate_ghost_center_offset() -> Vector2:
+	"""Calculate the offset needed to center the ghost on the cursor"""
+	if not ghost_instance:
+		return Vector2.ZERO
+
+	# Get TileMap cells from the ghost (in local space)
+	var local_cells: Array[Vector2i] = BuildingLayoutData._get_tilemap_cells_from_instance(ghost_instance)
+
+	if local_cells.size() == 0:
+		# Fallback: use piece size if no TileMap found
+		var piece_data: BuildingPieceRegistry.PieceData = BuildingPieceRegistry.get_piece(selected_piece_id)
+		if piece_data:
+			var size: Vector2i = piece_data.size
+			# Adjust for rotation
+			if current_rotation == 1 or current_rotation == 3:
+				size = Vector2i(size.y, size.x)
+			return Vector2(size.x * cell_size / 2.0, size.y * cell_size / 2.0)
+		return Vector2.ZERO
+
+	# Rotate the cells to match current rotation
+	var rotated_cells: Array[Vector2i] = []
+	for cell: Vector2i in local_cells:
+		var rotated_cell: Vector2i = _rotate_cell_for_offset(cell, current_rotation)
+		rotated_cells.append(rotated_cell)
+
+	# Calculate bounds of the rotated cells
+	var min_x: int = rotated_cells[0].x
+	var max_x: int = rotated_cells[0].x
+	var min_y: int = rotated_cells[0].y
+	var max_y: int = rotated_cells[0].y
+
+	for cell: Vector2i in rotated_cells:
+		min_x = mini(min_x, cell.x)
+		max_x = maxi(max_x, cell.x)
+		min_y = mini(min_y, cell.y)
+		max_y = maxi(max_y, cell.y)
+
+	# Calculate center point in world coordinates
+	var center_x: float = (min_x + max_x + 1) * cell_size / 2.0
+	var center_y: float = (min_y + max_y + 1) * cell_size / 2.0
+
+	return Vector2(center_x, center_y)
+
+
+func _rotate_cell_for_offset(cell: Vector2i, rotation: int) -> Vector2i:
+	"""Rotate a cell coordinate for offset calculation"""
+	var result: Vector2i = cell
+	match rotation:
+		0:  # 0 degrees
+			result = cell
+		1:  # 90 degrees clockwise
+			result = Vector2i(-cell.y, cell.x)
+		2:  # 180 degrees
+			result = Vector2i(-cell.x, -cell.y)
+		3:  # 270 degrees clockwise
+			result = Vector2i(cell.y, -cell.x)
+	return result
+
+
+func get_current_grid_position() -> Vector2i:
+	return current_grid_pos
+
+
+func get_selected_piece() -> String:
+	return selected_piece_id
+
+
+func is_placement_valid() -> bool:
+	return ghost_valid

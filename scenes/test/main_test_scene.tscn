@@ -1,16 +1,20 @@
-[gd_scene load_steps=7 format=3 uid="uid://p6bd81axrso8"]
+[gd_scene load_steps=9 format=3 uid="uid://p6bd81axrso8"]
 
 [ext_resource type="Script" uid="uid://dgm5knshx78wa" path="res://scripts/npc/main_hotel_scene_manager.gd" id="1_6vm10"]
 [ext_resource type="PackedScene" uid="uid://d0dhtip02w7f6" path="res://scenes/ui/game_screen.tscn" id="2_0ia0t"]
+[ext_resource type="PackedScene" uid="uid://cqxcxnw5skkbr" path="res://scenes/components/PlacementSystem.tscn" id="2_mxx4c"]
 [ext_resource type="Script" uid="uid://ca5tgsogyltll" path="res://scripts/camera/camera_controller.gd" id="3_kd5dn"]
 [ext_resource type="PackedScene" uid="uid://6fa2m4vt6287" path="res://scenes/characters/player/player.tscn" id="4_27wsr"]
 [ext_resource type="Script" uid="uid://c1uamwi6562u7" path="res://scripts/npc/visual_npc_spawner.gd" id="5_xx0dc"]
 [ext_resource type="Script" uid="uid://cbao8t4xipws4" path="res://scripts/scene_helpers/placeable_item_preview.gd" id="6_xqsx0"]
+[ext_resource type="Script" uid="uid://buvkr02fpfhbc" path="res://scenes/test/buildmode_debug.gd" id="8_71yk1"]
 
 [node name="MainScene" type="Node2D"]
 y_sort_enabled = true
 script = ExtResource("1_6vm10")
 metadata/_edit_group_ = true
+
+[node name="PlacementSystem" parent="." instance=ExtResource("2_mxx4c")]
 
 [node name="GameScreen" parent="." instance=ExtResource("2_0ia0t")]
 
@@ -33,3 +37,6 @@ player = NodePath("../Player")
 
 [node name="PlaceableItemPreview" type="Sprite2D" parent="."]
 script = ExtResource("6_xqsx0")
+
+[node name="BuildmodeDebug" type="CanvasLayer" parent="."]
+script = ExtResource("8_71yk1")

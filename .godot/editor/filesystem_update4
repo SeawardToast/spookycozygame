@@ -1,0 +1,15 @@
+res://scenes/test/building_construction_test_scene.tscn
+res://scenes/ui/game_ui_theme.tres
+res://tilesets/large_house_tile_set.tres
+res://scenes/objects/tree/tree_shake.gdshader
+res://tilesets/game_tile_set.tres
+res://assets/game/characters/sprites/girl_ghost_1/girl_ghost_1.tres
+res://assets/game/characters/sprites/vampires/vampire_1/vampire_1.tres
+res://dialogue/dialogue_balloon_theme.tres
+res://scenes/objects/rocks/rock_shake.gdshader
+res://scenes/characters/guide/replace_color.gdshader
+res://scenes/ui/hotel_management_ui/alert.tscn
+res://scenes/ui/hotel_management_ui/hotel_management_ui.tscn
+res://scenes/ui/hotel_management_ui/hotel_management_ui.gd
+res://scripts/globals/guest_assignment_manager.gd
+res://scripts/globals/save_game_manager.gd

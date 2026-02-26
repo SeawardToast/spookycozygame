@@ -239,9 +239,8 @@ func _update_daily_summary_mood(report: Variant) -> void:
 		summary.neutral_moods_count += 1
 
 
-func _compile_daily_summary(summary: Variant) -> Variant:
-	print("compiling summary")
-	return {"summary": "cuckery"}
+func _compile_daily_summary(summary: Variant) -> void:
+	summary.calculate_metrics()
 
 
 # ============================================================================

@@ -5,6 +5,8 @@ extends Node2D
 @onready var drag_preview_layer: Control = $DragPreview
 @onready var tooltip_label: Label = $TooltipLabel
 @onready var main_inventory_texture_rect: TextureRect = $MarginContainer/MainInventoryTextureRect
+@onready var hotbar_texture_rect: TextureRect = $MarginContainer/HotbarTextureRect
+@onready var currency_label: Label = $MarginContainer/MainInventoryTextureRect/CurrencyLabel
 
 var holding_item_id: int = -1
 var holding_quantity: int = 0
@@ -22,11 +24,26 @@ func _ready() -> void:
 	main_inventory_texture_rect.hide()
 	tooltip_label.hide()
 	_setup_slots()
-	_render_all_slots()
-	_select_hotbar_slot(2)
-	
+
+	# Connect signals first
 	InventoryManager.player_inventory.slot_changed.connect(_on_main_slot_changed)
 	InventoryManager.player_hotbar.slot_changed.connect(_on_hotbar_slot_changed)
+	InventoryManager.inventories_loaded.connect(_on_inventories_loaded)
+	InventoryManager.currency_changed.connect(_on_currency_changed)
+	SignalBus.chest_opened.connect(_on_chest_opened)
+	SignalBus.chest_closed.connect(_on_chest_closed)
+
+	currency_label.text = str(InventoryManager.currency)
+
+	# Defer initial render to ensure InventoryManager is fully initialized
+	call_deferred("_initial_render")
+
+
+func _initial_render() -> void:
+	"""Initial render after InventoryManager is fully set up"""
+	_render_all_slots()
+	_select_hotbar_slot(2)
+	print("Inventory UI: Initial render complete")
 
 
 func _setup_slots() -> void:
@@ -259,7 +276,8 @@ func _create_drag_ghost(texture: Texture2D) -> void:
 	drag_ghost.scale = Vector2(1.2, 1.2)
 	drag_preview_layer.add_child(drag_ghost)
 	drag_ghost.global_position = get_global_mouse_position() - drag_ghost.size * 0.5
-	
+	# Set high z_index so ghost renders on top of placed pieces
+	drag_ghost.z_index = 100
 	if holding_quantity > 1:
 		drag_ghost_label = Label.new()
 		drag_ghost_label.text = str(holding_quantity)
@@ -300,6 +318,21 @@ func _on_slot_mouse_entered(slot: InventorySlot) -> void:
 		tooltip_label.text = slot.item_name
 		tooltip_label.show()
 
-
 func _on_slot_mouse_exited() -> void:
 	tooltip_label.hide()
+	
+func _on_inventories_loaded() -> void:
+	# Re-render all slots after loading saved data
+	_render_all_slots()
+	print("Inventory UI: Re-rendered all slots after inventory load")
+
+
+func _on_chest_opened() -> void:
+	hotbar_texture_rect.hide()
+
+func _on_chest_closed() -> void:
+	hotbar_texture_rect.show()
+
+
+func _on_currency_changed(new_amount: int) -> void:
+	currency_label.text = str(new_amount)

@@ -17,7 +17,7 @@ class_name Item
 @export var duration: float = 0.0
 
 @export_group("Tool Properties")
-@export var tool_type: DataTypes.Tools
+@export var tool_type: DataTypes.ItemType
 @export var durability: int = 100
 @export var damage: int = 0
 
