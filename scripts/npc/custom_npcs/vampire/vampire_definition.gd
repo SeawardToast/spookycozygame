@@ -10,6 +10,7 @@ var speed: float = 5.0
 var thirst: int = 100        # Hunger but for blood
 var elegance: int = 50       # Vampires judge themselves by grace & poise
 var tired: bool = false      # Vampires rest in coffins at daybreak
+var base_nightly_payment: int = 40
 
 func _init() -> void:
 	# Randomize name

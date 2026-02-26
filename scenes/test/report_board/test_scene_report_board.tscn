@@ -7,25 +7,27 @@
 [ext_resource type="Script" uid="uid://c1uamwi6562u7" path="res://scripts/npc/visual_npc_spawner.gd" id="4_lfaip"]
 [ext_resource type="Script" uid="uid://cbao8t4xipws4" path="res://scripts/scene_helpers/placeable_item_preview.gd" id="6_lh1nm"]
 
-[node name="MainHotelScene" type="Node2D"]
+[node name="MainScene" type="Node2D"]
 y_sort_enabled = true
 script = ExtResource("1_kbwh4")
 metadata/_edit_group_ = true
 
-[node name="Camera2D" type="Camera2D" parent="." node_paths=PackedStringArray("target")]
+[node name="GameScreen" parent="." instance=ExtResource("3_kbwh4")]
+
+[node name="GameRoot" type="Node2D" parent="."]
+
+[node name="LevelRoot" type="Node2D" parent="GameRoot"]
+
+[node name="Camera2D" type="Camera2D" parent="GameRoot" node_paths=PackedStringArray("target")]
 position = Vector2(545, 178)
 zoom = Vector2(1.2, 1.2)
 script = ExtResource("2_hiv5b")
 target = NodePath("../Player")
 
-[node name="Player" parent="." instance=ExtResource("2_lfaip")]
+[node name="Player" parent="GameRoot" instance=ExtResource("2_lfaip")]
 position = Vector2(545, 178)
 
-[node name="GameScreen" parent="." instance=ExtResource("3_kbwh4")]
-
-[node name="FloorContainer" type="Node2D" parent="."]
-
-[node name="VisualNpcSpawner" type="Node2D" parent="." node_paths=PackedStringArray("player")]
+[node name="VisualNpcSpawner" type="Node2D" parent="GameRoot" node_paths=PackedStringArray("player")]
 script = ExtResource("4_lfaip")
 player = NodePath("../Player")
 

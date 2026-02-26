@@ -13,8 +13,9 @@ vframes = 2
 frame = 11
 
 [node name="CollectableComponent" parent="." instance=ExtResource("2_puqw6")]
+scale = Vector2(1.6400003, 1.719999)
 collision_layer = 160
-collectable_name = "tomato"
+item_id = 3
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="CollectableComponent"]
 y_sort_enabled = true

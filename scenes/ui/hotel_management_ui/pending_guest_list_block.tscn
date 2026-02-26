@@ -1,0 +1,43 @@
+[gd_scene load_steps=5 format=3 uid="uid://c5acu3ncrt2eg"]
+
+[ext_resource type="Theme" uid="uid://ljcck66th0xd" path="res://scenes/ui/game_ui_theme.tres" id="1_8p16g"]
+[ext_resource type="Script" uid="uid://v2e1k7p2pfef" path="res://scenes/ui/hotel_management_ui/pending_guest_list_block.gd" id="1_script"]
+[ext_resource type="Texture2D" uid="uid://cd8tuel5gyu8h" path="res://assets/ui/basic_ui_sprites.png" id="2_btjla"]
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_btjla"]
+atlas = ExtResource("2_btjla")
+region = Rect2(11, 11, 26, 28)
+
+[node name="PendingGuestListBlock" type="PanelContainer"]
+custom_minimum_size = Vector2(300, 20)
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_right = -553.0
+offset_bottom = -416.0
+grow_horizontal = 2
+grow_vertical = 2
+scale = Vector2(1, 0.9977324)
+theme = ExtResource("1_8p16g")
+theme_type_variation = &"LightWoodPanel"
+script = ExtResource("1_script")
+
+[node name="MarginContainer" type="MarginContainer" parent="."]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="MarginContainer"]
+layout_mode = 2
+size_flags_horizontal = 0
+theme = ExtResource("1_8p16g")
+theme_type_variation = &"DayAndNightLabel"
+text = "Guest Name"
+
+[node name="Button" type="Button" parent="MarginContainer"]
+layout_mode = 2
+size_flags_horizontal = 8
+size_flags_vertical = 4
+focus_mode = 0
+theme = ExtResource("1_8p16g")
+theme_type_variation = &"PendingGuestButton"
+icon = SubResource("AtlasTexture_btjla")
+flat = true

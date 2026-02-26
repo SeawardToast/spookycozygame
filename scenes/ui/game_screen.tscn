@@ -1,9 +1,10 @@
-[gd_scene load_steps=5 format=3 uid="uid://d0dhtip02w7f6"]
+[gd_scene load_steps=6 format=3 uid="uid://d0dhtip02w7f6"]
 
 [ext_resource type="Theme" uid="uid://ljcck66th0xd" path="res://scenes/ui/game_ui_theme.tres" id="1_e2vrk"]
+[ext_resource type="PackedScene" uid="uid://2v24415fmhrn" path="res://scenes/ui/chest_ui.tscn" id="2_0kkfd"]
 [ext_resource type="PackedScene" uid="uid://8qpho0ri8727" path="res://scenes/ui/day_and_night_panel.tscn" id="4_gkbp4"]
-[ext_resource type="PackedScene" uid="uid://wmrl8n368gpj" path="res://scenes/ui/report_board/report_board.tscn" id="5_0kkfd"]
 [ext_resource type="PackedScene" uid="uid://c2px04rprr7jf" path="res://scenes/ui/inventory.tscn" id="6_nwa5a"]
+[ext_resource type="PackedScene" uid="uid://qn8avmahanrf" path="res://scenes/ui/hotel_management_ui/hotel_management_ui.tscn" id="6_ooiym"]
 
 [node name="GameScreen" type="CanvasLayer"]
 
@@ -17,12 +18,24 @@ theme = ExtResource("1_e2vrk")
 
 [node name="Inventory" parent="MarginContainer" instance=ExtResource("6_nwa5a")]
 
-[node name="ReportBoard" parent="MarginContainer" instance=ExtResource("5_0kkfd")]
-layout_mode = 2
-size_flags_horizontal = 4
-size_flags_vertical = 4
-
 [node name="DayAndNightPanel" parent="MarginContainer" instance=ExtResource("4_gkbp4")]
 layout_mode = 2
 size_flags_horizontal = 8
 size_flags_vertical = 0
+
+[node name="ChestUI" parent="MarginContainer" instance=ExtResource("2_0kkfd")]
+
+[node name="HotelManagementPanel" parent="." instance=ExtResource("6_ooiym")]
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -275.5
+offset_top = -227.0
+offset_right = -275.5
+offset_bottom = -227.0
+grow_horizontal = 2
+grow_vertical = 2
+size_flags_horizontal = 4
+size_flags_vertical = 4

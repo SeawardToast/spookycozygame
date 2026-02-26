@@ -12,6 +12,7 @@ var speed: float = 5.0
 var tired: bool = true
 var hunger: int = 100
 var spookiness: int = 50
+var base_nightly_payment: int = 20
 
 func _init() -> void:
 	# Randomize name

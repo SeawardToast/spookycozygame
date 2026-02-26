@@ -1,0 +1,37 @@
+[gd_scene load_steps=4 format=4 uid="uid://28h4li2g1c3o"]
+
+[ext_resource type="TileSet" uid="uid://dcaqtdvfufe8g" path="res://tilesets/game_tile_set.tres" id="1_nxdf0"]
+[ext_resource type="PackedScene" uid="uid://ber0r841sem8q" path="res://scenes/components/save_load/save_data_component.tscn" id="2_hql8p"]
+[ext_resource type="Resource" uid="uid://sbybiywmb8mp" path="res://resources/scene_data_resource.tres" id="3_f4ek3"]
+
+[node name="HallwayStraight" type="Node2D" groups=["placeable_construction"]]
+y_sort_enabled = true
+
+[node name="GameTileMap" type="Node2D" parent="."]
+y_sort_enabled = true
+
+[node name="north_edge" type="TileMapLayer" parent="GameTileMap" groups=["connectable_tiles"]]
+y_sort_enabled = true
+tile_map_data = PackedByteArray("AAABAAAABwAAAA8AAAACAAAABwABAA8AAAADAAAABwACAA8AAAAEAAAABwADAA8AAAA=")
+tile_set = ExtResource("1_nxdf0")
+
+[node name="south_edge" type="TileMapLayer" parent="GameTileMap" groups=["connectable_tiles"]]
+y_sort_enabled = true
+tile_map_data = PackedByteArray("AAABAAwABwAAAA8AAAACAAwABwABAA8AAAADAAwABwACAA8AAAAEAAwABwADAA8AAAA=")
+tile_set = ExtResource("1_nxdf0")
+
+[node name="Floor" type="TileMapLayer" parent="GameTileMap"]
+y_sort_enabled = true
+tile_map_data = PackedByteArray("AAABAAEABwABAA8AAAACAAEABwACAA8AAAADAAEABwADAA8AAAAEAAEABwAEAA8AAAABAAIABwABAA4AAAABAAMABwABAA8AAAACAAIABwACAA4AAAACAAMABwACAA8AAAADAAIABwADAA4AAAADAAMABwADAA8AAAAEAAIABwAEAA4AAAAEAAMABwAEAA8AAAABAAQABwABAA4AAAABAAUABwABAA8AAAACAAQABwACAA4AAAACAAUABwACAA8AAAADAAQABwADAA4AAAADAAUABwADAA8AAAAEAAQABwAEAA4AAAAEAAUABwAEAA8AAAABAAYABwABAA4AAAACAAYABwACAA4AAAADAAYABwADAA4AAAAEAAYABwAEAA4AAAABAAcABwABAA4AAAACAAcABwACAA4AAAADAAcABwADAA4AAAAEAAcABwAEAA4AAAABAAgABwABAA4AAAABAAkABwABAA8AAAACAAgABwACAA4AAAACAAkABwACAA8AAAADAAgABwADAA4AAAADAAkABwADAA8AAAAEAAgABwAEAA4AAAAEAAkABwAEAA8AAAABAAoABwABAA4AAAABAAsABwABAA8AAAACAAoABwACAA4AAAACAAsABwACAA8AAAADAAoABwADAA4AAAADAAsABwADAA8AAAAEAAoABwAEAA4AAAAEAAsABwAEAA8AAAA=")
+tile_set = ExtResource("1_nxdf0")
+
+[node name="Walls" type="TileMapLayer" parent="GameTileMap"]
+y_sort_enabled = true
+tile_map_data = PackedByteArray("AAAAAAAACAAAAAMAAAAAAAEACAAAAAEAAAAAAAIACAAAAAIAAAAAAAMACAAAAAMAAAAAAAQACAAAAAEAAAAAAAUACAAAAAIAAAAAAAYACAAAAAMAAAAAAAcACAAAAAEAAAAAAAkACAAAAAMAAAAAAAoACAAAAAEAAAAFAAkACAAFAAAAAAAFAAoACAAFAAEAAAAFAAsACAAFAAIAAAAFAAwACAAFAAMAAAAFAAUACAAFAAAAAAAFAAYACAAFAAEAAAAFAAcACAAFAAIAAAAFAAgACAAFAAMAAAAFAAEACAAFAAAAAAAFAAIACAAFAAEAAAAFAAMACAAFAAIAAAAFAAQACAAFAAMAAAAFAAAACAAFAAMAAAAAAAsACAAAAAIAAAAAAAwACAAAAAMAAAAAAAgACAAAAAIAAAA=")
+tile_set = ExtResource("1_nxdf0")
+
+[node name="SaveDataComponent" parent="." instance=ExtResource("2_hql8p")]
+save_data_resource = ExtResource("3_f4ek3")
+
+[node name="Node2D" type="Node2D" parent="."]
+position = Vector2(24.426224, 6.9839935)

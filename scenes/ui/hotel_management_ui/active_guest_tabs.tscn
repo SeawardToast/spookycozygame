@@ -1,0 +1,49 @@
+[gd_scene load_steps=3 format=3 uid="uid://ch4exwicbplha"]
+
+[ext_resource type="Theme" uid="uid://ljcck66th0xd" path="res://scenes/ui/game_ui_theme.tres" id="1_w5thf"]
+[ext_resource type="PackedScene" uid="uid://d0p3jh6v1bwyq" path="res://scenes/ui/hotel_management_ui/active_guest_list_block.tscn" id="2_ikixa"]
+
+[node name="ActiveGuestTabs" type="Control"]
+layout_mode = 3
+anchors_preset = 0
+offset_right = 402.0
+offset_bottom = 234.0
+theme = ExtResource("1_w5thf")
+theme_type_variation = &"DarkWoodPanel"
+
+[node name="TabContainer" type="TabContainer" parent="."]
+layout_mode = 1
+anchors_preset = -1
+anchor_right = 0.83100003
+anchor_bottom = 1.0
+offset_right = 0.09320068
+offset_bottom = -36.0
+grow_horizontal = 2
+grow_vertical = 2
+size_flags_horizontal = 4
+theme = ExtResource("1_w5thf")
+theme_override_font_sizes/font_size = 16
+tab_alignment = 1
+current_tab = 0
+clip_tabs = false
+
+[node name="Active" type="MarginContainer" parent="TabContainer"]
+layout_mode = 2
+metadata/_tab_index = 0
+
+[node name="ActiveGuestList" type="VBoxContainer" parent="TabContainer/Active"]
+layout_mode = 2
+size_flags_horizontal = 0
+
+[node name="ActiveGuestListBlock" parent="TabContainer/Active/ActiveGuestList" instance=ExtResource("2_ikixa")]
+custom_minimum_size = Vector2(0, 0)
+layout_mode = 2
+size_flags_horizontal = 4
+size_flags_vertical = 4
+
+[node name="CheckedOut" type="RichTextLabel" parent="TabContainer"]
+visible = false
+layout_mode = 2
+text = "
+"
+metadata/_tab_index = 1
