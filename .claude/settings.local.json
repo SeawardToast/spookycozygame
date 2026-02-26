@@ -4,7 +4,8 @@
       "Bash(cd:*)",
       "Bash(dir:*)",
       "Bash(python3:*)",
-      "Bash(powershell -Command:*)"
+      "Bash(powershell -Command:*)",
+      "Bash(find c:UsersaidanDocumentsspookycozygame -name \"*.gd\" -exec grep -l \"furniture_bed\\\\|furniture_coffin\\\\|FURNITURE_QUALITY\" {} ;)"
     ]
   }
 }

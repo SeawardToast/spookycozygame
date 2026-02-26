@@ -1,4 +1,4 @@
-[gd_scene load_steps=7 format=3 uid="uid://qn8avmahanrf"]
+[gd_scene load_steps=8 format=3 uid="uid://qn8avmahanrf"]
 
 [ext_resource type="Theme" uid="uid://ljcck66th0xd" path="res://scenes/ui/game_ui_theme.tres" id="1_hmc0v"]
 [ext_resource type="PackedScene" uid="uid://c5acu3ncrt2eg" path="res://scenes/ui/hotel_management_ui/pending_guest_list_block.tscn" id="2_jb0no"]
@@ -6,6 +6,7 @@
 [ext_resource type="PackedScene" uid="uid://d0p3jh6v1bwyq" path="res://scenes/ui/hotel_management_ui/active_guest_list_block.tscn" id="4_glan0"]
 [ext_resource type="PackedScene" uid="uid://wmrl8n368gpj" path="res://scenes/ui/report_board/report_board.tscn" id="5_glan0"]
 [ext_resource type="PackedScene" uid="uid://bwgmb46nveqp8" path="res://scenes/ui/hotel_management_ui/alert.tscn" id="6_8jsry"]
+[ext_resource type="PackedScene" uid="uid://jypc7f7iofg2" path="res://scenes/ui/hotel_management_ui/room_list_block.tscn" id="6_n7omm"]
 
 [node name="HotelManagementPanel" type="Control"]
 layout_mode = 3
@@ -23,7 +24,7 @@ size_flags_horizontal = 4
 theme = ExtResource("1_hmc0v")
 theme_override_font_sizes/font_size = 16
 tab_alignment = 1
-current_tab = 4
+current_tab = 3
 clip_tabs = false
 
 [node name="PendingGuests" type="MarginContainer" parent="TabContainer"]
@@ -59,14 +60,18 @@ metadata/_tab_index = 2
 [node name="ReportBoard" parent="TabContainer/DailyReport" instance=ExtResource("5_glan0")]
 layout_mode = 2
 
-[node name="Rooms" type="RichTextLabel" parent="TabContainer"]
-visible = false
+[node name="Rooms" type="MarginContainer" parent="TabContainer"]
 layout_mode = 2
-text = "
-"
 metadata/_tab_index = 3
 
+[node name="VBoxContainer" type="VBoxContainer" parent="TabContainer/Rooms"]
+layout_mode = 2
+
+[node name="RoomGuestListBlock" parent="TabContainer/Rooms/VBoxContainer" instance=ExtResource("6_n7omm")]
+layout_mode = 2
+
 [node name="Alerts" type="MarginContainer" parent="TabContainer"]
+visible = false
 layout_mode = 2
 metadata/_tab_index = 4
 

@@ -327,7 +327,14 @@ func _calculate_checkout_payment(assignment: GuestAssignment) -> int:
 	if not definition or not "base_nightly_payment" in definition:
 		return 0
 	var nights: int = assignment.check_out_day - assignment.check_in_day
-	return nights * definition.base_nightly_payment
+	var base: int = nights * definition.base_nightly_payment
+	var room: PlacedRoom = RoomManager.placed_rooms.get(assignment.room_instance_id)
+	var multiplier: float = _quality_multiplier(room.current_quality if room else 0)
+	return int(base * multiplier)
+
+
+func _quality_multiplier(quality: int) -> float:
+	return clampf(0.5 + quality / 50.0, 0.5, 1.5)
 
 
 # --------------------------------------------

@@ -1,10 +1,10 @@
+VBoxContainer
+MarginContainer
 Button
 Label
 TextureRect
 HBoxContainer
 RichTextLabel
-VBoxContainer
-MarginContainer
 NavigationObstacle2D
 PanelContainer
 Panel

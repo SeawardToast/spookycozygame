@@ -104,8 +104,40 @@ func check_in(guest_id: String) -> bool:
 	_pending_guests.erase(guest_id)
 
 	guest_checked_in.emit(assignment)
+	_report_room_quality_mood(assignment, room)
 	print("GuestAssignmentManager: Checked in %s (npc_id: %s)" % [assignment.guest_name, npc_id])
 	return true
+
+
+func _report_room_quality_mood(assignment: GuestAssignment, room: PlacedRoom) -> void:
+	if not room:
+		return
+	var quality: int = room.current_quality
+	var mood: String
+	var intensity: int
+	if quality == 0:
+		mood = "disappointed"
+		intensity = 3
+	elif quality < 10:
+		mood = "neutral"
+		intensity = 5
+	elif quality < 25:
+		mood = "satisfied"
+		intensity = 6
+	elif quality < 45:
+		mood = "happy"
+		intensity = 8
+	else:
+		mood = "delighted"
+		intensity = 10
+	DailyReportManager.report_mood(
+		assignment.guest_id,
+		assignment.guest_name,
+		mood,
+		intensity,
+		"room quality",
+		assignment.room_instance_id
+	)
 
 
 func check_out(guest_id: String) -> bool:
