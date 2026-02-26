@@ -1,8 +1,15 @@
-[gd_resource type="Theme" load_steps=59 format=3 uid="uid://ljcck66th0xd"]
+[gd_resource type="Theme" load_steps=61 format=3 uid="uid://ljcck66th0xd"]
 
 [ext_resource type="Texture2D" uid="uid://cd8tuel5gyu8h" path="res://assets/ui/basic_ui_sprites.png" id="1_nhbk8"]
 [ext_resource type="FontVariation" uid="uid://ifuaiodn04dj" path="res://assets/ui/fonts/zx_palm_variation.tres" id="2_68i34"]
 [ext_resource type="FontFile" uid="uid://2pfwl33qn5vf" path="res://assets/ui/fonts/pixelFont-7-8x14-sproutLands.ttf" id="2_mtjyl"]
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_q5bnr"]
+atlas = ExtResource("1_nhbk8")
+region = Rect2(243, 82, 10, 12)
+
+[sub_resource type="StyleBoxTexture" id="StyleBoxTexture_0wli6"]
+texture = SubResource("AtlasTexture_q5bnr")
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_nhbk8"]
 atlas = ExtResource("1_nhbk8")
@@ -289,6 +296,8 @@ texture_margin_bottom = 6.0
 
 [resource]
 default_font = ExtResource("2_mtjyl")
+AlertDismissButton/base_type = &"Button"
+AlertDismissButton/styles/normal = SubResource("StyleBoxTexture_0wli6")
 DarkWoodPanel/base_type = &"PanelContainer"
 DarkWoodPanel/styles/panel = SubResource("StyleBoxTexture_mtjyl")
 DayAndNightButton/base_type = &"Button"

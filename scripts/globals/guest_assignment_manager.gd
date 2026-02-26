@@ -53,6 +53,7 @@ func _try_generate_pending_guest(day: int) -> void:
 	assignment.guest_name = definition.npc_name
 	_pending_guests[guest_id] = assignment
 	guest_pending.emit(assignment)
+	DailyReportManager.generate_alert("guest_pending", "low", guest_id, assignment.guest_name, "%s is waiting to check in" % assignment.guest_name, "lobby")
 	print("GuestAssignmentManager: New pending guest %s (%s) in room %s" % [assignment.guest_name, guest_type, room_id])
 
 
@@ -122,6 +123,7 @@ func check_out(guest_id: String) -> bool:
 
 	if assignment:
 		guest_checked_out.emit(assignment)
+		DailyReportManager.generate_alert("checkout", "low", assignment.guest_id, assignment.guest_name, "%s has checked out" % assignment.guest_name, "lobby")
 		print("GuestAssignmentManager: Checked out %s" % assignment.guest_name)
 	return true
 

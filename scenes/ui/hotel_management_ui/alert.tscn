@@ -1,0 +1,29 @@
+[gd_scene load_steps=3 format=3 uid="uid://bwgmb46nveqp8"]
+
+[ext_resource type="Theme" uid="uid://ljcck66th0xd" path="res://scenes/ui/game_ui_theme.tres" id="1_iy86h"]
+[ext_resource type="Script" uid="uid://crwee82hleikk" path="res://scenes/ui/hotel_management_ui/alert.gd" id="1_script"]
+
+[node name="Alert" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_script")
+
+[node name="HBoxContainer" type="HBoxContainer" parent="."]
+layout_mode = 0
+offset_right = 40.0
+offset_bottom = 40.0
+theme_override_constants/separation = 15
+
+[node name="DismissButton" type="Button" parent="HBoxContainer"]
+custom_minimum_size = Vector2(40, 0)
+layout_mode = 2
+theme = ExtResource("1_iy86h")
+theme_type_variation = &"AlertDismissButton"
+
+[node name="Label" type="Label" parent="HBoxContainer"]
+layout_mode = 2
+text = "tester"

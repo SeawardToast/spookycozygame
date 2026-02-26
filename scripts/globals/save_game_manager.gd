@@ -1,5 +1,7 @@
 extends Node
 
+signal game_loaded
+
 var allow_save_game: bool
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -36,6 +38,12 @@ func load_game() -> void:
 	# Restore guest assignment state after scenes are loaded
 	GuestAssignmentManager.load_state()
 	GuestAssignmentManager.sync_pending_from_room_manager()
+	game_loaded.emit()
+
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_WM_CLOSE_REQUEST:
+		save_game()
+
 
 func reset_game() -> void:
 	await get_tree().process_frame
