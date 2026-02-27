@@ -3,19 +3,13 @@
 [ext_resource type="Theme" uid="uid://ljcck66th0xd" path="res://scenes/ui/game_ui_theme.tres" id="1_iy86h"]
 [ext_resource type="Script" uid="uid://crwee82hleikk" path="res://scenes/ui/hotel_management_ui/alert.gd" id="1_script"]
 
-[node name="Alert" type="Control"]
-layout_mode = 3
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
+[node name="Alert" type="HBoxContainer"]
+offset_right = 101.0
+offset_bottom = 33.0
 script = ExtResource("1_script")
 
 [node name="HBoxContainer" type="HBoxContainer" parent="."]
-layout_mode = 0
-offset_right = 40.0
-offset_bottom = 40.0
+layout_mode = 2
 theme_override_constants/separation = 15
 
 [node name="DismissButton" type="Button" parent="HBoxContainer"]

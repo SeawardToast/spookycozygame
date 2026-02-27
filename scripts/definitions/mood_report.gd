@@ -10,6 +10,7 @@ var context: String
 var timestamp: float
 var location: String
 var zone: String = ""
+var room_number: String = ""
 
 func _init(g_id: String, g_name: String, mood: String, intens: int, trig: String, loc: String) -> void:
 	guest_id = g_id
