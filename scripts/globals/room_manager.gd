@@ -460,6 +460,10 @@ func load_save_data(data: Dictionary) -> void:
 		room_assignments[assignment.room_instance_id] = assignment.assignment_id
 		guest_to_room[assignment.guest_id] = assignment.room_instance_id
 
+	# Recalculate quality from live furniture data (BuildingLayoutData is already loaded at this point)
+	for room_id: String in placed_rooms:
+		rescan_room_furniture(room_id)
+
 	print("RoomManager: Loaded %d rooms, %d assignments" % [placed_rooms.size(), active_assignments.size()])
 
 

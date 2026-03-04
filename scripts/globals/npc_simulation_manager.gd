@@ -273,13 +273,20 @@ func load_npcs() -> bool:
 		if npc_type == "":
 			push_error("NPC save data missing npc_type")
 			continue
-		
-		# Get saved position
+
+		# Rewind counter so spawn_npc regenerates the original ID
+		var saved_id: String = npc_data.get("npc_id", "")
+		if not saved_id.is_empty():
+			var parts: PackedStringArray = saved_id.rsplit("_", false, 1)
+			if parts.size() == 2 and parts[1].is_valid_int():
+				npc_id_counter = parts[1].to_int() - 1
+
+		# Get saved position and name
 		var pos_data: Dictionary = npc_data.get("current_position", {})
 		var saved_position: Vector2 = Vector2(pos_data.get("x", 0.0), pos_data.get("y", 0.0))
-		
-		# Spawn NPC at saved position (this handles everything including visual instance)
-		var npc_id: String = spawn_npc(npc_type, saved_position)
+		var saved_name: String = npc_data.get("npc_name", "")
+
+		var npc_id: String = spawn_npc(npc_type, saved_position, saved_name)
 		if npc_id == "":
 			push_error("Failed to spawn NPC of type: " + npc_type)
 			continue
@@ -288,6 +295,9 @@ func load_npcs() -> bool:
 		var npc_state: NPCSimulationState = simulated_npcs[npc_id]
 		_restore_npc_state(npc_state, npc_data)
 	
+	# Restore counter to saved value so future spawns don't collide with loaded IDs
+	npc_id_counter = save_data.get("npc_id_counter", 0)
+
 	print("NPCs loaded from: ", SAVE_PATH, " (", simulated_npcs.size(), " NPCs)")
 	npcs_loaded.emit()
 	return true

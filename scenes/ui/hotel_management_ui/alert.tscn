@@ -13,7 +13,7 @@ layout_mode = 2
 theme_override_constants/separation = 15
 
 [node name="DismissButton" type="Button" parent="HBoxContainer"]
-custom_minimum_size = Vector2(40, 0)
+custom_minimum_size = Vector2(40, 40)
 layout_mode = 2
 theme = ExtResource("1_iy86h")
 theme_type_variation = &"AlertDismissButton"

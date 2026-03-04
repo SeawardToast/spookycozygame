@@ -26,11 +26,15 @@ func get_interior_cells(origin: Vector2i) -> Array[Vector2i]:
 	var collision: CollisionPolygon2D = _interior.get_node_or_null("CollisionPolygon2D")
 
 	if not collision:
-		# Fallback: use all floor tiles
+		# Fallback: use all floor tiles, converting through the transform chain
+		# so any position offset on GameTileMap or Floor layer is accounted for.
 		var floor_layer: TileMapLayer = get_node_or_null("GameTileMap/Floor")
 		if floor_layer:
 			for local_cell: Vector2i in floor_layer.get_used_cells():
-				cells.append(origin + local_cell)
+				var local_pos: Vector2 = floor_layer.map_to_local(local_cell)
+				var root_relative: Vector2 = to_local(floor_layer.to_global(local_pos))
+				var grid_offset := Vector2i(floori(root_relative.x / CELL_SIZE), floori(root_relative.y / CELL_SIZE))
+				cells.append(origin + grid_offset)
 		return cells
 
 	# Convert collision polygon to grid cells
@@ -45,17 +49,19 @@ func get_interior_cells(origin: Vector2i) -> Array[Vector2i]:
 	var max_y: float = -INF
 
 	for point: Vector2 in polygon:
-		var world_point: Vector2 = _interior.to_global(point)
+		# Polygon points are in CollisionPolygon2D's local space — use collision.to_global,
+		# NOT _interior.to_global, which would ignore the CollisionPolygon2D's position offset.
+		var world_point: Vector2 = collision.to_global(point)
 		min_x = minf(min_x, world_point.x)
 		max_x = maxf(max_x, world_point.x)
 		min_y = minf(min_y, world_point.y)
 		max_y = maxf(max_y, world_point.y)
 
-	# Convert to grid cells
-	var start_x: int = int(min_x / CELL_SIZE)
-	var end_x: int = int(max_x / CELL_SIZE) + 1
-	var start_y: int = int(min_y / CELL_SIZE)
-	var end_y: int = int(max_y / CELL_SIZE) + 1
+	# Convert to grid cells — use floori/ceili to match BuildingLayoutData.world_to_grid()
+	var start_x: int = floori(min_x / CELL_SIZE)
+	var end_x: int = ceili(max_x / CELL_SIZE)
+	var start_y: int = floori(min_y / CELL_SIZE)
+	var end_y: int = ceili(max_y / CELL_SIZE)
 
 	for x: int in range(start_x, end_x):
 		for y: int in range(start_y, end_y):

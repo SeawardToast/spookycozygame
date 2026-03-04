@@ -6,6 +6,7 @@ var panel: PanelContainer
 var vbox: VBoxContainer
 var piece_buttons: Dictionary = {}
 var status_label: Label
+var _room_debug_btn: Button
 
 
 func _ready() -> void:
@@ -48,7 +49,16 @@ func _create_ui() -> void:
 	# Another separator
 	var sep2: HSeparator = HSeparator.new()
 	vbox.add_child(sep2)
-	
+
+	# Room debug toggle
+	_room_debug_btn = Button.new()
+	_room_debug_btn.text = "Room Debug [OFF]"
+	_room_debug_btn.pressed.connect(_on_room_debug_pressed)
+	vbox.add_child(_room_debug_btn)
+
+	var sep3: HSeparator = HSeparator.new()
+	vbox.add_child(sep3)
+
 	# Piece buttons (will be populated when PieceRegistry is ready)
 	call_deferred("_populate_piece_buttons")
 
@@ -100,9 +110,19 @@ func _update_status() -> void:
 		status_label.text = "Selected: %s" % piece.display_name
 
 
+func _on_room_debug_pressed() -> void:
+	if BuildModeManager.placement_system:
+		BuildModeManager.placement_system.toggle_room_debug()
+		var is_on: bool = BuildModeManager.placement_system.debug_show_rooms
+		_room_debug_btn.text = "Room Debug [%s]" % ("ON" if is_on else "OFF")
+
+
 func _on_build_mode_entered() -> void:
 	visible = true
 	_update_status()
+	if BuildModeManager.placement_system and _room_debug_btn:
+		var is_on: bool = BuildModeManager.placement_system.debug_show_rooms
+		_room_debug_btn.text = "Room Debug [%s]" % ("ON" if is_on else "OFF")
 
 
 func _on_build_mode_exited() -> void:

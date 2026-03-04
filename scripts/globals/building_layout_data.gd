@@ -527,22 +527,30 @@ func _get_room_door_offset(scene_path: String) -> Vector2i:
 # HELPERS
 # =============================================
 
-func _get_tilemap_cells_from_instance(instance: Node) -> Array[Vector2i]:
-	"""Recursively find all TileMapLayer nodes and extract their used cells
-	Skips door_side_wall and door_edge layers (room-specific, not for occupancy)"""
+func _get_tilemap_cells_from_instance(instance: Node, root: Node = null) -> Array[Vector2i]:
+	"""Recursively find all TileMapLayer nodes and extract their used cells.
+	Skips door_side_wall and door_edge layers (room-specific, not for occupancy).
+	Converts each cell's position relative to the piece root so that any position
+	offsets on GameTileMap or TileMapLayer nodes are correctly accounted for."""
+	if root == null:
+		root = instance
+
 	var all_cells: Array[Vector2i] = []
 
 	if instance is TileMapLayer:
 		var tilemap: TileMapLayer = instance as TileMapLayer
 		# Skip room door layers - they're for validation/visuals, not occupancy
 		if tilemap.name != "door_side_wall" and tilemap.name != "door_edge":
-			var used_cells: Array[Vector2i] = tilemap.get_used_cells()
-			all_cells.append_array(used_cells)
+			for cell: Vector2i in tilemap.get_used_cells():
+				# Convert through the transform chain to get position relative to piece root,
+				# so any position offset on GameTileMap or the TileMapLayer itself is included.
+				var local_pos: Vector2 = tilemap.map_to_local(cell)
+				var root_relative_pos: Vector2 = root.to_local(tilemap.to_global(local_pos))
+				all_cells.append(Vector2i(floori(root_relative_pos.x / cell_size), floori(root_relative_pos.y / cell_size)))
 
 	# Recursively check children
 	for child in instance.get_children():
-		var child_cells: Array[Vector2i] = _get_tilemap_cells_from_instance(child)
-		all_cells.append_array(child_cells)
+		all_cells.append_array(_get_tilemap_cells_from_instance(child, root))
 
 	return all_cells
 

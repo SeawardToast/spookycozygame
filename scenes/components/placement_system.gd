@@ -29,6 +29,13 @@ var last_validated_pos: Vector2i = Vector2i(-99999, -99999)  # Track last valida
 var valid_color: Color = Color(0.2, 1.0, 0.2, 0.5)  # Green, semi-transparent
 var invalid_color: Color = Color(1.0, 0.2, 0.2, 0.5)  # Red, semi-transparent
 
+# Debug overlay
+const _DEBUG_ROOM_COLOR := Color(0.2, 0.5, 1.0, 0.25)
+const _DEBUG_FURNITURE_COLOR := Color(0.2, 1.0, 0.3, 0.5)
+const _DEBUG_DOOR_COLOR := Color(1.0, 0.7, 0.1, 0.7)
+const _DEBUG_TEXT_COLOR := Color(1.0, 1.0, 1.0, 1.0)
+var debug_show_rooms: bool = false
+
 # Camera reference for panning
 var camera: Camera2D = null
 
@@ -44,6 +51,15 @@ func _ready() -> void:
 	
 	set_process(false)
 	set_process_unhandled_input(false)
+
+	# Draw above all placed room/furniture scenes; ghost child is relative so it stacks above this
+	z_index = 200
+
+	RoomManager.room_registered.connect(queue_redraw.unbind(1))
+	RoomManager.room_unregistered.connect(queue_redraw.unbind(1))
+	RoomManager.room_quality_changed.connect(queue_redraw.unbind(2))
+	BuildingLayoutData.piece_added.connect(queue_redraw.unbind(2))
+	BuildingLayoutData.piece_removed.connect(queue_redraw.unbind(2))
 
 
 func _on_game_initialized() -> void:
@@ -590,3 +606,48 @@ func get_selected_piece() -> String:
 
 func is_placement_valid() -> bool:
 	return ghost_valid
+
+
+# =============================================
+# DEBUG OVERLAY
+# =============================================
+
+func toggle_room_debug() -> void:
+	debug_show_rooms = !debug_show_rooms
+	queue_redraw()
+
+
+func _draw() -> void:
+	if not debug_show_rooms:
+		return
+
+	var font: Font = ThemeDB.fallback_font
+	var cs := cell_size
+
+	for room: PlacedRoom in RoomManager.placed_rooms.values():
+		# Occupied cells — blue
+		for cell: Vector2i in room.occupied_cells:
+			var p := to_local(Vector2(cell.x * cs, cell.y * cs))
+			draw_rect(Rect2(p, Vector2(cs, cs)), _DEBUG_ROOM_COLOR)
+
+		# Furniture cells — green (drawn on top)
+		for cell: Vector2i in room.furniture_inside:
+			var p := to_local(Vector2(cell.x * cs, cell.y * cs))
+			draw_rect(Rect2(p, Vector2(cs, cs)), _DEBUG_FURNITURE_COLOR)
+
+		# Door cell — orange
+		var dp := to_local(Vector2(room.door_grid_pos.x * cs, room.door_grid_pos.y * cs))
+		draw_rect(Rect2(dp, Vector2(cs, cs)), _DEBUG_DOOR_COLOR)
+
+		# Label at room center
+		if not room.occupied_cells.is_empty():
+			var sum := Vector2.ZERO
+			for cell: Vector2i in room.occupied_cells:
+				sum += Vector2(cell.x * cs, cell.y * cs)
+			var label_pos := to_local(sum / room.occupied_cells.size())
+			draw_string(
+				font,
+				label_pos,
+				"%s\nQ:%d" % [room.instance_id, room.current_quality],
+				HORIZONTAL_ALIGNMENT_LEFT, -1, 8, _DEBUG_TEXT_COLOR
+			)
