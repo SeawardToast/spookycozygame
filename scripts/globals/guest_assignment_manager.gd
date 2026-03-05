@@ -9,6 +9,9 @@ const STAY_MIN_DAYS: int = 1
 const STAY_MAX_DAYS: int = 3
 const SAVE_PATH: String = "user://guest_assignments.json"
 
+const BASE_RATE_PER_NIGHT: int = 10
+const QUALITY_GOLD_PER_POINT: int = 2
+
 var _pending_guests: Dictionary = {}  # guest_id -> GuestAssignment
 var _guest_to_npc: Dictionary = {}    # guest_id -> npc_id
 var _npc_to_guest: Dictionary = {}    # npc_id -> guest_id
@@ -103,8 +106,8 @@ func check_in(guest_id: String) -> bool:
 	_npc_to_guest[npc_id] = guest_id
 	_pending_guests.erase(guest_id)
 
-	guest_checked_in.emit(assignment)
 	_report_room_quality_mood(assignment, room)
+	guest_checked_in.emit(assignment)
 	print("GuestAssignmentManager: Checked in %s (npc_id: %s)" % [assignment.guest_name, npc_id])
 	return true
 
@@ -142,6 +145,8 @@ func _report_room_quality_mood(assignment: GuestAssignment, room: PlacedRoom) ->
 
 func check_out(guest_id: String) -> bool:
 	var assignment: GuestAssignment = _find_active_assignment(guest_id)
+	# Fetch room before RoomManager erases guest_to_room
+	var room: PlacedRoom = RoomManager.placed_rooms.get(assignment.room_instance_id) if assignment else null
 
 	if not RoomManager.check_out_guest(guest_id):
 		push_warning("GuestAssignmentManager: RoomManager check_out failed for %s" % guest_id)
@@ -155,9 +160,49 @@ func check_out(guest_id: String) -> bool:
 
 	if assignment:
 		guest_checked_out.emit(assignment)
-		DailyReportManager.generate_alert("checkout", "low", assignment.guest_id, assignment.guest_name, "%s has checked out" % assignment.guest_name, "lobby")
+		var message: String = _build_checkout_message(assignment, room)
+		DailyReportManager.generate_alert("checkout", "low", assignment.guest_id, assignment.guest_name, message, "lobby")
 		print("GuestAssignmentManager: Checked out %s" % assignment.guest_name)
 	return true
+
+
+func _build_checkout_message(assignment: GuestAssignment, room: PlacedRoom) -> String:
+	var nights: int = assignment.check_out_day - assignment.check_in_day
+	var night_str: String = "night" if nights == 1 else "nights"
+
+	var report: Variant = DailyReportManager.get_guest_report(assignment.guest_id)
+	var mood_line: String = ""
+	if report:
+		report.calculate_metrics()
+		mood_line = "\nMood: %s (avg %.1f) — peaked at %d, dipped to %d" % [
+			_mood_label(report.average_mood), report.average_mood,
+			report.highest_mood, report.lowest_mood
+		]
+
+	var room_quality: int = room.current_quality if room else 0
+	var base_pay: int = nights * BASE_RATE_PER_NIGHT
+	var bonus_pay: int = room_quality * QUALITY_GOLD_PER_POINT
+	var payment_line: String = "\nPayment: %d gold (%d base + %d room bonus)" % [
+		base_pay + bonus_pay, base_pay, bonus_pay
+	]
+
+	return "%s has checked out (%d %s)%s%s" % [
+		assignment.guest_name, nights, night_str, mood_line, payment_line
+	]
+
+
+func _mood_label(avg: float) -> String:
+	if avg >= 9.0:
+		return "delighted"
+	elif avg >= 7.0:
+		return "happy"
+	elif avg >= 5.0:
+		return "satisfied"
+	elif avg >= 3.0:
+		return "neutral"
+	elif avg >= 1.5:
+		return "disappointed"
+	return "miserable"
 
 
 func _auto_checkout_expired(current_day: int) -> void:

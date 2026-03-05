@@ -31,6 +31,14 @@ func _ready() -> void:
 func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed("toggle_management_ui"):
 		_panel.visible = !_panel.visible
+		if _panel.visible:
+			_refresh_active_moods()
+
+
+func _refresh_active_moods() -> void:
+	for child in _active_list.get_children():
+		if child is ActiveGuestListBlock:
+			child.refresh_mood()
 
 
 func _populate_pending_list() -> void:

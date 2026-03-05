@@ -1,4 +1,5 @@
-res://scenes/ui/hotel_management_ui/alert.tscn
+res://scripts/globals/guest_assignment_manager.gd
+res://scenes/ui/hotel_management_ui/active_guest_list_block.tscn
 res://scenes/ui/game_ui_theme.tres
 res://tilesets/large_house_tile_set.tres
 res://scenes/objects/tree/tree_shake.gdshader
@@ -8,10 +9,6 @@ res://assets/game/characters/sprites/vampires/vampire_1/vampire_1.tres
 res://dialogue/dialogue_balloon_theme.tres
 res://scenes/objects/rocks/rock_shake.gdshader
 res://scenes/characters/guide/replace_color.gdshader
-res://scripts/globals/npc_simulation_manager.gd
-res://scripts/globals/room_manager.gd
-res://scenes/constructions/rooms/dark_small_room.gd
-res://scenes/components/placement_system.gd
-res://scenes/test/buildmode_debug.gd
-res://scripts/globals/building_layout_data.gd
-res://scenes/constructions/rooms/dark_small_room.tscn
+res://scenes/ui/hotel_management_ui/active_guest_list_block.gd
+res://scenes/ui/hotel_management_ui/hotel_management_ui.gd
+res://scenes/test/building_construction_test_scene.tscn
