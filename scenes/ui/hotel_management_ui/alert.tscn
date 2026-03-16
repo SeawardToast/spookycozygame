@@ -3,21 +3,31 @@
 [ext_resource type="Theme" uid="uid://ljcck66th0xd" path="res://scenes/ui/game_ui_theme.tres" id="1_iy86h"]
 [ext_resource type="Script" uid="uid://crwee82hleikk" path="res://scenes/ui/hotel_management_ui/alert.gd" id="1_script"]
 
-[node name="Alert" type="HBoxContainer"]
-offset_right = 101.0
-offset_bottom = 33.0
+[node name="Alert" type="Panel"]
+custom_minimum_size = Vector2(270, 100)
+offset_right = 284.0
+offset_bottom = 116.0
+theme = ExtResource("1_iy86h")
+theme_type_variation = &"LightWoodPanel"
 script = ExtResource("1_script")
 
-[node name="HBoxContainer" type="HBoxContainer" parent="."]
+[node name="MarginContainer" type="MarginContainer" parent="."]
+layout_mode = 0
+offset_right = 284.0
+offset_bottom = 115.0
+
+[node name="HBoxContainer" type="HBoxContainer" parent="MarginContainer"]
 layout_mode = 2
 theme_override_constants/separation = 15
 
-[node name="DismissButton" type="Button" parent="HBoxContainer"]
+[node name="DismissButton" type="Button" parent="MarginContainer/HBoxContainer"]
 custom_minimum_size = Vector2(40, 40)
 layout_mode = 2
+size_flags_horizontal = 0
+size_flags_vertical = 4
 theme = ExtResource("1_iy86h")
 theme_type_variation = &"AlertDismissButton"
 
-[node name="Label" type="Label" parent="HBoxContainer"]
+[node name="VBoxContainer" type="VBoxContainer" parent="MarginContainer/HBoxContainer"]
 layout_mode = 2
-text = "tester"
+theme_override_constants/separation = 13

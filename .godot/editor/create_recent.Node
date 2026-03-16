@@ -1,13 +1,13 @@
-HBoxContainer
 VBoxContainer
 MarginContainer
+Panel
+HBoxContainer
 Button
 Label
 TextureRect
 RichTextLabel
 NavigationObstacle2D
 PanelContainer
-Panel
 Control
 TabBar
 TabContainer
