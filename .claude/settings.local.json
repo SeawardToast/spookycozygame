@@ -5,7 +5,9 @@
       "Bash(dir:*)",
       "Bash(python3:*)",
       "Bash(powershell -Command:*)",
-      "Bash(find c:UsersaidanDocumentsspookycozygame -name \"*.gd\" -exec grep -l \"furniture_bed\\\\|furniture_coffin\\\\|FURNITURE_QUALITY\" {} ;)"
+      "Bash(find c:UsersaidanDocumentsspookycozygame -name \"*.gd\" -exec grep -l \"furniture_bed\\\\|furniture_coffin\\\\|FURNITURE_QUALITY\" {} ;)",
+      "Bash(xargs grep -l \"class_name.*Placement\")",
+      "Bash(ls -la /c/Users/aidan/Documents/spookycozygame/scenes/constructions/hallway_L_N_W*)"
     ]
   }
 }

@@ -8,3 +8,11 @@ res://assets/game/characters/sprites/vampires/vampire_1/vampire_1.tres
 res://dialogue/dialogue_balloon_theme.tres
 res://scenes/objects/rocks/rock_shake.gdshader
 res://scenes/characters/guide/replace_color.gdshader
+res://scenes/constructions/hallway_L.tscn
+res://scenes/constructions/hallway_L_inverted.tscn
+res://scenes/constructions/hallway_L_S_E.tscn
+res://scenes/constructions/hallway_L_N_W.tscn
+res://scripts/globals/building_piece_registry.gd
+res://scenes/test/building_construction_test_scene.tscn
+res://scenes/constructions/hallway_straight_horizontal.tscn
+res://scenes/constructions/hallway_straight.tscn

@@ -1,0 +1,38 @@
+[gd_scene load_steps=4 format=4 uid="uid://bflym0kl3qo67"]
+
+[ext_resource type="TileSet" uid="uid://dcaqtdvfufe8g" path="res://tilesets/game_tile_set.tres" id="1_sqgx5"]
+[ext_resource type="PackedScene" uid="uid://ber0r841sem8q" path="res://scenes/components/save_load/save_data_component.tscn" id="2_66blc"]
+[ext_resource type="Resource" uid="uid://sbybiywmb8mp" path="res://resources/scene_data_resource.tres" id="3_w65bv"]
+
+[node name="HallwayStraight" type="Node2D" groups=["placeable_construction"]]
+y_sort_enabled = true
+
+[node name="GameTileMap" type="Node2D" parent="."]
+y_sort_enabled = true
+
+[node name="Floor" type="TileMapLayer" parent="GameTileMap"]
+y_sort_enabled = true
+position = Vector2(0, -96)
+tile_map_data = PackedByteArray("AAABAAcABwABAA4AAAACAAcABwACAA4AAAADAAcABwADAA4AAAAEAAcABwAEAA4AAAABAAgABwAAAA4AAAABAAkABwAAAA8AAAACAAgABwABAA4AAAACAAkABwABAA8AAAADAAgABwACAA4AAAADAAkABwACAA8AAAAEAAgABwADAA4AAAAEAAkABwADAA8AAAABAAoABwAAAA4AAAABAAsABwAAAA8AAAACAAoABwABAA4AAAACAAsABwABAA8AAAADAAoABwACAA4AAAADAAsABwACAA8AAAAEAAoABwADAA4AAAAEAAsABwADAA8AAAAFAAkABwAAAA4AAAAFAAoABwAAAA8AAAAGAAkABwABAA4AAAAGAAoABwABAA8AAAAFAAsABwAAAA4AAAAGAAsABwABAA4AAAABAAwABwAAAA4AAAACAAwABwABAA4AAAADAAwABwACAA4AAAAEAAwABwADAA4AAAAFAAwABwAAAA4AAAAGAAwABwABAA4AAAA=")
+tile_set = ExtResource("1_sqgx5")
+
+[node name="connectable_one" type="TileMapLayer" parent="GameTileMap" groups=["connectable_tiles"]]
+y_sort_enabled = true
+position = Vector2(0, -96)
+tile_map_data = PackedByteArray("AAABAAYABwAAAA4AAAACAAYABwABAA4AAAADAAYABwACAA4AAAAEAAYABwADAA4AAAA=")
+tile_set = ExtResource("1_sqgx5")
+
+[node name="connectable_two" type="TileMapLayer" parent="GameTileMap" groups=["connectable_tiles"]]
+y_sort_enabled = true
+position = Vector2(0, -96)
+tile_map_data = PackedByteArray("AAAHAAkABwAAAA4AAAAHAAoABwAAAA8AAAAHAAsABwAAAA4AAAAHAAwABwAAAA8AAAA=")
+tile_set = ExtResource("1_sqgx5")
+
+[node name="Walls" type="TileMapLayer" parent="GameTileMap"]
+y_sort_enabled = true
+position = Vector2(0, -96)
+tile_map_data = PackedByteArray("AAAAAAYACAAAAAMAAAAFAAYACAAFAAEAAAAFAAcACAAFAAIAAAAAAAcACAAAAAAAAAAAAAgACAAAAAEAAAAAAAkACAAAAAIAAAAAAAoACAAAAAMAAAAAAAsACAAAAAAAAAAFAAgACAABAAAAAAAGAAgACAACAAAAAAAHAAgACAADAAAAAAAAAAwACAAAAAIAAAAAAA0ACAAAAAQAAAABAA0ACAABAAQAAAACAA0ACAACAAQAAAADAA0ACAADAAQAAAAEAA0ACAAEAAQAAAAFAA0ACAACAAQAAAAGAA0ACAADAAQAAAAHAA0ACAABAAQAAAA=")
+tile_set = ExtResource("1_sqgx5")
+
+[node name="SaveDataComponent" parent="." instance=ExtResource("2_66blc")]
+save_data_resource = ExtResource("3_w65bv")

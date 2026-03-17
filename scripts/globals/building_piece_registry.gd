@@ -74,8 +74,28 @@ func _register_default_pieces() -> void:
 	# L-turn (connects up and right)
 	register_piece(PieceData.new(
 		"hallway_L",
-		"L-Turn",
-		"res://scenes/constructions/hallway_L.tscn",
+		"L-Turn SE",
+		"res://scenes/constructions/hallway_L_S_E.tscn",
+		Vector2i(1, 1),
+		[Vector2i.UP, Vector2i.RIGHT],
+		"hallway"
+	))
+	
+		# L-turn (connects from north to west)
+	register_piece(PieceData.new(
+		"hallway_L_N_W",
+		"L-Turn NW",
+		"res://scenes/constructions/hallway_L_N_W.tscn",
+		Vector2i(1, 1),
+		[Vector2i.UP, Vector2i.RIGHT],
+		"hallway"
+	))
+	
+			# L-turn (connects from north to east)
+	register_piece(PieceData.new(
+		"hallway_L_N_E",
+		"L-Turn NE",
+		"res://scenes/constructions/hallway_L_N_E.tscn",
 		Vector2i(1, 1),
 		[Vector2i.UP, Vector2i.RIGHT],
 		"hallway"

@@ -1,3 +1,4 @@
+TileMapLayer
 VBoxContainer
 MarginContainer
 Panel
@@ -11,4 +12,3 @@ PanelContainer
 Control
 TabBar
 TabContainer
-TileMapLayer
